@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "901674071868",
+    "project_id": "hundredheadssociety",
+    "storage_bucket": "hundredheadssociety.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:901674071868:android:caccfeebb722027f7a1039",
+        "android_client_info": {
+          "package_name": "com.hundredheadsociety.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA10pLiV5uk6K3O1LtAmiOXVxIKDZ6MD7M"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+} 

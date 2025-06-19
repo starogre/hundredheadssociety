@@ -1,0 +1,258 @@
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../providers/auth_provider.dart';
+import '../providers/portrait_provider.dart';
+import '../models/portrait_model.dart';
+import '../widgets/portrait_slot.dart';
+import '../widgets/add_portrait_dialog.dart';
+import 'profile_screen.dart';
+import 'community_screen.dart';
+import '../theme/app_theme.dart';
+
+class DashboardScreen extends StatefulWidget {
+  const DashboardScreen({super.key});
+
+  @override
+  State<DashboardScreen> createState() => _DashboardScreenState();
+}
+
+class _DashboardScreenState extends State<DashboardScreen> {
+  int _selectedIndex = 0;
+
+  @override
+  Widget build(BuildContext context) {
+    return Consumer<AuthProvider>(
+      builder: (context, authProvider, child) {
+        if (!authProvider.isAuthenticated) {
+          return const Scaffold(
+            body: Center(
+              child: CircularProgressIndicator(),
+            ),
+          );
+        }
+
+        return Scaffold(
+          appBar: AppBar(
+            title: const Text('100 Heads Society'),
+          ),
+          body: IndexedStack(
+            index: _selectedIndex,
+            children: [
+              _buildDashboardTab(authProvider),
+              const CommunityScreen(),
+              ProfileScreen(userId: authProvider.currentUser!.uid),
+            ],
+          ),
+          bottomNavigationBar: BottomNavigationBar(
+            currentIndex: _selectedIndex,
+            onTap: (index) {
+              setState(() {
+                _selectedIndex = index;
+              });
+            },
+            selectedItemColor: AppColors.rustyOrange,
+            unselectedItemColor: AppColors.forestGreen,
+            items: const [
+              BottomNavigationBarItem(
+                icon: Icon(Icons.dashboard),
+                label: 'My Heads',
+              ),
+              BottomNavigationBarItem(
+                icon: Icon(Icons.people),
+                label: 'Community',
+              ),
+              BottomNavigationBarItem(
+                icon: Icon(Icons.person),
+                label: 'Profile',
+              ),
+            ],
+          ),
+          floatingActionButton: _selectedIndex == 0
+              ? FloatingActionButton(
+                  onPressed: () => _showAddPortraitDialog(context, authProvider),
+                  child: const Icon(Icons.add_a_photo),
+                )
+              : null,
+        );
+      },
+    );
+  }
+
+  Widget _buildDashboardTab(AuthProvider authProvider) {
+    return Column(
+      children: [
+        // Progress Header
+        Container(
+          padding: const EdgeInsets.all(16),
+          color: AppColors.forestGreen.withValues(alpha: 0.1),
+          child: Row(
+            children: [
+              CircleAvatar(
+                radius: 30,
+                backgroundColor: AppColors.rustyOrange,
+                child: Text(
+                  '${authProvider.userData?.portraitsCompleted ?? 0}',
+                  style: const TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.white,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Welcome, ${authProvider.userData?.name ?? 'Artist'}!',
+                      style: Theme.of(context).textTheme.headlineMedium,
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      '${authProvider.userData?.portraitsCompleted ?? 0} of 100 portraits completed',
+                      style: Theme.of(context).textTheme.bodyMedium,
+                    ),
+                    const SizedBox(height: 8),
+                    LinearProgressIndicator(
+                      value: (authProvider.userData?.portraitsCompleted ?? 0) / 100,
+                      backgroundColor: AppColors.cream,
+                      valueColor: AlwaysStoppedAnimation<Color>(AppColors.rustyOrange),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+
+        // Grid of 100 slots
+        Expanded(
+          child: StreamBuilder<List<PortraitModel>>(
+            stream: Provider.of<PortraitProvider>(context, listen: false)
+                .getUserPortraits(authProvider.currentUser!.uid),
+            builder: (context, snapshot) {
+              if (snapshot.hasError) {
+                return Center(
+                  child: Text('Error: ${snapshot.error}'),
+                );
+              }
+
+              if (!snapshot.hasData) {
+                return const Center(
+                  child: CircularProgressIndicator(),
+                );
+              }
+
+              List<PortraitModel> portraits = snapshot.data!;
+              int completedCount = portraits.length;
+
+              // Create a map for O(1) lookup instead of O(n) search for each item
+              Map<int, PortraitModel> portraitMap = {
+                for (var portrait in portraits) portrait.weekNumber: portrait
+              };
+
+              return GridView.builder(
+                padding: const EdgeInsets.all(16),
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 5,
+                  crossAxisSpacing: 16,
+                  mainAxisSpacing: 16,
+                  childAspectRatio: 1,
+                ),
+                itemCount: 100,
+                itemBuilder: (context, index) {
+                  int weekNumber = index + 1;
+                  PortraitModel? portrait = portraitMap[weekNumber];
+
+                  return PortraitSlot(
+                    weekNumber: weekNumber,
+                    portrait: portrait,
+                    isCompleted: portrait != null,
+                    onTap: portrait != null
+                        ? () => _showPortraitDetails(context, portrait)
+                        : () => _showAddPortraitDialog(context, authProvider),
+                  );
+                },
+              );
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
+  void _showAddPortraitDialog(BuildContext context, AuthProvider authProvider) {
+    showDialog(
+      context: context,
+      builder: (context) => AddPortraitDialog(
+        userId: authProvider.currentUser!.uid,
+        nextWeekNumber: (authProvider.userData?.portraitsCompleted ?? 0) + 1,
+      ),
+    );
+  }
+
+  void _showPortraitDetails(BuildContext context, PortraitModel portrait) {
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: double.infinity,
+              height: 300,
+              decoration: BoxDecoration(
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(8)),
+                image: DecorationImage(
+                  image: NetworkImage(portrait.imageUrl),
+                  fit: BoxFit.cover,
+                ),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    portrait.title,
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  if (portrait.description != null) ...[
+                    const SizedBox(height: 8),
+                    Text(
+                      portrait.description!,
+                      style: TextStyle(
+                        color: Colors.grey.shade600,
+                      ),
+                    ),
+                  ],
+                  const SizedBox(height: 8),
+                  Text(
+                    'Week ${portrait.weekNumber}',
+                    style: TextStyle(
+                      color: Colors.blue.shade600,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            ButtonBar(
+              children: [
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  child: const Text('Close'),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+} 
