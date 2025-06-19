@@ -34,6 +34,7 @@ class PortraitProvider extends ChangeNotifier {
     required File imageFile,
     required String title,
     String? description,
+    int? weekNumber,
     BuildContext? context,
   }) async {
     print('Starting portrait upload process');
@@ -53,6 +54,7 @@ class PortraitProvider extends ChangeNotifier {
         imageUrl: imageUrl,
         title: title,
         description: description,
+        weekNumber: weekNumber,
       );
       print('Portrait added to Firestore');
 
@@ -126,5 +128,10 @@ class PortraitProvider extends ChangeNotifier {
 
   void clearError() {
     _clearError();
+  }
+
+  // Refresh portraits to notify listeners
+  void refreshPortraits() {
+    notifyListeners();
   }
 } 

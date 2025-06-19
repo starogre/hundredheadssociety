@@ -3,11 +3,15 @@ import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
 import '../providers/portrait_provider.dart';
 import '../models/portrait_model.dart';
+import '../models/user_model.dart';
 import '../widgets/portrait_slot.dart';
 import '../widgets/add_portrait_dialog.dart';
+import '../widgets/portrait_details_dialog.dart';
+import '../services/user_service.dart';
 import 'profile_screen.dart';
 import 'community_screen.dart';
 import '../theme/app_theme.dart';
+import 'add_portrait_screen.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -69,7 +73,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           ),
           floatingActionButton: _selectedIndex == 0
               ? FloatingActionButton(
-                  onPressed: () => _showAddPortraitDialog(context, authProvider),
+                  onPressed: () => _showAddPortraitDialog(context, authProvider, (authProvider.userData?.portraitsCompleted ?? 0) + 1),
                   child: const Icon(Icons.add_a_photo),
                 )
               : null,
@@ -164,6 +168,18 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   itemBuilder: (context, index) {
                     int weekNumber = index + 1;
                     PortraitModel? portrait = portraitMap[weekNumber];
+                    
+                    // Calculate the next available week (first week without a portrait)
+                    int nextAvailableWeek = 1;
+                    for (int i = 1; i <= 100; i++) {
+                      if (!portraitMap.containsKey(i)) {
+                        nextAvailableWeek = i;
+                        break;
+                      }
+                    }
+                    
+                    // Only allow tapping if this is the next available week and it's empty
+                    bool isUnlocked = weekNumber == nextAvailableWeek && portrait == null;
 
                     return PortraitSlot(
                       weekNumber: weekNumber,
@@ -171,7 +187,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       isCompleted: portrait != null,
                       onTap: portrait != null
                           ? () => _showPortraitDetails(context, portrait)
-                          : () => _showAddPortraitDialog(context, authProvider),
+                          : isUnlocked 
+                              ? () => _showAddPortraitDialog(context, authProvider, weekNumber)
+                              : null, // Disable tapping for locked weeks
                     );
                   },
                 );
@@ -183,79 +201,36 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  void _showAddPortraitDialog(BuildContext context, AuthProvider authProvider) {
-    showDialog(
-      context: context,
-      builder: (context) => ChangeNotifierProvider.value(
-        value: Provider.of<PortraitProvider>(context, listen: false),
-        child: AddPortraitDialog(
+  void _showAddPortraitDialog(BuildContext context, AuthProvider authProvider, int weekNumber) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => AddPortraitScreen(
           userId: authProvider.currentUser!.uid,
-          nextWeekNumber: (authProvider.userData?.portraitsCompleted ?? 0) + 1,
+          nextWeekNumber: weekNumber,
         ),
       ),
     );
   }
 
   void _showPortraitDetails(BuildContext context, PortraitModel portrait) {
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final userService = UserService();
+    
     showDialog(
       context: context,
-      builder: (context) => Dialog(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: double.infinity,
-              height: 300,
-              decoration: BoxDecoration(
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(8)),
-                image: DecorationImage(
-                  image: NetworkImage(portrait.imageUrl),
-                  fit: BoxFit.cover,
-                ),
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    portrait.title,
-                    style: const TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  if (portrait.description != null) ...[
-                    const SizedBox(height: 8),
-                    Text(
-                      portrait.description!,
-                      style: TextStyle(
-                        color: Colors.grey.shade600,
-                      ),
-                    ),
-                  ],
-                  const SizedBox(height: 8),
-                  Text(
-                    'Week ${portrait.weekNumber}',
-                    style: TextStyle(
-                      color: Colors.blue.shade600,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            ButtonBar(
-              children: [
-                TextButton(
-                  onPressed: () => Navigator.of(context).pop(),
-                  child: const Text('Close'),
-                ),
-              ],
-            ),
-          ],
-        ),
+      builder: (context) => FutureBuilder<UserModel?>(
+        future: userService.getUserById(portrait.userId),
+        builder: (context, userSnapshot) {
+          return PortraitDetailsDialog(
+            portrait: portrait,
+            user: userSnapshot.data,
+            currentUserId: authProvider.currentUser!.uid,
+            onPortraitModified: () {
+              // The streams will automatically update when Firestore data changes
+              // No need to manually refresh
+            },
+          );
+        },
       ),
     );
   }

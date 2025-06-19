@@ -6,18 +6,20 @@ class PortraitSlot extends StatelessWidget {
   final int weekNumber;
   final PortraitModel? portrait;
   final bool isCompleted;
-  final VoidCallback onTap;
+  final VoidCallback? onTap;
 
   const PortraitSlot({
     super.key,
     required this.weekNumber,
     this.portrait,
     required this.isCompleted,
-    required this.onTap,
+    this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
+    bool isUnlocked = onTap != null;
+    
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -25,7 +27,11 @@ class PortraitSlot extends StatelessWidget {
           color: isCompleted ? Colors.white : Colors.grey.shade300,
           borderRadius: BorderRadius.circular(8),
           border: Border.all(
-            color: isCompleted ? Colors.blue.shade200 : Colors.grey.shade400,
+            color: isCompleted 
+                ? Colors.blue.shade200 
+                : isUnlocked 
+                    ? Colors.orange.shade300 
+                    : Colors.grey.shade400,
             width: 1,
           ),
           boxShadow: isCompleted
@@ -36,7 +42,15 @@ class PortraitSlot extends StatelessWidget {
                     offset: const Offset(0, 2),
                   ),
                 ]
-              : null,
+              : isUnlocked && !isCompleted
+                  ? [
+                      BoxShadow(
+                        color: Colors.orange.shade100,
+                        blurRadius: 4,
+                        offset: const Offset(0, 2),
+                      ),
+                    ]
+                  : null,
         ),
         child: Stack(
           children: [
@@ -73,8 +87,8 @@ class PortraitSlot extends StatelessWidget {
                   borderRadius: BorderRadius.circular(7),
                 ),
                 child: Icon(
-                  Icons.add_a_photo,
-                  color: Colors.grey.shade400,
+                  isUnlocked ? Icons.add_a_photo : Icons.lock,
+                  color: isUnlocked ? Colors.orange.shade400 : Colors.grey.shade400,
                   size: 20,
                 ),
               ),
@@ -87,7 +101,11 @@ class PortraitSlot extends StatelessWidget {
               child: Container(
                 padding: const EdgeInsets.symmetric(vertical: 2, horizontal: 4),
                 decoration: BoxDecoration(
-                  color: isCompleted ? Colors.blue.shade600 : Colors.grey.shade600,
+                  color: isCompleted 
+                      ? Colors.blue.shade600 
+                      : isUnlocked 
+                          ? Colors.orange.shade600 
+                          : Colors.grey.shade600,
                   borderRadius: const BorderRadius.only(
                     bottomLeft: Radius.circular(7),
                     bottomRight: Radius.circular(7),

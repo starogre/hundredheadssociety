@@ -11,6 +11,7 @@ import 'package:firebase_storage/firebase_storage.dart';
 import 'dart:io';
 import '../widgets/profile_image_picker_dialog.dart';
 import '../theme/app_theme.dart';
+import '../widgets/portrait_details_dialog.dart';
 
 class ProfileScreen extends StatefulWidget {
   final String userId;
@@ -28,6 +29,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   final UserService _userService = UserService();
   UserModel? _userData;
   final ImagePicker _picker = ImagePicker();
+  int _lastPortraitCount = 0;
 
   @override
   void initState() {
@@ -73,6 +75,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
         },
       ),
     );
+  }
+
+  int _getCurrentWeek() {
+    final now = DateTime.now();
+    final startDate = DateTime(2024, 1, 1); // Assuming the challenge started on January 1st, 2024
+    final difference = now.difference(startDate).inDays;
+    return (difference ~/ 7) + 1;
   }
 
   @override
@@ -142,13 +151,34 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               ],
                             ),
                             const SizedBox(height: 16),
-                            Text(
-                              _userData!.name,
-                              style: const TextStyle(
-                                fontSize: 24,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.white,
-                              ),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Text(
+                                  _userData!.name,
+                                  style: const TextStyle(
+                                    fontSize: 24,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                GestureDetector(
+                                  onTap: _editName,
+                                  child: Container(
+                                    padding: const EdgeInsets.all(4),
+                                    decoration: BoxDecoration(
+                                      color: Colors.white.withOpacity(0.2),
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: const Icon(
+                                      Icons.edit,
+                                      color: Colors.white,
+                                      size: 16,
+                                    ),
+                                  ),
+                                ),
+                              ],
                             ),
                             if (_userData!.bio != null) ...[
                               const SizedBox(height: 8),
@@ -175,246 +205,133 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 SliverToBoxAdapter(
                   child: Container(
                     padding: const EdgeInsets.all(16),
-                    color: AppColors.cream,
                     child: Column(
                       children: [
-                        Card(
-                          child: Padding(
-                            padding: const EdgeInsets.all(16),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceAround,
-                              children: [
-                                Expanded(
-                                  child: Column(
-                                    children: [
-                                      Text(
-                                        '${_userData!.portraitsCompleted}',
-                                        style: TextStyle(
-                                          fontSize: 24,
-                                          fontWeight: FontWeight.bold,
-                                          color: AppColors.rustyOrange,
-                                        ),
-                                      ),
-                                      Text(
-                                        'Completed',
-                                        style: TextStyle(
-                                          color: AppColors.forestGreen.withOpacity(0.7),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                Container(
-                                  width: 1,
-                                  height: 40,
-                                  color: AppColors.forestGreen.withOpacity(0.2),
-                                ),
-                                Expanded(
-                                  child: Column(
-                                    children: [
-                                      Text(
-                                        '${100 - _userData!.portraitsCompleted}',
-                                        style: TextStyle(
-                                          fontSize: 24,
-                                          fontWeight: FontWeight.bold,
-                                          color: AppColors.rustyOrange,
-                                        ),
-                                      ),
-                                      Text(
-                                        'Remaining',
-                                        style: TextStyle(
-                                          color: AppColors.forestGreen.withOpacity(0.7),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ],
+                        Row(
+                          children: [
+                            Expanded(
+                              child: _buildStatCard(
+                                'Done',
+                                _userData!.portraitsCompleted.toString(),
+                                AppColors.forestGreen,
+                              ),
                             ),
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-
-                        // Progress Bar
-                        Card(
-                          child: Padding(
-                            padding: const EdgeInsets.all(16),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'Progress to 100 Heads',
-                                  style: Theme.of(context).textTheme.headlineMedium,
-                                ),
-                                const SizedBox(height: 8),
-                                LinearProgressIndicator(
-                                  value: _userData!.portraitsCompleted / 100,
-                                  backgroundColor: AppColors.cream,
-                                  valueColor: AlwaysStoppedAnimation<Color>(AppColors.rustyOrange),
-                                  minHeight: 8,
-                                ),
-                                const SizedBox(height: 8),
-                                Text(
-                                  '${_userData!.portraitsCompleted} of 100 portraits completed',
-                                  style: TextStyle(
-                                    color: AppColors.forestGreen.withOpacity(0.7),
-                                    fontSize: 14,
-                                  ),
-                                ),
-                              ],
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: _buildStatCard(
+                                'Left',
+                                (100 - _userData!.portraitsCompleted).toString(),
+                                AppColors.rustyOrange,
+                              ),
                             ),
-                          ),
+                          ],
                         ),
-                      ],
-                    ),
-                  ),
-                ),
-
-                // Portraits Section
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'Portraits Gallery',
-                          style: TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        const SizedBox(height: 16),
                       ],
                     ),
                   ),
                 ),
 
                 // Portraits Grid
-                StreamBuilder<List<PortraitModel>>(
-                  stream: Provider.of<PortraitProvider>(context, listen: false)
-                      .getUserPortraits(widget.userId),
-                  builder: (context, snapshot) {
-                    if (snapshot.hasError) {
-                      return SliverToBoxAdapter(
-                        child: Center(
-                          child: Text('Error: ${snapshot.error}'),
-                        ),
-                      );
-                    }
+                Consumer<PortraitProvider>(
+                  builder: (context, portraitProvider, child) {
+                    return StreamBuilder<List<PortraitModel>>(
+                      stream: portraitProvider.getUserPortraits(widget.userId),
+                      builder: (context, snapshot) {
+                        if (snapshot.hasError) {
+                          return SliverToBoxAdapter(
+                            child: Center(
+                              child: Text('Error: ${snapshot.error}'),
+                            ),
+                          );
+                        }
 
-                    if (!snapshot.hasData) {
-                      return const SliverToBoxAdapter(
-                        child: Center(
-                          child: CircularProgressIndicator(),
-                        ),
-                      );
-                    }
+                        if (!snapshot.hasData) {
+                          return const SliverToBoxAdapter(
+                            child: Center(
+                              child: CircularProgressIndicator(),
+                            ),
+                          );
+                        }
 
-                    List<PortraitModel> portraits = snapshot.data!;
+                        final portraits = snapshot.data!;
+                        _lastPortraitCount = portraits.length;
 
-                    if (portraits.isEmpty) {
-                      return const SliverToBoxAdapter(
-                        child: Padding(
-                          padding: EdgeInsets.all(32),
-                          child: Center(
-                            child: Column(
-                              children: [
-                                Icon(
-                                  Icons.photo_library,
-                                  size: 64,
-                                  color: Colors.grey,
-                                ),
-                                SizedBox(height: 16),
-                                Text(
-                                  'No portraits yet',
-                                  style: TextStyle(
-                                    fontSize: 18,
-                                    color: Colors.grey,
+                        if (portraits.isEmpty) {
+                          return SliverToBoxAdapter(
+                            child: Center(
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(
+                                    Icons.photo_library,
+                                    size: 64,
+                                    color: AppColors.forestGreen.withOpacity(0.5),
                                   ),
-                                ),
-                                SizedBox(height: 8),
-                                Text(
-                                  'Start your journey by adding your first portrait!',
-                                  textAlign: TextAlign.center,
-                                  style: TextStyle(
-                                    color: Colors.grey,
+                                  const SizedBox(height: 16),
+                                  Text(
+                                    'No portraits yet',
+                                    style: TextStyle(
+                                      fontSize: 18,
+                                      color: AppColors.forestGreen,
+                                      fontWeight: FontWeight.bold,
+                                    ),
                                   ),
-                                ),
-                              ],
+                                ],
+                              ),
+                            ),
+                          );
+                        }
+
+                        return SliverPadding(
+                          padding: const EdgeInsets.all(16),
+                          sliver: SliverGrid(
+                            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                              crossAxisCount: 2,
+                              mainAxisSpacing: 16,
+                              crossAxisSpacing: 16,
+                              childAspectRatio: 1,
+                            ),
+                            delegate: SliverChildBuilderDelegate(
+                              (context, index) {
+                                final portrait = portraits[index];
+                                return GestureDetector(
+                                  onTap: () {
+                                    showDialog(
+                                      context: context,
+                                      builder: (context) => PortraitDetailsDialog(
+                                        portrait: portrait,
+                                        user: _userData,
+                                        currentUserId: widget.userId,
+                                        onPortraitModified: () {
+                                          setState(() {});
+                                        },
+                                      ),
+                                    );
+                                  },
+                                  child: ClipRRect(
+                                    borderRadius: BorderRadius.circular(8),
+                                    child: CachedNetworkImage(
+                                      imageUrl: portrait.imageUrl,
+                                      fit: BoxFit.cover,
+                                      placeholder: (context, url) => Container(
+                                        color: Colors.grey[200],
+                                        child: const Center(
+                                          child: CircularProgressIndicator(),
+                                        ),
+                                      ),
+                                      errorWidget: (context, url, error) => Container(
+                                        color: Colors.grey[200],
+                                        child: const Icon(Icons.error),
+                                      ),
+                                    ),
+                                  ),
+                                );
+                              },
+                              childCount: portraits.length,
                             ),
                           ),
-                        ),
-                      );
-                    }
-
-                    return SliverPadding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      sliver: SliverGrid(
-                        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: 2,
-                          crossAxisSpacing: 8,
-                          mainAxisSpacing: 8,
-                          childAspectRatio: 1,
-                        ),
-                        delegate: SliverChildBuilderDelegate(
-                          (context, index) {
-                            final portrait = portraits[index];
-                            return GestureDetector(
-                              onTap: () => _showPortraitDetails(context, portrait),
-                              child: Card(
-                                clipBehavior: Clip.antiAlias,
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Expanded(
-                                      child: CachedNetworkImage(
-                                        imageUrl: portrait.imageUrl,
-                                        fit: BoxFit.cover,
-                                        width: double.infinity,
-                                        placeholder: (context, url) => Container(
-                                          color: Colors.grey.shade200,
-                                          child: const Center(
-                                            child: CircularProgressIndicator(),
-                                          ),
-                                        ),
-                                        errorWidget: (context, url, error) => Container(
-                                          color: Colors.grey.shade200,
-                                          child: const Icon(Icons.error),
-                                        ),
-                                      ),
-                                    ),
-                                    Padding(
-                                      padding: const EdgeInsets.all(8),
-                                      child: Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
-                                        children: [
-                                          Text(
-                                            portrait.title,
-                                            style: const TextStyle(
-                                              fontWeight: FontWeight.bold,
-                                            ),
-                                            maxLines: 1,
-                                            overflow: TextOverflow.ellipsis,
-                                          ),
-                                          Text(
-                                            'Week ${portrait.weekNumber}',
-                                            style: TextStyle(
-                                              color: Colors.grey.shade600,
-                                              fontSize: 12,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            );
-                          },
-                          childCount: portraits.length,
-                        ),
-                      ),
+                        );
+                      },
                     );
                   },
                 ),
@@ -479,66 +396,89 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  void _showPortraitDetails(BuildContext context, PortraitModel portrait) {
-    showDialog(
-      context: context,
-      builder: (context) => Dialog(
+  Widget _buildStatCard(String title, String value, Color color) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
         child: Column(
-          mainAxisSize: MainAxisSize.min,
           children: [
-            Container(
-              width: double.infinity,
-              height: 300,
-              decoration: BoxDecoration(
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(8)),
-                image: DecorationImage(
-                  image: CachedNetworkImageProvider(portrait.imageUrl),
-                  fit: BoxFit.cover,
-                ),
+            Text(
+              value,
+              style: TextStyle(
+                fontSize: 36,
+                fontWeight: FontWeight.bold,
+                color: color,
               ),
             ),
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    portrait.title,
-                    style: const TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  if (portrait.description != null) ...[
-                    const SizedBox(height: 8),
-                    Text(
-                      portrait.description!,
-                      style: TextStyle(
-                        color: Colors.grey.shade600,
-                      ),
-                    ),
-                  ],
-                  const SizedBox(height: 8),
-                  Text(
-                    'Week ${portrait.weekNumber}',
-                    style: TextStyle(
-                      color: Colors.blue.shade600,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ],
+            Text(
+              title,
+              style: TextStyle(
+                fontSize: 16,
+                color: AppColors.forestGreen.withOpacity(0.7),
               ),
-            ),
-            ButtonBar(
-              children: [
-                TextButton(
-                  onPressed: () => Navigator.of(context).pop(),
-                  child: const Text('Close'),
-                ),
-              ],
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  void _editName() {
+    final TextEditingController nameController = TextEditingController(text: _userData?.name ?? '');
+    
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Edit Name'),
+        content: TextField(
+          controller: nameController,
+          decoration: const InputDecoration(
+            labelText: 'Name',
+            hintText: 'Enter your name',
+          ),
+          autofocus: true,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              final newName = nameController.text.trim();
+              if (newName.isNotEmpty) {
+                try {
+                  await _userService.updateUserProfile(
+                    userId: widget.userId,
+                    name: newName,
+                  );
+                  await _loadUserData();
+                  // Also reload user data in the auth provider to notify other screens
+                  await Provider.of<AuthProvider>(context, listen: false).reloadUserData();
+                  if (mounted) {
+                    Navigator.of(context).pop();
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Name updated successfully'),
+                        backgroundColor: Colors.green,
+                      ),
+                    );
+                  }
+                } catch (e) {
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('Failed to update name: $e'),
+                        backgroundColor: Colors.red,
+                      ),
+                    );
+                  }
+                }
+              }
+            },
+            child: const Text('Save'),
+          ),
+        ],
       ),
     );
   }

@@ -61,6 +61,7 @@ class PortraitService {
     required String imageUrl,
     required String title,
     String? description,
+    int? weekNumber,
   }) async {
     try {
       print('Getting user document for week number');
@@ -69,8 +70,21 @@ class PortraitService {
       print('Got user document');
       UserModel user = UserModel.fromMap(userDoc.data() as Map<String, dynamic>, userDoc.id);
       
-      int weekNumber = user.portraitsCompleted + 1;
-      print('Week number: $weekNumber');
+      int targetWeekNumber;
+      if (weekNumber != null) {
+        // Use provided week number
+        targetWeekNumber = weekNumber;
+        print('Using provided week number: $targetWeekNumber');
+      } else {
+        // Calculate next week number
+        targetWeekNumber = user.portraitsCompleted + 1;
+        print('Calculated week number: $targetWeekNumber');
+      }
+      
+      // If using a custom week number, we need to shift existing portraits
+      if (weekNumber != null && weekNumber <= user.portraitsCompleted) {
+        await _shiftWeeksForInsertion(userId, weekNumber);
+      }
       
       // Create portrait document
       print('Creating portrait document');
@@ -80,7 +94,7 @@ class PortraitService {
         'title': title,
         'description': description,
         'createdAt': FieldValue.serverTimestamp(),
-        'weekNumber': weekNumber,
+        'weekNumber': targetWeekNumber,
       });
       print('Created portrait document with ID: ${portraitRef.id}');
 
@@ -161,7 +175,66 @@ class PortraitService {
         'portraitsCompleted': FieldValue.increment(-1),
         'portraitIds': FieldValue.arrayRemove([portraitId]),
       });
+
+      // Shift all portraits with higher week numbers back by one
+      await _shiftWeeksAfterDeletion(userId, portrait.weekNumber);
     } catch (e) {
+      rethrow;
+    }
+  }
+
+  // Shift weeks after deletion to fill gaps
+  Future<void> _shiftWeeksAfterDeletion(String userId, int deletedWeekNumber) async {
+    try {
+      // Get all portraits with week numbers higher than the deleted one
+      QuerySnapshot higherPortraits = await _firestore
+          .collection('portraits')
+          .where('userId', isEqualTo: userId)
+          .where('weekNumber', isGreaterThan: deletedWeekNumber)
+          .orderBy('weekNumber')
+          .get();
+
+      // Update each portrait to shift its week number back by one
+      for (QueryDocumentSnapshot doc in higherPortraits.docs) {
+        Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
+        int currentWeek = data['weekNumber'] as int;
+        await _firestore.collection('portraits').doc(doc.id).update({
+          'weekNumber': currentWeek - 1,
+        });
+      }
+    } catch (e) {
+      print('Error shifting weeks after deletion: $e');
+      rethrow;
+    }
+  }
+
+  // Shift weeks for insertion to make room for new portrait
+  Future<void> _shiftWeeksForInsertion(String userId, int insertWeekNumber) async {
+    try {
+      print('Shifting weeks for insertion at week $insertWeekNumber');
+      // Get all portraits with week numbers greater than or equal to the insert week
+      QuerySnapshot existingPortraits = await _firestore
+          .collection('portraits')
+          .where('userId', isEqualTo: userId)
+          .where('weekNumber', isGreaterThanOrEqualTo: insertWeekNumber)
+          .orderBy('weekNumber', descending: false) // Process from lowest to highest
+          .get();
+
+      print('Found ${existingPortraits.docs.length} portraits to shift');
+
+      // Update each portrait to shift its week number forward by one
+      for (QueryDocumentSnapshot doc in existingPortraits.docs) {
+        Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
+        int currentWeek = data['weekNumber'] as int;
+        int newWeek = currentWeek + 1;
+        print('Shifting portrait ${doc.id} from week $currentWeek to week $newWeek');
+        await _firestore.collection('portraits').doc(doc.id).update({
+          'weekNumber': newWeek,
+        });
+      }
+      print('Week shifting completed');
+    } catch (e) {
+      print('Error shifting weeks for insertion: $e');
       rethrow;
     }
   }
@@ -173,6 +246,32 @@ class PortraitService {
       UserModel user = UserModel.fromMap(userDoc.data() as Map<String, dynamic>, userDoc.id);
       return user.portraitsCompleted + 1;
     } catch (e) {
+      rethrow;
+    }
+  }
+
+  // Update existing portrait
+  Future<void> updatePortrait({
+    required String portraitId,
+    required String title,
+    String? description,
+    String? imageUrl,
+  }) async {
+    try {
+      print('Updating portrait: $portraitId');
+      Map<String, dynamic> updates = {
+        'title': title,
+        'description': description,
+      };
+      
+      if (imageUrl != null) {
+        updates['imageUrl'] = imageUrl;
+      }
+
+      await _firestore.collection('portraits').doc(portraitId).update(updates);
+      print('Portrait updated successfully');
+    } catch (e) {
+      print('Error in updatePortrait: $e');
       rethrow;
     }
   }

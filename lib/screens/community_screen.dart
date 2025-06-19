@@ -6,6 +6,7 @@ import '../services/user_service.dart';
 import '../services/portrait_service.dart';
 import '../models/user_model.dart';
 import '../models/portrait_model.dart';
+import '../providers/auth_provider.dart';
 import 'profile_screen.dart';
 import '../theme/app_theme.dart';
 import '../widgets/portrait_details_dialog.dart';
@@ -321,10 +322,20 @@ class _CommunityScreenState extends State<CommunityScreen>
                 final user = userSnapshot.data;
                 return GestureDetector(
                   onTap: () {
-                    showDialog(
-                      context: context,
-                      builder: (context) => PortraitDetailsDialog(portrait: portrait, user: user),
-                    );
+                    final currentUser = Provider.of<AuthProvider>(context, listen: false).currentUser;
+                    if (currentUser != null) {
+                      showDialog(
+                        context: context,
+                        builder: (context) => PortraitDetailsDialog(
+                          portrait: portrait, 
+                          user: user,
+                          currentUserId: currentUser.uid,
+                          onPortraitModified: () {
+                            setState(() {});
+                          },
+                        ),
+                      );
+                    }
                   },
                   child: Card(
                     clipBehavior: Clip.antiAlias,
