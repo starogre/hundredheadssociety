@@ -36,13 +36,17 @@ class PortraitProvider extends ChangeNotifier {
     String? description,
     BuildContext? context,
   }) async {
+    print('Starting portrait upload process');
     _setLoading(true);
     _clearError();
     
     try {
+      print('Uploading image to Firebase Storage');
       // Upload image to Firebase Storage
       String imageUrl = await _portraitService.uploadPortraitImage(imageFile, userId);
+      print('Image uploaded successfully');
       
+      print('Adding portrait to Firestore');
       // Add portrait to Firestore
       await _portraitService.addPortrait(
         userId: userId,
@@ -50,13 +54,19 @@ class PortraitProvider extends ChangeNotifier {
         title: title,
         description: description,
       );
+      print('Portrait added to Firestore');
+
       // Reload user data for up-to-date stats
       if (context != null) {
+        print('Reloading user data');
         await Provider.of<AuthProvider>(context, listen: false).reloadUserData();
+        print('User data reloaded');
       }
       _setLoading(false);
+      print('Portrait upload process completed successfully');
       return true;
     } catch (e) {
+      print('Error in addPortrait provider: $e');
       _setError('Failed to add portrait: $e');
       _setLoading(false);
       return false;

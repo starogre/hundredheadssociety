@@ -79,115 +79,119 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Widget _buildDashboardTab(AuthProvider authProvider) {
-    return Column(
-      children: [
-        // Progress Header
-        Container(
-          padding: const EdgeInsets.all(16),
-          color: AppColors.forestGreen.withValues(alpha: 0.1),
-          child: Row(
-            children: [
-              CircleAvatar(
-                radius: 30,
-                backgroundColor: AppColors.rustyOrange,
-                child: Text(
-                  '${authProvider.userData?.portraitsCompleted ?? 0}',
-                  style: const TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.white,
+    return Consumer<PortraitProvider>(
+      builder: (context, portraitProvider, child) => Column(
+        children: [
+          // Progress Header
+          Container(
+            padding: const EdgeInsets.all(16),
+            color: AppColors.forestGreen.withValues(alpha: 0.1),
+            child: Row(
+              children: [
+                CircleAvatar(
+                  radius: 30,
+                  backgroundColor: AppColors.rustyOrange,
+                  child: Text(
+                    '${authProvider.userData?.portraitsCompleted ?? 0}',
+                    style: const TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.white,
+                    ),
                   ),
                 ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Welcome, ${authProvider.userData?.name ?? 'Artist'}!',
-                      style: Theme.of(context).textTheme.headlineMedium,
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      '${authProvider.userData?.portraitsCompleted ?? 0} of 100 portraits completed',
-                      style: Theme.of(context).textTheme.bodyMedium,
-                    ),
-                    const SizedBox(height: 8),
-                    LinearProgressIndicator(
-                      value: (authProvider.userData?.portraitsCompleted ?? 0) / 100,
-                      backgroundColor: AppColors.cream,
-                      valueColor: AlwaysStoppedAnimation<Color>(AppColors.rustyOrange),
-                    ),
-                  ],
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Welcome, ${authProvider.userData?.name ?? 'Artist'}!',
+                        style: Theme.of(context).textTheme.headlineMedium,
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        '${authProvider.userData?.portraitsCompleted ?? 0} of 100 portraits completed',
+                        style: Theme.of(context).textTheme.bodyMedium,
+                      ),
+                      const SizedBox(height: 8),
+                      LinearProgressIndicator(
+                        value: (authProvider.userData?.portraitsCompleted ?? 0) / 100,
+                        backgroundColor: AppColors.cream,
+                        valueColor: AlwaysStoppedAnimation<Color>(AppColors.rustyOrange),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
-        ),
 
-        // Grid of 100 slots
-        Expanded(
-          child: StreamBuilder<List<PortraitModel>>(
-            stream: Provider.of<PortraitProvider>(context, listen: false)
-                .getUserPortraits(authProvider.currentUser!.uid),
-            builder: (context, snapshot) {
-              if (snapshot.hasError) {
-                return Center(
-                  child: Text('Error: ${snapshot.error}'),
-                );
-              }
-
-              if (!snapshot.hasData) {
-                return const Center(
-                  child: CircularProgressIndicator(),
-                );
-              }
-
-              List<PortraitModel> portraits = snapshot.data!;
-              int completedCount = portraits.length;
-
-              // Create a map for O(1) lookup instead of O(n) search for each item
-              Map<int, PortraitModel> portraitMap = {
-                for (var portrait in portraits) portrait.weekNumber: portrait
-              };
-
-              return GridView.builder(
-                padding: const EdgeInsets.all(16),
-                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 5,
-                  crossAxisSpacing: 16,
-                  mainAxisSpacing: 16,
-                  childAspectRatio: 1,
-                ),
-                itemCount: 100,
-                itemBuilder: (context, index) {
-                  int weekNumber = index + 1;
-                  PortraitModel? portrait = portraitMap[weekNumber];
-
-                  return PortraitSlot(
-                    weekNumber: weekNumber,
-                    portrait: portrait,
-                    isCompleted: portrait != null,
-                    onTap: portrait != null
-                        ? () => _showPortraitDetails(context, portrait)
-                        : () => _showAddPortraitDialog(context, authProvider),
+          // Grid of 100 slots
+          Expanded(
+            child: StreamBuilder<List<PortraitModel>>(
+              stream: portraitProvider.getUserPortraits(authProvider.currentUser!.uid),
+              builder: (context, snapshot) {
+                if (snapshot.hasError) {
+                  return Center(
+                    child: Text('Error: ${snapshot.error}'),
                   );
-                },
-              );
-            },
+                }
+
+                if (!snapshot.hasData) {
+                  return const Center(
+                    child: CircularProgressIndicator(),
+                  );
+                }
+
+                List<PortraitModel> portraits = snapshot.data!;
+                int completedCount = portraits.length;
+
+                // Create a map for O(1) lookup instead of O(n) search for each item
+                Map<int, PortraitModel> portraitMap = {
+                  for (var portrait in portraits) portrait.weekNumber: portrait
+                };
+
+                return GridView.builder(
+                  padding: const EdgeInsets.all(16),
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 5,
+                    crossAxisSpacing: 16,
+                    mainAxisSpacing: 16,
+                    childAspectRatio: 1,
+                  ),
+                  itemCount: 100,
+                  itemBuilder: (context, index) {
+                    int weekNumber = index + 1;
+                    PortraitModel? portrait = portraitMap[weekNumber];
+
+                    return PortraitSlot(
+                      weekNumber: weekNumber,
+                      portrait: portrait,
+                      isCompleted: portrait != null,
+                      onTap: portrait != null
+                          ? () => _showPortraitDetails(context, portrait)
+                          : () => _showAddPortraitDialog(context, authProvider),
+                    );
+                  },
+                );
+              },
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 
   void _showAddPortraitDialog(BuildContext context, AuthProvider authProvider) {
     showDialog(
       context: context,
-      builder: (context) => AddPortraitDialog(
-        userId: authProvider.currentUser!.uid,
-        nextWeekNumber: (authProvider.userData?.portraitsCompleted ?? 0) + 1,
+      builder: (context) => ChangeNotifierProvider.value(
+        value: Provider.of<PortraitProvider>(context, listen: false),
+        child: AddPortraitDialog(
+          userId: authProvider.currentUser!.uid,
+          nextWeekNumber: (authProvider.userData?.portraitsCompleted ?? 0) + 1,
+        ),
       ),
     );
   }

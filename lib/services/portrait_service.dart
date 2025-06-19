@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:uuid/uuid.dart';
@@ -13,14 +14,43 @@ class PortraitService {
   // Upload portrait image to Firebase Storage
   Future<String> uploadPortraitImage(File imageFile, String userId) async {
     try {
+      print('Starting image upload to Firebase Storage');
       String fileName = 'portraits/$userId/${_uuid.v4()}.jpg';
+      print('Generated filename: $fileName');
       Reference ref = _storage.ref().child(fileName);
       
-      UploadTask uploadTask = ref.putFile(imageFile);
-      TaskSnapshot snapshot = await uploadTask;
+      print('Starting upload task');
+      UploadTask uploadTask = ref.putFile(
+        imageFile,
+        SettableMetadata(
+          contentType: 'image/jpeg',
+          customMetadata: {'userId': userId},
+        ),
+      );
+
+      print('Waiting for upload to complete');
+      TaskSnapshot snapshot = await uploadTask.timeout(
+        const Duration(minutes: 2),
+        onTimeout: () {
+          print('Upload timed out after 2 minutes');
+          throw TimeoutException('Upload timed out after 2 minutes');
+        },
+      );
       
-      return await snapshot.ref.getDownloadURL();
+      if (snapshot.state == TaskState.error) {
+        print('Upload failed with error state');
+        throw Exception('Upload failed: ${snapshot.state}');
+      }
+
+      print('Upload complete, getting download URL');
+      String downloadUrl = await snapshot.ref.getDownloadURL();
+      print('Got download URL: $downloadUrl');
+      return downloadUrl;
+    } on FirebaseException catch (e) {
+      print('Firebase error in uploadPortraitImage: ${e.code} - ${e.message}');
+      rethrow;
     } catch (e) {
+      print('Error in uploadPortraitImage: $e');
       rethrow;
     }
   }
@@ -33,13 +63,17 @@ class PortraitService {
     String? description,
   }) async {
     try {
+      print('Getting user document for week number');
       // Get user's current portrait count to determine week number
       DocumentSnapshot userDoc = await _firestore.collection('users').doc(userId).get();
+      print('Got user document');
       UserModel user = UserModel.fromMap(userDoc.data() as Map<String, dynamic>, userDoc.id);
       
       int weekNumber = user.portraitsCompleted + 1;
+      print('Week number: $weekNumber');
       
       // Create portrait document
+      print('Creating portrait document');
       DocumentReference portraitRef = await _firestore.collection('portraits').add({
         'userId': userId,
         'imageUrl': imageUrl,
@@ -48,13 +82,17 @@ class PortraitService {
         'createdAt': FieldValue.serverTimestamp(),
         'weekNumber': weekNumber,
       });
+      print('Created portrait document with ID: ${portraitRef.id}');
 
       // Update user's portrait count and add portrait ID to user's list
+      print('Updating user document');
       await _firestore.collection('users').doc(userId).update({
         'portraitsCompleted': FieldValue.increment(1),
         'portraitIds': FieldValue.arrayUnion([portraitRef.id]),
       });
+      print('User document updated successfully');
     } catch (e) {
+      print('Error in addPortrait: $e');
       rethrow;
     }
   }
