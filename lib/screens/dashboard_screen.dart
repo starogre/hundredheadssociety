@@ -8,6 +8,7 @@ import '../widgets/portrait_slot.dart';
 import '../widgets/add_portrait_dialog.dart';
 import '../widgets/portrait_details_dialog.dart';
 import '../services/user_service.dart';
+import '../services/portrait_service.dart';
 import 'profile_screen.dart';
 import 'community_screen.dart';
 import '../theme/app_theme.dart';
@@ -22,6 +23,27 @@ class DashboardScreen extends StatefulWidget {
 
 class _DashboardScreenState extends State<DashboardScreen> {
   int _selectedIndex = 0;
+  final PortraitService _portraitService = PortraitService();
+
+  @override
+  void initState() {
+    super.initState();
+    // Fix week gaps when dashboard loads
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _fixWeekGaps();
+    });
+  }
+
+  Future<void> _fixWeekGaps() async {
+    try {
+      final authProvider = Provider.of<AuthProvider>(context, listen: false);
+      if (authProvider.currentUser != null) {
+        await _portraitService.fixWeekGaps(authProvider.currentUser!.uid);
+      }
+    } catch (e) {
+      print('Error fixing week gaps: $e');
+    }
+  }
 
   @override
   Widget build(BuildContext context) {

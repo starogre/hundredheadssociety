@@ -239,6 +239,60 @@ class PortraitService {
     }
   }
 
+  // Fix week gaps by reordering portraits to fill missing weeks
+  Future<void> fixWeekGaps(String userId) async {
+    try {
+      print('Fixing week gaps for user: $userId');
+      
+      // Get all user's portraits ordered by week number
+      QuerySnapshot portraitsSnapshot = await _firestore
+          .collection('portraits')
+          .where('userId', isEqualTo: userId)
+          .orderBy('weekNumber')
+          .get();
+
+      List<QueryDocumentSnapshot> portraits = portraitsSnapshot.docs;
+      print('Found ${portraits.length} portraits');
+
+      if (portraits.isEmpty) {
+        print('No portraits found, nothing to fix');
+        return;
+      }
+
+      // Check for gaps and fix them
+      int expectedWeek = 1;
+      List<Map<String, dynamic>> updates = [];
+
+      for (int i = 0; i < portraits.length; i++) {
+        QueryDocumentSnapshot doc = portraits[i];
+        Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
+        int currentWeek = data['weekNumber'] as int;
+
+        if (currentWeek != expectedWeek) {
+          print('Gap detected: expected week $expectedWeek, found week $currentWeek');
+          updates.add({
+            'docId': doc.id,
+            'newWeek': expectedWeek,
+          });
+        }
+        expectedWeek++;
+      }
+
+      // Apply updates to fix gaps
+      for (Map<String, dynamic> update in updates) {
+        await _firestore.collection('portraits').doc(update['docId']).update({
+          'weekNumber': update['newWeek'],
+        });
+        print('Updated portrait ${update['docId']} to week ${update['newWeek']}');
+      }
+
+      print('Week gap fixing completed');
+    } catch (e) {
+      print('Error fixing week gaps: $e');
+      rethrow;
+    }
+  }
+
   // Get next available week number for user
   Future<int> getNextWeekNumber(String userId) async {
     try {
