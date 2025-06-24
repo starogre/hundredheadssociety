@@ -13,6 +13,7 @@ import 'profile_screen.dart';
 import 'community_screen.dart';
 import '../theme/app_theme.dart';
 import 'add_portrait_screen.dart';
+import 'weekly_sessions_screen.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -67,6 +68,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
               _buildDashboardTab(authProvider),
               const CommunityScreen(),
               ProfileScreen(userId: authProvider.currentUser!.uid),
+              const WeeklySessionsScreen(),
             ],
           ),
           bottomNavigationBar: BottomNavigationBar(
@@ -90,6 +92,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
               BottomNavigationBarItem(
                 icon: Icon(Icons.person),
                 label: 'Profile',
+              ),
+              BottomNavigationBarItem(
+                icon: Icon(Icons.event),
+                label: 'Weekly Sessions',
               ),
             ],
           ),

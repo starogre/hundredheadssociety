@@ -1,0 +1,36 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Users collection
+    match /users/{userId} {
+      // Allow any authenticated user to read user profiles (for community/artist lists)
+      allow read: if request.auth != null;
+
+      // Allow a user to create their own document
+      allow create: if request.auth != null && request.auth.uid == userId;
+      
+      // Only allow a user to update or delete their own document
+      allow update, delete: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // Portraits collection
+    match /portraits/{portraitId} {
+      // A user can only create a portrait for themselves
+      allow create: if request.auth != null && request.auth.uid == request.resource.data.userId;
+
+      // Anyone authenticated can read portraits, but only owner can edit/delete
+      allow read: if request.auth != null;
+      allow update, delete: if request.auth != null && request.auth.uid == resource.data.userId;
+    }
+
+    // Weekly Sessions collection
+    match /weekly_sessions/{sessionId} {
+      // Any authenticated user can view session data and create new sessions
+      allow read, create: if request.auth != null;
+      // Any authenticated user can update a session (for RSVPs and submissions)
+      allow update: if request.auth != null;
+    }
+  }
+} 

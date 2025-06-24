@@ -19,6 +19,15 @@ class PortraitModel {
     required this.weekNumber,
   });
 
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    return other is PortraitModel && other.id == id;
+  }
+
+  @override
+  int get hashCode => id.hashCode;
+
   factory PortraitModel.fromMap(Map<String, dynamic> map, String id) {
     return PortraitModel(
       id: id,
