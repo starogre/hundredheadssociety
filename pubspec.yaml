@@ -51,6 +51,13 @@ dependencies:
   # Utilities
   uuid: ^4.2.2
 
+  # Custom gallery access
+  photo_manager: ^3.7.1
+  photo_manager_image_provider: ^2.1.1
+
+  # Permission handling
+  permission_handler: ^11.3.1
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

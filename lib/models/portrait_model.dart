@@ -8,6 +8,7 @@ class PortraitModel {
   final String? description;
   final DateTime createdAt;
   final int weekNumber;
+  final String? modelName;
 
   PortraitModel({
     required this.id,
@@ -17,6 +18,7 @@ class PortraitModel {
     this.description,
     required this.createdAt,
     required this.weekNumber,
+    this.modelName,
   });
 
   @override
@@ -37,6 +39,7 @@ class PortraitModel {
       description: map['description'],
       createdAt: (map['createdAt'] as Timestamp).toDate(),
       weekNumber: map['weekNumber'] ?? 0,
+      modelName: map['modelName'],
     );
   }
 
@@ -48,6 +51,7 @@ class PortraitModel {
       'description': description,
       'createdAt': createdAt,
       'weekNumber': weekNumber,
+      'modelName': modelName,
     };
   }
 
@@ -59,6 +63,7 @@ class PortraitModel {
     String? description,
     DateTime? createdAt,
     int? weekNumber,
+    String? modelName,
   }) {
     return PortraitModel(
       id: id ?? this.id,
@@ -68,6 +73,7 @@ class PortraitModel {
       description: description ?? this.description,
       createdAt: createdAt ?? this.createdAt,
       weekNumber: weekNumber ?? this.weekNumber,
+      modelName: modelName ?? this.modelName,
     );
   }
 } 

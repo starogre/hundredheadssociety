@@ -26,6 +26,7 @@ class _CommunityScreenState extends State<CommunityScreen>
   final TextEditingController _searchController = TextEditingController();
   Timer? _debounceTimer;
   String _searchQuery = '';
+  String _modelNameFilter = '';
 
   @override
   void initState() {
@@ -257,176 +258,236 @@ class _CommunityScreenState extends State<CommunityScreen>
   }
 
   Widget _buildRecentPortraitsTab() {
-    return StreamBuilder<List<PortraitModel>>(
-      stream: _portraitService.getAllPortraits(),
-      builder: (context, snapshot) {
-        if (snapshot.hasError) {
-          return Center(
-            child: Text(
-              'Error loading portraits: ${snapshot.error}',
-              style: TextStyle(color: AppColors.rustyOrange),
-            ),
-          );
-        }
-
-        if (!snapshot.hasData) {
-          return Center(
-            child: CircularProgressIndicator(
-              valueColor: AlwaysStoppedAnimation<Color>(AppColors.rustyOrange),
-            ),
-          );
-        }
-
-        final portraits = snapshot.data!;
-
-        if (portraits.isEmpty) {
-          return Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(
-                  Icons.photo_library,
-                  size: 64,
-                  color: AppColors.forestGreen.withValues(alpha: 0.5),
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  'No portraits yet',
-                  style: TextStyle(
-                    fontSize: 18,
-                    color: AppColors.forestGreen,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'Be the first to share a portrait!',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: AppColors.forestGreen.withValues(alpha: 0.7),
-                  ),
-                ),
-              ],
-            ),
-          );
-        }
-
-        return ListView.builder(
+    return Column(
+      children: [
+        // Model Name Filter
+        Padding(
           padding: const EdgeInsets.all(16),
-          itemCount: portraits.length,
-          itemBuilder: (context, index) {
-            final portrait = portraits[index];
-            return FutureBuilder<UserModel?>(
-              future: _userService.getUserById(portrait.userId),
-              builder: (context, userSnapshot) {
-                final user = userSnapshot.data;
-                return GestureDetector(
-                  onTap: () {
-                    final currentUser = Provider.of<AuthProvider>(context, listen: false).currentUser;
-                    if (currentUser != null) {
-                      showDialog(
-                        context: context,
-                        builder: (context) => PortraitDetailsDialog(
-                          portrait: portrait, 
-                          user: user,
-                          currentUserId: currentUser.uid,
-                          onPortraitModified: () {
-                            setState(() {});
-                          },
+          child: TextField(
+            decoration: InputDecoration(
+              hintText: 'Filter by model name...',
+              prefixIcon: const Icon(Icons.filter_alt),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(25),
+              ),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 12,
+              ),
+            ),
+            onChanged: (value) {
+              setState(() {
+                _modelNameFilter = value.trim();
+              });
+            },
+          ),
+        ),
+        Expanded(
+          child: StreamBuilder<List<PortraitModel>>(
+            stream: _portraitService.getAllPortraits(),
+            builder: (context, snapshot) {
+              if (snapshot.hasError) {
+                return Center(
+                  child: Text(
+                    'Error loading portraits: \\${snapshot.error}',
+                    style: TextStyle(color: AppColors.rustyOrange),
+                  ),
+                );
+              }
+
+              if (!snapshot.hasData) {
+                return Center(
+                  child: CircularProgressIndicator(
+                    valueColor: AlwaysStoppedAnimation<Color>(AppColors.rustyOrange),
+                  ),
+                );
+              }
+
+              final portraits = _modelNameFilter.isEmpty
+                  ? snapshot.data!
+                  : snapshot.data!.where((p) => (p.modelName ?? '').toLowerCase().contains(_modelNameFilter.toLowerCase())).toList();
+
+              if (portraits.isEmpty) {
+                return Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.photo_library,
+                        size: 64,
+                        color: AppColors.forestGreen.withValues(alpha: 0.5),
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        'No portraits yet',
+                        style: TextStyle(
+                          fontSize: 18,
+                          color: AppColors.forestGreen,
+                          fontWeight: FontWeight.bold,
                         ),
-                      );
-                    }
-                  },
-                  child: Card(
-                    clipBehavior: Clip.antiAlias,
-                    margin: const EdgeInsets.only(bottom: 24),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        AspectRatio(
-                          aspectRatio: 4/3,
-                          child: CachedNetworkImage(
-                            imageUrl: portrait.imageUrl,
-                            fit: BoxFit.cover,
-                            placeholder: (context, url) => Container(
-                              color: AppColors.forestGreen.withValues(alpha: 0.1),
-                              child: Center(
-                                child: CircularProgressIndicator(
-                                  valueColor: AlwaysStoppedAnimation<Color>(AppColors.rustyOrange),
-                                ),
-                              ),
-                            ),
-                            errorWidget: (context, url, error) => Container(
-                              color: AppColors.forestGreen.withValues(alpha: 0.1),
-                              child: Icon(
-                                Icons.error,
-                                color: AppColors.rustyOrange,
-                              ),
-                            ),
-                          ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Be the first to share a portrait!',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          color: AppColors.forestGreen.withValues(alpha: 0.7),
                         ),
-                        Container(
-                          width: double.infinity,
-                          padding: const EdgeInsets.all(16),
-                          decoration: BoxDecoration(
-                            border: Border(
-                              top: BorderSide(
-                                color: AppColors.forestGreen.withValues(alpha: 0.1),
+                      ),
+                    ],
+                  ),
+                );
+              }
+
+              return ListView.builder(
+                padding: const EdgeInsets.all(16),
+                itemCount: portraits.length,
+                itemBuilder: (context, index) {
+                  final portrait = portraits[index];
+                  return FutureBuilder<UserModel?>(
+                    future: _userService.getUserById(portrait.userId),
+                    builder: (context, userSnapshot) {
+                      final user = userSnapshot.data;
+                      return GestureDetector(
+                        onTap: () {
+                          final currentUser = Provider.of<AuthProvider>(context, listen: false).currentUser;
+                          if (currentUser != null) {
+                            showDialog(
+                              context: context,
+                              builder: (context) => PortraitDetailsDialog(
+                                portrait: portrait, 
+                                user: user,
+                                currentUserId: currentUser.uid,
+                                onPortraitModified: () {
+                                  setState(() {});
+                                },
                               ),
-                            ),
-                          ),
+                            );
+                          }
+                        },
+                        child: Card(
+                          clipBehavior: Clip.antiAlias,
+                          margin: const EdgeInsets.only(bottom: 24),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(
-                                portrait.title,
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 18,
-                                ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                              const SizedBox(height: 8),
-                              Row(
-                                children: [
-                                  CircleAvatar(
-                                    radius: 14,
-                                    backgroundColor: AppColors.forestGreen,
-                                    child: Text(
-                                      user?.name.isNotEmpty == true ? user!.name[0].toUpperCase() : 'A',
-                                      style: const TextStyle(
-                                        fontSize: 12,
-                                        color: Colors.white,
+                              AspectRatio(
+                                aspectRatio: 4/3,
+                                child: CachedNetworkImage(
+                                  imageUrl: portrait.imageUrl,
+                                  fit: BoxFit.cover,
+                                  placeholder: (context, url) => Container(
+                                    color: AppColors.forestGreen.withValues(alpha: 0.1),
+                                    child: Center(
+                                      child: CircularProgressIndicator(
+                                        valueColor: AlwaysStoppedAnimation<Color>(AppColors.rustyOrange),
                                       ),
                                     ),
                                   ),
-                                  const SizedBox(width: 8),
-                                  Expanded(
-                                    child: Text(
-                                      user?.name ?? 'Anonymous',
-                                      style: TextStyle(
-                                        color: AppColors.forestGreen.withValues(alpha: 0.7),
-                                        fontSize: 14,
+                                  errorWidget: (context, url, error) => Container(
+                                    color: AppColors.forestGreen.withValues(alpha: 0.1),
+                                    child: Icon(
+                                      Icons.error,
+                                      color: AppColors.rustyOrange,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              Container(
+                                width: double.infinity,
+                                padding: const EdgeInsets.all(16),
+                                decoration: BoxDecoration(
+                                  border: Border(
+                                    top: BorderSide(
+                                      color: AppColors.forestGreen.withValues(alpha: 0.1),
+                                    ),
+                                  ),
+                                ),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      portrait.title,
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 18,
                                       ),
                                       maxLines: 1,
                                       overflow: TextOverflow.ellipsis,
                                     ),
-                                  ),
-                                ],
+                                    if (portrait.modelName != null && portrait.modelName!.isNotEmpty) ...[
+                                      const SizedBox(height: 6),
+                                      Chip(
+                                        label: Text(
+                                          portrait.modelName!,
+                                          style: const TextStyle(color: AppColors.rustyOrange, fontWeight: FontWeight.bold),
+                                        ),
+                                        backgroundColor: AppColors.lightRustyOrange,
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(50),
+                                        ),
+                                        side: BorderSide.none,
+                                        visualDensity: VisualDensity.compact,
+                                      ),
+                                    ],
+                                    if (portrait.description != null && portrait.description!.isNotEmpty) ...[
+                                      const SizedBox(height: 6),
+                                      Text(
+                                        portrait.description!,
+                                        style: TextStyle(
+                                          color: AppColors.forestGreen.withOpacity(0.8),
+                                          fontSize: 14,
+                                        ),
+                                      ),
+                                    ],
+                                    const SizedBox(height: 8),
+                                    Row(
+                                      children: [
+                                        CircleAvatar(
+                                          radius: 14,
+                                          backgroundColor: AppColors.forestGreen,
+                                          backgroundImage: user?.profileImageUrl != null && user!.profileImageUrl!.isNotEmpty
+                                              ? NetworkImage(user.profileImageUrl!)
+                                              : null,
+                                          child: (user?.profileImageUrl == null || user!.profileImageUrl!.isEmpty)
+                                              ? Text(
+                                                  user?.name.isNotEmpty == true ? user!.name[0].toUpperCase() : 'A',
+                                                  style: const TextStyle(
+                                                    fontSize: 12,
+                                                    color: Colors.white,
+                                                  ),
+                                                )
+                                              : null,
+                                        ),
+                                        const SizedBox(width: 8),
+                                        Expanded(
+                                          child: Text(
+                                            user?.name ?? 'Anonymous',
+                                            style: TextStyle(
+                                              color: AppColors.forestGreen.withValues(alpha: 0.7),
+                                              fontSize: 14,
+                                            ),
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                ),
                               ),
                             ],
                           ),
                         ),
-                      ],
-                    ),
-                  ),
-                );
-              },
-            );
-          },
-        );
-      },
+                      );
+                    },
+                  );
+                },
+              );
+            },
+          ),
+        ),
+      ],
     );
   }
 } 

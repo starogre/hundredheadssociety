@@ -24,6 +24,7 @@ class _EditPortraitScreenState extends State<EditPortraitScreen> {
   final _formKey = GlobalKey<FormState>();
   final _titleController = TextEditingController();
   final _descriptionController = TextEditingController();
+  final _modelNameController = TextEditingController();
   File? _newImageFile;
   final ImagePicker _picker = ImagePicker();
   bool _isLoading = false;
@@ -34,12 +35,14 @@ class _EditPortraitScreenState extends State<EditPortraitScreen> {
     super.initState();
     _titleController.text = widget.portrait.title;
     _descriptionController.text = widget.portrait.description ?? '';
+    _modelNameController.text = widget.portrait.modelName ?? '';
   }
 
   @override
   void dispose() {
     _titleController.dispose();
     _descriptionController.dispose();
+    _modelNameController.dispose();
     super.dispose();
   }
 
@@ -115,6 +118,7 @@ class _EditPortraitScreenState extends State<EditPortraitScreen> {
         title: _titleController.text.trim(),
         description: _descriptionController.text.trim().isEmpty ? null : _descriptionController.text.trim(),
         imageUrl: newImageUrl,
+        modelName: _modelNameController.text.trim().isEmpty ? null : _modelNameController.text.trim(),
       );
 
       if (mounted) {
@@ -304,6 +308,30 @@ class _EditPortraitScreenState extends State<EditPortraitScreen> {
                   contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 12),
                 ),
                 maxLines: 3,
+              ),
+              const SizedBox(height: 16),
+              // Model Name Field
+              Row(
+                children: [
+                  Icon(Icons.person, color: AppColors.rustyOrange, size: 20),
+                  const SizedBox(width: 8),
+                  const Text(
+                    'Model Name (Optional)',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              TextFormField(
+                controller: _modelNameController,
+                decoration: const InputDecoration(
+                  border: OutlineInputBorder(),
+                  hintText: 'Enter model name (optional)',
+                  contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                ),
               ),
               const SizedBox(height: 24),
               

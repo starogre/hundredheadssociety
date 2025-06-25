@@ -62,6 +62,7 @@ class PortraitService {
     required String title,
     String? description,
     int? weekNumber,
+    String? modelName,
   }) async {
     try {
       print('Getting user document for week number');
@@ -95,6 +96,7 @@ class PortraitService {
         'description': description,
         'createdAt': FieldValue.serverTimestamp(),
         'weekNumber': targetWeekNumber,
+        'modelName': modelName,
       });
       print('Created portrait document with ID: ${portraitRef.id}');
 
@@ -310,6 +312,7 @@ class PortraitService {
     required String title,
     String? description,
     String? imageUrl,
+    String? modelName,
   }) async {
     try {
       print('Updating portrait: $portraitId');
@@ -321,7 +324,9 @@ class PortraitService {
       if (imageUrl != null) {
         updates['imageUrl'] = imageUrl;
       }
-
+      if (modelName != null) {
+        updates['modelName'] = modelName;
+      }
       await _firestore.collection('portraits').doc(portraitId).update(updates);
       print('Portrait updated successfully');
     } catch (e) {

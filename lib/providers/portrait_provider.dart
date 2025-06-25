@@ -35,6 +35,7 @@ class PortraitProvider extends ChangeNotifier {
     required String title,
     String? description,
     int? weekNumber,
+    String? modelName,
     BuildContext? context,
   }) async {
     print('Starting portrait upload process');
@@ -55,6 +56,7 @@ class PortraitProvider extends ChangeNotifier {
         title: title,
         description: description,
         weekNumber: weekNumber,
+        modelName: modelName,
       );
       print('Portrait added to Firestore');
 
