@@ -23,6 +23,11 @@ class PortraitProvider extends ChangeNotifier {
     return _portraitService.getUserPortraits(userId);
   }
 
+  // Get user's portraits in reverse order (newest first) for profile view
+  Stream<List<PortraitModel>> getUserPortraitsReversed(String userId) {
+    return _portraitService.getUserPortraitsReversed(userId);
+  }
+
   // Get all portraits for community
   Stream<List<PortraitModel>> getAllPortraits() {
     return _portraitService.getAllPortraits();

@@ -139,26 +139,6 @@ class PortraitSlot extends StatelessWidget {
                 ),
               ),
             ),
-
-            // Completion indicator
-            if (isCompleted)
-              Positioned(
-                top: 4,
-                right: 4,
-                child: Container(
-                  width: 12,
-                  height: 12,
-                  decoration: const BoxDecoration(
-                    color: Colors.green,
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(
-                    Icons.check,
-                    color: Colors.white,
-                    size: 8,
-                  ),
-                ),
-              ),
           ],
         ),
       ),

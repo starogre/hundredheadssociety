@@ -332,7 +332,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 Consumer<PortraitProvider>(
                   builder: (context, portraitProvider, child) {
                     return StreamBuilder<List<PortraitModel>>(
-                      stream: portraitProvider.getUserPortraits(widget.userId),
+                      stream: portraitProvider.getUserPortraitsReversed(widget.userId),
                       builder: (context, snapshot) {
                         if (snapshot.hasError) {
                           return SliverToBoxAdapter(

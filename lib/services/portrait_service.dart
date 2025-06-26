@@ -127,6 +127,20 @@ class PortraitService {
     });
   }
 
+  // Get user's portraits in reverse order (newest first) for profile view
+  Stream<List<PortraitModel>> getUserPortraitsReversed(String userId) {
+    return _firestore
+        .collection('portraits')
+        .where('userId', isEqualTo: userId)
+        .orderBy('weekNumber', descending: true)
+        .snapshots()
+        .map((snapshot) {
+      return snapshot.docs
+          .map((doc) => PortraitModel.fromMap(doc.data(), doc.id))
+          .toList();
+    });
+  }
+
   // Get all portraits for community view
   Stream<List<PortraitModel>> getAllPortraits() {
     return _firestore

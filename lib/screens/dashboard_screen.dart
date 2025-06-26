@@ -124,6 +124,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           floatingActionButton: _selectedIndex == 0
               ? FloatingActionButton(
                   onPressed: () => _showAddPortraitDialog(context, authProvider, (authProvider.userData?.portraitsCompleted ?? 0) + 1),
+                  backgroundColor: AppColors.rustyOrange,
                   child: const Icon(Icons.add_a_photo),
                 )
               : null,
