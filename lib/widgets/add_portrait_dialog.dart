@@ -26,7 +26,6 @@ class _AddPortraitDialogState extends State<AddPortraitDialog> {
   final _descriptionController = TextEditingController();
   File? _selectedImage;
   final ImagePicker _picker = ImagePicker();
-  bool _isSubmitting = false;
 
   @override
   void dispose() {
@@ -58,10 +57,6 @@ class _AddPortraitDialogState extends State<AddPortraitDialog> {
 
   Future<void> _submitPortrait() async {
     if (_formKey.currentState!.validate() && _selectedImage != null) {
-      setState(() {
-        _isSubmitting = true;
-      });
-
       final portraitProvider = Provider.of<PortraitProvider>(context, listen: false);
       
       try {
@@ -99,12 +94,6 @@ class _AddPortraitDialogState extends State<AddPortraitDialog> {
               backgroundColor: Colors.red,
             ),
           );
-        }
-      } finally {
-        if (mounted) {
-          setState(() {
-            _isSubmitting = false;
-          });
         }
       }
     }

@@ -30,6 +30,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
   UserModel? _userData;
   final ImagePicker _picker = ImagePicker();
   int _lastPortraitCount = 0;
+  bool _isUpdatingProfileImage = false;
+  int _imageRefreshKey = 0;
 
   @override
   void initState() {
@@ -52,23 +54,84 @@ class _ProfileScreenState extends State<ProfileScreen> {
       builder: (context) => ProfileImagePickerDialog(
         onImageSelected: (File imageFile) async {
           try {
-            final storageRef = FirebaseStorage.instance.ref().child('profile_pictures/${widget.userId}.jpg');
-            await storageRef.putFile(imageFile);
+            setState(() {
+              _isUpdatingProfileImage = true;
+            });
+            
+            // Check authentication
+            final authProvider = Provider.of<AuthProvider>(context, listen: false);
+            final currentUser = authProvider.currentUser;
+            if (currentUser == null) {
+              throw Exception('User not authenticated');
+            }
+            
+            // Check file size (max 5MB)
+            final fileSize = await imageFile.length();
+            if (fileSize > 5 * 1024 * 1024) {
+              throw Exception('Image file is too large. Please select a smaller image (max 5MB).');
+            }
+            
+            final oldUrl = _userData?.profileImageUrl;
+            
+            // Delete the old file if it exists
+            if (oldUrl != null) {
+              try {
+                final oldRef = FirebaseStorage.instance.refFromURL(oldUrl);
+                await oldRef.delete();
+              } catch (e) {
+                // Ignore if file doesn't exist
+              }
+            }
+            
+            final fileExtension = imageFile.path.split('.').last.toLowerCase();
+            final fileName = '${currentUser.uid}.$fileExtension';
+            final storageRef = FirebaseStorage.instance.ref().child('profile-images/$fileName');
+            
+            // Upload the new image
+            final uploadTask = storageRef.putFile(
+              imageFile,
+              SettableMetadata(
+                contentType: 'image/$fileExtension',
+                customMetadata: {
+                  'uploadedBy': currentUser.uid,
+                  'uploadedAt': DateTime.now().toIso8601String(),
+                },
+              ),
+            );
+            
+            await uploadTask;
             final imageUrl = await storageRef.getDownloadURL();
+            
+            // Evict the old image from cache
+            if (oldUrl != null) {
+              CachedNetworkImage.evictFromCache(oldUrl);
+            }
+            
+            // Update user profile in database
             await _userService.updateUserProfile(
               userId: widget.userId,
               profileImageUrl: imageUrl,
             );
+            
+            // Reload user data
             await _loadUserData();
+            
             if (mounted) {
+              setState(() {
+                _isUpdatingProfileImage = false;
+                _imageRefreshKey++; // Force image refresh
+              });
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(content: Text('Profile picture updated!'), backgroundColor: Colors.green),
               );
             }
           } catch (e) {
             if (mounted) {
+              setState(() {
+                _isUpdatingProfileImage = false;
+              });
               ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text('Failed to update profile picture: $e'), backgroundColor: Colors.red),
+                SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
               );
             }
           }
@@ -113,25 +176,59 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           children: [
                             Stack(
                               children: [
-                                CircleAvatar(
-                                  radius: 50,
-                                  backgroundColor: Colors.white,
-                                  backgroundImage: _userData!.profileImageUrl != null
-                                      ? CachedNetworkImageProvider(_userData!.profileImageUrl!)
-                                      : null,
-                                  child: _userData!.profileImageUrl == null
-                                      ? Text(
-                                          _userData!.name.isNotEmpty
-                                              ? _userData!.name[0].toUpperCase()
-                                              : 'A',
-                                          style: const TextStyle(
-                                            fontSize: 32,
-                                            fontWeight: FontWeight.bold,
-                                            color: Colors.blue,
+                                Stack(
+                                  alignment: Alignment.center,
+                                  children: [
+                                    CircleAvatar(
+                                      key: ValueKey('profile-${_userData!.profileImageUrl ?? 'no-image'}'),
+                                      radius: 50,
+                                      backgroundColor: Colors.white,
+                                      backgroundImage: null,
+                                      child: _userData!.profileImageUrl == null
+                                          ? Text(
+                                              _userData!.name.isNotEmpty
+                                                  ? _userData!.name[0].toUpperCase()
+                                                  : 'A',
+                                              style: const TextStyle(
+                                                fontSize: 32,
+                                                fontWeight: FontWeight.bold,
+                                                color: Colors.blue,
+                                              ),
+                                            )
+                                          : null,
+                                    ),
+                                    if (_userData!.profileImageUrl != null)
+                                      Positioned.fill(
+                                        child: ClipOval(
+                                          child: CachedNetworkImage(
+                                            key: ValueKey(_imageRefreshKey),
+                                            imageUrl: _userData!.profileImageUrl!,
+                                            fit: BoxFit.cover,
+                                            placeholder: (context, url) => Center(
+                                              child: CircularProgressIndicator(strokeWidth: 2),
+                                            ),
+                                            errorWidget: (context, url, error) => Center(
+                                              child: Icon(Icons.error, color: Colors.red, size: 32),
+                                            ),
                                           ),
-                                        )
-                                      : null,
+                                        ),
+                                      ),
+                                  ],
                                 ),
+                                if (_isUpdatingProfileImage)
+                                  Container(
+                                    width: 100,
+                                    height: 100,
+                                    decoration: BoxDecoration(
+                                      color: Colors.black.withOpacity(0.5),
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: const Center(
+                                      child: CircularProgressIndicator(
+                                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                      ),
+                                    ),
+                                  ),
                                 Positioned(
                                   bottom: 0,
                                   right: 4,
@@ -481,5 +578,28 @@ class _ProfileScreenState extends State<ProfileScreen> {
         ],
       ),
     );
+  }
+
+  String? _getProfileImageUrl(String? originalUrl) {
+    if (originalUrl == null) return null;
+    print('=== PROFILE IMAGE URL DEBUG ===');
+    print('Original URL: $originalUrl');
+    // If it's already using the new folder structure, return as is
+    if (originalUrl.contains('profile-images/')) {
+      print('Using new URL (profile-images): $originalUrl');
+      return originalUrl;
+    }
+    // If it's using the old flat structure, convert to new nested structure
+    if (originalUrl.contains('profile_pictures/')) {
+      final fileName = originalUrl.split('/').last;
+      final newUrl = originalUrl.replaceAll('profile_pictures/', 'profile-images/${widget.userId}/');
+      print('Converting old URL to new structure:');
+      print('  Old: $originalUrl');
+      print('  New: $newUrl');
+      print('  User ID: ${widget.userId}');
+      return newUrl;
+    }
+    print('Using original URL (no conversion): $originalUrl');
+    return originalUrl;
   }
 } 

@@ -19,7 +19,7 @@ class AppTheme {
         secondary: AppColors.rustyOrange,
         onPrimary: AppColors.white,
         onSecondary: AppColors.white,
-        background: AppColors.cream,
+        surface: AppColors.cream,
       ),
       appBarTheme: AppBarTheme(
         backgroundColor: AppColors.forestGreen,

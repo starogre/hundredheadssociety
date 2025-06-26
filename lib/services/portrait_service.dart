@@ -313,24 +313,155 @@ class PortraitService {
     String? description,
     String? imageUrl,
     String? modelName,
+    int? weekNumber,
   }) async {
     try {
       print('Updating portrait: $portraitId');
-      Map<String, dynamic> updates = {
-        'title': title,
-        'description': description,
-      };
       
-      if (imageUrl != null) {
-        updates['imageUrl'] = imageUrl;
-      }
-      if (modelName != null) {
-        updates['modelName'] = modelName;
-      }
-      await _firestore.collection('portraits').doc(portraitId).update(updates);
+      // Use a transaction to ensure data consistency
+      await _firestore.runTransaction((transaction) async {
+        // First, verify the portrait exists
+        DocumentSnapshot portraitDoc = await transaction.get(
+          _firestore.collection('portraits').doc(portraitId)
+        );
+        
+        if (!portraitDoc.exists) {
+          throw Exception('Portrait not found');
+        }
+        
+        Map<String, dynamic> updates = {
+          'title': title,
+          'description': description,
+        };
+        
+        if (imageUrl != null) {
+          updates['imageUrl'] = imageUrl;
+        }
+        if (modelName != null) {
+          updates['modelName'] = modelName;
+        }
+        if (weekNumber != null) {
+          updates['weekNumber'] = weekNumber;
+        }
+        
+        transaction.update(
+          _firestore.collection('portraits').doc(portraitId),
+          updates
+        );
+      });
+      
       print('Portrait updated successfully');
     } catch (e) {
       print('Error in updatePortrait: $e');
+      rethrow;
+    }
+  }
+
+  // Shift weeks when a portrait's week number is changed
+  Future<void> shiftWeeksForWeekChange(String userId, int oldWeek, int newWeek, String portraitId) async {
+    try {
+      print('Shifting weeks for week change: $oldWeek -> $newWeek for portrait $portraitId');
+      
+      if (oldWeek == newWeek) {
+        print('No week change, nothing to shift');
+        return;
+      }
+
+      // Get all user's portraits
+      QuerySnapshot allPortraits = await _firestore
+          .collection('portraits')
+          .where('userId', isEqualTo: userId)
+          .get();
+
+      // Create a map of current week numbers to document IDs (excluding the edited portrait)
+      Map<int, String> weekToDocId = {};
+      for (QueryDocumentSnapshot doc in allPortraits.docs) {
+        if (doc.id != portraitId) {
+          Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
+          int week = data['weekNumber'] as int;
+          weekToDocId[week] = doc.id;
+        }
+      }
+
+      List<Map<String, dynamic>> updates = [];
+
+      if (newWeek < oldWeek) {
+        // Moving to an earlier week - shift portraits in the range [newWeek, oldWeek-1] forward by 1
+        for (int week = newWeek; week < oldWeek; week++) {
+          if (weekToDocId.containsKey(week)) {
+            updates.add({
+              'docId': weekToDocId[week]!,
+              'newWeek': week + 1,
+            });
+          }
+        }
+      } else {
+        // Moving to a later week - shift portraits in the range [oldWeek+1, newWeek] backward by 1
+        for (int week = oldWeek + 1; week <= newWeek; week++) {
+          if (weekToDocId.containsKey(week)) {
+            updates.add({
+              'docId': weekToDocId[week]!,
+              'newWeek': week - 1,
+            });
+          }
+        }
+      }
+
+      print('Found ${updates.length} portraits to update');
+
+      // Apply all updates
+      for (Map<String, dynamic> update in updates) {
+        print('Updating portrait ${update['docId']} to week ${update['newWeek']}');
+        await _firestore.collection('portraits').doc(update['docId']).update({
+          'weekNumber': update['newWeek'],
+        });
+      }
+
+      print('Week shifting completed');
+    } catch (e) {
+      print('Error shifting weeks for week change: $e');
+      rethrow;
+    }
+  }
+
+  // Renumber all portraits sequentially starting from week 1
+  Future<void> renumberPortraitsSequentially(String userId) async {
+    try {
+      print('Renumbering portraits sequentially for user: $userId');
+      
+      // Get all user's portraits ordered by current week number
+      QuerySnapshot portraitsSnapshot = await _firestore
+          .collection('portraits')
+          .where('userId', isEqualTo: userId)
+          .orderBy('weekNumber')
+          .get();
+
+      List<QueryDocumentSnapshot> portraits = portraitsSnapshot.docs;
+      print('Found ${portraits.length} portraits to renumber');
+
+      if (portraits.isEmpty) {
+        print('No portraits found, nothing to renumber');
+        return;
+      }
+
+      // Renumber all portraits sequentially starting from 1
+      for (int i = 0; i < portraits.length; i++) {
+        QueryDocumentSnapshot doc = portraits[i];
+        Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
+        int currentWeek = data['weekNumber'] as int;
+        int newWeek = i + 1;
+
+        if (currentWeek != newWeek) {
+          print('Renumbering portrait ${doc.id} from week $currentWeek to week $newWeek');
+          await _firestore.collection('portraits').doc(doc.id).update({
+            'weekNumber': newWeek,
+          });
+        }
+      }
+
+      print('Sequential renumbering completed');
+    } catch (e) {
+      print('Error renumbering portraits sequentially: $e');
       rethrow;
     }
   }

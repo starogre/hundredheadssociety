@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../models/portrait_model.dart';
+import '../theme/app_theme.dart';
 
 class PortraitSlot extends StatelessWidget {
   final int weekNumber;
@@ -28,16 +29,16 @@ class PortraitSlot extends StatelessWidget {
           borderRadius: BorderRadius.circular(8),
           border: Border.all(
             color: isCompleted 
-                ? Colors.blue.shade200 
+                ? AppColors.forestGreen
                 : isUnlocked 
-                    ? Colors.orange.shade300 
+                    ? AppColors.rustyOrange
                     : Colors.grey.shade400,
             width: 1,
           ),
           boxShadow: isCompleted
               ? [
                   BoxShadow(
-                    color: Colors.blue.shade100,
+                    color: AppColors.forestGreen.withOpacity(0.3),
                     blurRadius: 4,
                     offset: const Offset(0, 2),
                   ),
@@ -45,7 +46,7 @@ class PortraitSlot extends StatelessWidget {
               : isUnlocked && !isCompleted
                   ? [
                       BoxShadow(
-                        color: Colors.orange.shade100,
+                        color: AppColors.rustyOrange.withOpacity(0.3),
                         blurRadius: 4,
                         offset: const Offset(0, 2),
                       ),
@@ -58,24 +59,40 @@ class PortraitSlot extends StatelessWidget {
             if (isCompleted && portrait != null)
               ClipRRect(
                 borderRadius: BorderRadius.circular(7),
-                child: CachedNetworkImage(
-                  imageUrl: portrait!.imageUrl,
-                  fit: BoxFit.cover,
-                  width: double.infinity,
-                  height: double.infinity,
-                  placeholder: (context, url) => Container(
-                    color: Colors.grey.shade200,
-                    child: const Center(
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
+                child: Container(
+                  color: Colors.grey.shade200,
+                  child: ClipRect(
+                    child: CachedNetworkImage(
+                      imageUrl: portrait!.imageUrl,
+                      fit: BoxFit.cover,
+                      width: double.infinity,
+                      height: double.infinity,
+                      alignment: Alignment.center,
+                      memCacheWidth: 400,
+                      maxWidthDiskCache: 300,
+                      maxHeightDiskCache: 300,
+                      placeholder: (context, url) => Container(
+                        color: Colors.grey.shade200,
+                        child: const Center(
+                          child: SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                            ),
+                          ),
+                        ),
                       ),
-                    ),
-                  ),
-                  errorWidget: (context, url, error) => Container(
-                    color: Colors.grey.shade200,
-                    child: const Icon(
-                      Icons.error,
-                      color: Colors.grey,
+                      errorWidget: (context, url, error) => Container(
+                        color: Colors.grey.shade200,
+                        child: const Icon(
+                          Icons.error,
+                          color: Colors.grey,
+                          size: 16,
+                        ),
+                      ),
+                      fadeInDuration: const Duration(milliseconds: 100),
+                      fadeOutDuration: const Duration(milliseconds: 100),
                     ),
                   ),
                 ),
@@ -102,9 +119,9 @@ class PortraitSlot extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(vertical: 2, horizontal: 4),
                 decoration: BoxDecoration(
                   color: isCompleted 
-                      ? Colors.blue.shade600 
+                      ? AppColors.forestGreen
                       : isUnlocked 
-                          ? Colors.orange.shade600 
+                          ? AppColors.rustyOrange
                           : Colors.grey.shade600,
                   borderRadius: const BorderRadius.only(
                     bottomLeft: Radius.circular(7),

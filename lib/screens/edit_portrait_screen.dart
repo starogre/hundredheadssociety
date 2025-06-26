@@ -29,6 +29,9 @@ class _EditPortraitScreenState extends State<EditPortraitScreen> {
   final ImagePicker _picker = ImagePicker();
   bool _isLoading = false;
   bool _imageChanged = false;
+  int _selectedWeek = 1;
+  List<int> _availableWeeks = [];
+  bool _isSaving = false; // Prevent multiple saves
 
   @override
   void initState() {
@@ -36,6 +39,8 @@ class _EditPortraitScreenState extends State<EditPortraitScreen> {
     _titleController.text = widget.portrait.title;
     _descriptionController.text = widget.portrait.description ?? '';
     _modelNameController.text = widget.portrait.modelName ?? '';
+    _selectedWeek = widget.portrait.weekNumber;
+    _loadAvailableWeeks();
   }
 
   @override
@@ -98,9 +103,13 @@ class _EditPortraitScreenState extends State<EditPortraitScreen> {
 
   Future<void> _saveChanges() async {
     if (!_formKey.currentState!.validate()) return;
-
+    
+    // Prevent multiple simultaneous saves
+    if (_isSaving) return;
+    
     setState(() {
       _isLoading = true;
+      _isSaving = true;
     });
 
     try {
@@ -112,6 +121,9 @@ class _EditPortraitScreenState extends State<EditPortraitScreen> {
         newImageUrl = await portraitService.uploadPortraitImage(_newImageFile!, widget.portrait.userId);
       }
 
+      // Check if week number changed
+      bool weekChanged = _selectedWeek != widget.portrait.weekNumber;
+      
       // Update portrait in Firestore
       await portraitService.updatePortrait(
         portraitId: widget.portrait.id,
@@ -119,7 +131,18 @@ class _EditPortraitScreenState extends State<EditPortraitScreen> {
         description: _descriptionController.text.trim().isEmpty ? null : _descriptionController.text.trim(),
         imageUrl: newImageUrl,
         modelName: _modelNameController.text.trim().isEmpty ? null : _modelNameController.text.trim(),
+        weekNumber: _selectedWeek, // Add week number to update
       );
+
+      // If week number changed, shift other portraits
+      if (weekChanged) {
+        await portraitService.shiftWeeksForWeekChange(
+          widget.portrait.userId, 
+          widget.portrait.weekNumber, 
+          _selectedWeek,
+          widget.portrait.id,
+        );
+      }
 
       if (mounted) {
         // Call the callback first
@@ -150,8 +173,25 @@ class _EditPortraitScreenState extends State<EditPortraitScreen> {
       if (mounted) {
         setState(() {
           _isLoading = false;
+          _isSaving = false;
         });
       }
+    }
+  }
+
+  Future<void> _loadAvailableWeeks() async {
+    try {
+      final portraitService = PortraitService();
+      final existingPortraits = await portraitService.getUserPortraits(widget.portrait.userId).first;
+      final existingWeeks = existingPortraits.map((p) => p.weekNumber).toSet();
+      
+      // Create list of available weeks (1 to max existing week + 1)
+      final maxWeek = existingWeeks.isEmpty ? 1 : existingWeeks.reduce((a, b) => a > b ? a : b);
+      setState(() {
+        _availableWeeks = List.generate(maxWeek + 1, (index) => index + 1);
+      });
+    } catch (e) {
+      print('Error loading available weeks: $e');
     }
   }
 
@@ -179,17 +219,44 @@ class _EditPortraitScreenState extends State<EditPortraitScreen> {
                   borderRadius: BorderRadius.circular(8),
                   border: Border.all(color: AppColors.rustyOrange.withOpacity(0.3)),
                 ),
-                child: Row(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Icon(Icons.calendar_today, color: AppColors.rustyOrange, size: 16),
-                    const SizedBox(width: 8),
-                    Text(
-                      'Week ${widget.portrait.weekNumber}',
-                      style: TextStyle(
-                        color: AppColors.rustyOrange,
-                        fontWeight: FontWeight.w600,
-                        fontSize: 16,
+                    Row(
+                      children: [
+                        Icon(Icons.calendar_today, color: AppColors.rustyOrange, size: 16),
+                        const SizedBox(width: 8),
+                        Text(
+                          'Week Number',
+                          style: TextStyle(
+                            color: AppColors.rustyOrange,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 16,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    DropdownButtonFormField<int>(
+                      value: _selectedWeek,
+                      decoration: const InputDecoration(
+                        labelText: 'Select Week',
+                        border: OutlineInputBorder(),
+                        contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                       ),
+                      items: _availableWeeks.map((week) {
+                        return DropdownMenuItem(
+                          value: week,
+                          child: Text('Week $week'),
+                        );
+                      }).toList(),
+                      onChanged: (value) {
+                        if (value != null) {
+                          setState(() {
+                            _selectedWeek = value;
+                          });
+                        }
+                      },
                     ),
                   ],
                 ),

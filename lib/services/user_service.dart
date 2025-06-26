@@ -12,7 +12,7 @@ class UserService {
         .snapshots()
         .map((snapshot) {
       return snapshot.docs
-          .map((doc) => UserModel.fromMap(doc.data() as Map<String, dynamic>, doc.id))
+          .map((doc) => UserModel.fromMap(doc.data(), doc.id))
           .toList();
     });
   }

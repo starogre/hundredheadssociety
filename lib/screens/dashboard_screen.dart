@@ -46,6 +46,28 @@ class _DashboardScreenState extends State<DashboardScreen> {
     }
   }
 
+  Future<void> _renumberPortraits() async {
+    try {
+      final authProvider = Provider.of<AuthProvider>(context, listen: false);
+      if (authProvider.currentUser != null) {
+        await _portraitService.renumberPortraitsSequentially(authProvider.currentUser!.uid);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Portraits renumbered successfully!'),
+            backgroundColor: AppColors.forestGreen,
+          ),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error renumbering portraits: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Consumer<AuthProvider>(
@@ -118,42 +140,46 @@ class _DashboardScreenState extends State<DashboardScreen> {
           Container(
             padding: const EdgeInsets.all(16),
             color: AppColors.forestGreen.withValues(alpha: 0.1),
-            child: Row(
+            child: Column(
               children: [
-                CircleAvatar(
-                  radius: 30,
-                  backgroundColor: AppColors.rustyOrange,
-                  child: Text(
-                    '${authProvider.userData?.portraitsCompleted ?? 0}',
-                    style: const TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.white,
+                Row(
+                  children: [
+                    CircleAvatar(
+                      radius: 30,
+                      backgroundColor: AppColors.rustyOrange,
+                      child: Text(
+                        '${authProvider.userData?.portraitsCompleted ?? 0}',
+                        style: const TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.white,
+                        ),
+                      ),
                     ),
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Welcome, ${authProvider.userData?.name ?? 'Artist'}!',
-                        style: Theme.of(context).textTheme.headlineMedium,
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Welcome, ${authProvider.userData?.name ?? 'Artist'}!',
+                            style: Theme.of(context).textTheme.headlineMedium,
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            '${authProvider.userData?.portraitsCompleted ?? 0} of 100 portraits completed',
+                            style: Theme.of(context).textTheme.bodyMedium,
+                          ),
+                          const SizedBox(height: 8),
+                          LinearProgressIndicator(
+                            value: (authProvider.userData?.portraitsCompleted ?? 0) / 100,
+                            backgroundColor: AppColors.cream,
+                            valueColor: AlwaysStoppedAnimation<Color>(AppColors.rustyOrange),
+                          ),
+                        ],
                       ),
-                      const SizedBox(height: 4),
-                      Text(
-                        '${authProvider.userData?.portraitsCompleted ?? 0} of 100 portraits completed',
-                        style: Theme.of(context).textTheme.bodyMedium,
-                      ),
-                      const SizedBox(height: 8),
-                      LinearProgressIndicator(
-                        value: (authProvider.userData?.portraitsCompleted ?? 0) / 100,
-                        backgroundColor: AppColors.cream,
-                        valueColor: AlwaysStoppedAnimation<Color>(AppColors.rustyOrange),
-                      ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
               ],
             ),
@@ -166,7 +192,35 @@ class _DashboardScreenState extends State<DashboardScreen> {
               builder: (context, snapshot) {
                 if (snapshot.hasError) {
                   return Center(
-                    child: Text('Error: ${snapshot.error}'),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.error, size: 48, color: AppColors.rustyOrange),
+                        const SizedBox(height: 16),
+                        Text(
+                          'Error loading portraits',
+                          style: TextStyle(
+                            fontSize: 16,
+                            color: AppColors.rustyOrange,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          '${snapshot.error}',
+                          style: const TextStyle(fontSize: 12),
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 16),
+                        ElevatedButton(
+                          onPressed: () {
+                            // Trigger a refresh
+                            portraitProvider.refreshPortraits();
+                          },
+                          child: const Text('Retry'),
+                        ),
+                      ],
+                    ),
                   );
                 }
 
@@ -180,12 +234,31 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 int completedCount = portraits.length;
 
                 // Create a map for O(1) lookup instead of O(n) search for each item
-                Map<int, PortraitModel> portraitMap = {
-                  for (var portrait in portraits) portrait.weekNumber: portrait
-                };
+                Map<int, PortraitModel> portraitMap = {};
+                try {
+                  portraitMap = {
+                    for (var portrait in portraits) portrait.weekNumber: portrait
+                  };
+                } catch (e) {
+                  print('Error creating portrait map: $e');
+                  // Return error state if there's an issue with the data
+                  return Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.error, size: 48, color: AppColors.rustyOrange),
+                        const SizedBox(height: 16),
+                        const Text(
+                          'Error processing portraits',
+                          style: TextStyle(fontSize: 16),
+                        ),
+                      ],
+                    ),
+                  );
+                }
 
                 return GridView.builder(
-                  padding: const EdgeInsets.all(16),
+                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 80), // Extra bottom padding for FAB
                   gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                     crossAxisCount: 5,
                     crossAxisSpacing: 16,
@@ -199,11 +272,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     
                     // Calculate the next available week (first week without a portrait)
                     int nextAvailableWeek = 1;
-                    for (int i = 1; i <= 100; i++) {
-                      if (!portraitMap.containsKey(i)) {
-                        nextAvailableWeek = i;
-                        break;
+                    try {
+                      for (int i = 1; i <= 100; i++) {
+                        if (!portraitMap.containsKey(i)) {
+                          nextAvailableWeek = i;
+                          break;
+                        }
                       }
+                    } catch (e) {
+                      print('Error calculating next available week: $e');
+                      nextAvailableWeek = 1;
                     }
                     
                     // Only allow tapping if this is the next available week and it's empty

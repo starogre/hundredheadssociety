@@ -113,6 +113,22 @@ class PortraitProvider extends ChangeNotifier {
     }
   }
 
+  // Renumber portraits sequentially starting from week 1
+  Future<bool> renumberPortraitsSequentially(String userId) async {
+    _setLoading(true);
+    _clearError();
+    
+    try {
+      await _portraitService.renumberPortraitsSequentially(userId);
+      _setLoading(false);
+      return true;
+    } catch (e) {
+      _setError('Failed to renumber portraits: $e');
+      _setLoading(false);
+      return false;
+    }
+  }
+
   void _setLoading(bool loading) {
     _isLoading = loading;
     notifyListeners();

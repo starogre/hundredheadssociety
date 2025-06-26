@@ -8,6 +8,7 @@ import '../theme/app_theme.dart';
 import '../providers/auth_provider.dart';
 import '../widgets/multi_image_picker_gallery.dart';
 import '../widgets/bulk_image_grid_picker.dart';
+import '../services/portrait_service.dart';
 
 class AddPortraitScreen extends StatefulWidget {
   final String userId;
@@ -38,7 +39,10 @@ class _AddPortraitScreenState extends State<AddPortraitScreen> {
   List<TextEditingController> _bulkDescriptionControllers = [];
   List<TextEditingController> _bulkModelNameControllers = [];
   List<int> _bulkWeekNumbers = [];
-  List<AssetEntity> _bulkAssets = [];
+  
+  // Progress tracking for bulk upload
+  int _bulkUploadProgress = 0;
+  int _bulkUploadTotal = 0;
 
   @override
   void initState() {
@@ -48,10 +52,6 @@ class _AddPortraitScreenState extends State<AddPortraitScreen> {
   }
 
   Future<void> _loadAvailableWeeks() async {
-    // Get user's current portrait count to determine available weeks
-    final portraitProvider = Provider.of<PortraitProvider>(context, listen: false);
-    final userPortraits = await portraitProvider.getUserPortraits(widget.userId);
-    
     // Create list of available weeks (1 to nextWeekNumber)
     setState(() {
       _availableWeeks = List.generate(widget.nextWeekNumber, (index) => index + 1);
@@ -76,9 +76,6 @@ class _AddPortraitScreenState extends State<AddPortraitScreen> {
   }
 
   Future<void> _pickBulkImages() async {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('DEBUG: _pickBulkImages called')),
-    );
     final result = await Navigator.of(context).push(
       MaterialPageRoute(
         builder: (context) => BulkImageGridPicker(
@@ -87,43 +84,34 @@ class _AddPortraitScreenState extends State<AddPortraitScreen> {
       ),
     );
     
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('DEBUG: Navigator returned result type: ${result.runtimeType}')),
-    );
-    
     if (result != null && result is List<AssetEntity> && result.isNotEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('DEBUG: Converting ${result.length} assets to files')),
-      );
-      
       final files = await Future.wait(result.map((a) => a.file).toList());
       final validFiles = files.whereType<File>().toList();
       
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('DEBUG: Converted to ${validFiles.length} valid files')),
-      );
-      
       if (validFiles.isNotEmpty) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('DEBUG: Setting bulk images with ${validFiles.length} files')),
-        );
+        // Find the next available week numbers without gaps
+        final portraitService = PortraitService();
+        final existingPortraits = await portraitService.getUserPortraits(widget.userId).first;
+        final existingWeeks = existingPortraits.map((p) => p.weekNumber).toSet();
+        
+        // Find the next available week numbers
+        final nextWeeks = <int>[];
+        int weekToCheck = 1;
+        while (nextWeeks.length < validFiles.length) {
+          if (!existingWeeks.contains(weekToCheck)) {
+            nextWeeks.add(weekToCheck);
+          }
+          weekToCheck++;
+        }
+        
         setState(() {
           _bulkImages = validFiles;
           _bulkTitleControllers = List.generate(_bulkImages.length, (_) => TextEditingController());
           _bulkDescriptionControllers = List.generate(_bulkImages.length, (_) => TextEditingController());
           _bulkModelNameControllers = List.generate(_bulkImages.length, (_) => TextEditingController());
-          final authProvider = Provider.of<AuthProvider>(context, listen: false);
-          final completed = authProvider.userData?.portraitsCompleted ?? 0;
-          _bulkWeekNumbers = List.generate(_bulkImages.length, (i) => completed + 1 + i);
+          _bulkWeekNumbers = nextWeeks;
         });
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('DEBUG: Bulk mode should now show ${_bulkImages.length} images')),
-        );
       }
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('DEBUG: No valid result returned')),
-      );
     }
   }
 
@@ -182,12 +170,18 @@ class _AddPortraitScreenState extends State<AddPortraitScreen> {
     bool hasError = false;
     setState(() {
       _isLoading = true;
+      _bulkUploadProgress = 0;
+      _bulkUploadTotal = _bulkImages.length;
     });
+    
     final portraitProvider = Provider.of<PortraitProvider>(context, listen: false);
     for (int i = 0; i < _bulkImages.length; i++) {
       final title = _bulkTitleControllers[i].text.trim();
       if (title.isEmpty) {
         hasError = true;
+        setState(() {
+          _bulkUploadProgress = i + 1;
+        });
         continue;
       }
       try {
@@ -200,8 +194,14 @@ class _AddPortraitScreenState extends State<AddPortraitScreen> {
           modelName: _bulkModelNameControllers[i].text.trim().isEmpty ? null : _bulkModelNameControllers[i].text.trim(),
           context: context,
         );
+        setState(() {
+          _bulkUploadProgress = i + 1;
+        });
       } catch (e) {
         hasError = true;
+        setState(() {
+          _bulkUploadProgress = i + 1;
+        });
       }
     }
     setState(() {
@@ -212,6 +212,8 @@ class _AddPortraitScreenState extends State<AddPortraitScreen> {
       _bulkModelNameControllers.clear();
       _bulkWeekNumbers.clear();
       _isBulkMode = false;
+      _bulkUploadProgress = 0;
+      _bulkUploadTotal = 0;
     });
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -236,7 +238,7 @@ class _AddPortraitScreenState extends State<AddPortraitScreen> {
           ? Form(
               key: _formKey,
               child: ListView(
-                padding: const EdgeInsets.all(16),
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
                 children: [
                   Row(
                     children: [
@@ -300,23 +302,53 @@ class _AddPortraitScreenState extends State<AddPortraitScreen> {
                     );
                   }),
                   if (_bulkImages.isNotEmpty)
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton(
-                        onPressed: _isLoading ? null : _bulkUploadPortraits,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.rustyOrange,
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 12),
+                    Column(
+                      children: [
+                        if (_isLoading) ...[
+                          const SizedBox(height: 16),
+                          Text(
+                            'Uploading $_bulkUploadProgress of $_bulkUploadTotal portraits...',
+                            style: TextStyle(
+                              color: AppColors.forestGreen,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          LinearProgressIndicator(
+                            value: _bulkUploadTotal > 0 ? _bulkUploadProgress / _bulkUploadTotal : 0,
+                            backgroundColor: Colors.grey[300],
+                            valueColor: AlwaysStoppedAnimation<Color>(AppColors.forestGreen),
+                          ),
+                          const SizedBox(height: 16),
+                        ],
+                        SizedBox(
+                          width: double.infinity,
+                          child: ElevatedButton(
+                            onPressed: _isLoading ? null : _bulkUploadPortraits,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppColors.rustyOrange,
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(vertical: 12),
+                            ),
+                            child: _isLoading
+                                ? const SizedBox(
+                                    height: 20,
+                                    width: 20,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                    ),
+                                  )
+                                : const Text('Submit All'),
+                          ),
                         ),
-                        child: const Text('Submit All'),
-                      ),
+                      ],
                     ),
                 ],
               ),
             )
           : SingleChildScrollView(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
               child: Form(
                 key: _formKey,
                 child: Column(

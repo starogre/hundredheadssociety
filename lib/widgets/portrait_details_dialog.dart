@@ -96,13 +96,18 @@ class _PortraitDetailsDialogState extends State<PortraitDetailsDialog> {
                     CircleAvatar(
                       radius: 14,
                       backgroundColor: AppColors.forestGreen,
-                      child: Text(
-                        widget.user?.name.isNotEmpty == true ? widget.user!.name[0].toUpperCase() : 'A',
-                        style: const TextStyle(
-                          fontSize: 12,
-                          color: Colors.white,
-                        ),
-                      ),
+                      backgroundImage: widget.user?.profileImageUrl != null 
+                          ? NetworkImage(widget.user!.profileImageUrl!)
+                          : null,
+                      child: widget.user?.profileImageUrl == null
+                          ? Text(
+                              widget.user?.name.isNotEmpty == true ? widget.user!.name[0].toUpperCase() : 'A',
+                              style: const TextStyle(
+                                fontSize: 12,
+                                color: Colors.white,
+                              ),
+                            )
+                          : null,
                     ),
                     const SizedBox(width: 8),
                     Expanded(

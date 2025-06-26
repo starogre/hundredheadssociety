@@ -9,6 +9,7 @@ import '../models/user_model.dart';
 import '../theme/app_theme.dart';
 import '../widgets/submit_portrait_dialog.dart';
 import '../widgets/nomination_dialog.dart';
+import '../screens/profile_screen.dart';
 
 class WeeklySessionsScreen extends StatefulWidget {
   const WeeklySessionsScreen({super.key});
@@ -85,7 +86,7 @@ class _WeeklySessionsScreenState extends State<WeeklySessionsScreen>
               labelColor: AppColors.white,
               unselectedLabelColor: AppColors.cream,
               tabs: const [
-                Tab(text: 'RSVP & Attendees'),
+                Tab(text: 'RSVP'),
                 Tab(text: 'Submissions'),
                 Tab(text: 'Winners'),
               ],
@@ -164,14 +165,17 @@ class _WeeklySessionsScreenState extends State<WeeklySessionsScreen>
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Icon(Icons.event, color: AppColors.forestGreen, size: 24),
                       const SizedBox(width: 8),
-                      Text(
-                        'Monday Night Studio Session',
-                        style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                          color: AppColors.forestGreen,
-                          fontWeight: FontWeight.bold,
+                      Expanded(
+                        child: Text(
+                          'Monday Night Studio Session',
+                          style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                            color: AppColors.forestGreen,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                       ),
                     ],
@@ -259,17 +263,22 @@ class _WeeklySessionsScreenState extends State<WeeklySessionsScreen>
                   margin: const EdgeInsets.only(bottom: 8),
                   child: ListTile(
                     leading: CircleAvatar(
+                      backgroundImage: user.profileImageUrl != null && user.profileImageUrl!.isNotEmpty
+                          ? NetworkImage(user.profileImageUrl!)
+                          : null,
                       backgroundColor: AppColors.rustyOrange,
-                      child: Text(
-                        user.name.isNotEmpty ? user.name[0].toUpperCase() : '?',
-                        style: const TextStyle(
-                          color: AppColors.white,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
+                      child: user.profileImageUrl == null || user.profileImageUrl!.isEmpty
+                          ? Text(
+                              user.name.isNotEmpty ? user.name[0].toUpperCase() : '?',
+                              style: const TextStyle(
+                                color: AppColors.white,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            )
+                          : null,
                     ),
                     title: Text(user.name),
-                    subtitle: Text('${user.portraitsCompleted} portraits completed'),
+                    onTap: () => _navigateToUserProfile(user.id),
                   ),
                 );
               },
@@ -520,6 +529,14 @@ class _WeeklySessionsScreenState extends State<WeeklySessionsScreen>
     showDialog(
       context: context,
       builder: (context) => NominationDialog(submission: submission),
+    );
+  }
+
+  void _navigateToUserProfile(String userId) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => ProfileScreen(userId: userId),
+      ),
     );
   }
 } 

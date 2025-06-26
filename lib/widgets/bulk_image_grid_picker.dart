@@ -79,17 +79,9 @@ class _BulkImageGridPickerState extends State<BulkImageGridPicker> {
       current.add(asset);
     }
     _selectedImages.value = current;
-    
-    // Debug: Show selection count
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('DEBUG: Selected ${current.length} images')),
-    );
   }
 
   void _finishSelection() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('DEBUG: _finishSelection called with ${_selectedImages.value.length} selected images')),
-    );
     Navigator.of(context).pop(_selectedImages.value);
   }
 
