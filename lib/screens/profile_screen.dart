@@ -152,287 +152,290 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Widget build(BuildContext context) {
     return _userData == null
         ? const Center(child: CircularProgressIndicator())
-        : CustomScrollView(
-            slivers: [
-              // Profile Header
-              SliverAppBar(
-                expandedHeight: 200,
-                pinned: true,
-                flexibleSpace: FlexibleSpaceBar(
-                  background: Container(
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                        colors: [
-                          AppColors.forestGreen,
-                          AppColors.forestGreen.withOpacity(0.8),
-                        ],
+        : Scaffold(
+            backgroundColor: AppColors.cream,
+            body: CustomScrollView(
+              slivers: [
+                // Profile Header
+                SliverAppBar(
+                  expandedHeight: 200,
+                  pinned: true,
+                  flexibleSpace: FlexibleSpaceBar(
+                    background: Container(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          colors: [
+                            AppColors.forestGreen,
+                            AppColors.forestGreen.withOpacity(0.8),
+                          ],
+                        ),
                       ),
-                    ),
-                    child: SafeArea(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Stack(
-                            children: [
-                              Stack(
-                                alignment: Alignment.center,
-                                children: [
-                                  CircleAvatar(
-                                    key: ValueKey('profile-${_userData!.profileImageUrl ?? 'no-image'}'),
-                                    radius: 50,
-                                    backgroundColor: Colors.white,
-                                    backgroundImage: null,
-                                    child: _userData!.profileImageUrl == null
-                                        ? Text(
-                                            _userData!.name.isNotEmpty
-                                                ? _userData!.name[0].toUpperCase()
-                                                : 'A',
-                                            style: const TextStyle(
-                                              fontSize: 32,
-                                              fontWeight: FontWeight.bold,
-                                              color: Colors.blue,
+                      child: SafeArea(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Stack(
+                              children: [
+                                Stack(
+                                  alignment: Alignment.center,
+                                  children: [
+                                    CircleAvatar(
+                                      key: ValueKey('profile-${_userData!.profileImageUrl ?? 'no-image'}'),
+                                      radius: 50,
+                                      backgroundColor: Colors.white,
+                                      backgroundImage: null,
+                                      child: _userData!.profileImageUrl == null
+                                          ? Text(
+                                              _userData!.name.isNotEmpty
+                                                  ? _userData!.name[0].toUpperCase()
+                                                  : 'A',
+                                              style: const TextStyle(
+                                                fontSize: 32,
+                                                fontWeight: FontWeight.bold,
+                                                color: Colors.blue,
+                                              ),
+                                            )
+                                          : null,
+                                    ),
+                                    if (_userData!.profileImageUrl != null)
+                                      Positioned.fill(
+                                        child: ClipOval(
+                                          child: CachedNetworkImage(
+                                            key: ValueKey(_imageRefreshKey),
+                                            imageUrl: _userData!.profileImageUrl!,
+                                            fit: BoxFit.cover,
+                                            placeholder: (context, url) => Center(
+                                              child: CircularProgressIndicator(strokeWidth: 2),
                                             ),
-                                          )
-                                        : null,
-                                  ),
-                                  if (_userData!.profileImageUrl != null)
-                                    Positioned.fill(
-                                      child: ClipOval(
-                                        child: CachedNetworkImage(
-                                          key: ValueKey(_imageRefreshKey),
-                                          imageUrl: _userData!.profileImageUrl!,
-                                          fit: BoxFit.cover,
-                                          placeholder: (context, url) => Center(
-                                            child: CircularProgressIndicator(strokeWidth: 2),
-                                          ),
-                                          errorWidget: (context, url, error) => Center(
-                                            child: Icon(Icons.error, color: Colors.red, size: 32),
+                                            errorWidget: (context, url, error) => Center(
+                                              child: Icon(Icons.error, color: Colors.red, size: 32),
+                                            ),
                                           ),
                                         ),
                                       ),
-                                    ),
-                                ],
-                              ),
-                              if (_isUpdatingProfileImage)
-                                Container(
-                                  width: 100,
-                                  height: 100,
-                                  decoration: BoxDecoration(
-                                    color: Colors.black.withOpacity(0.5),
-                                    shape: BoxShape.circle,
-                                  ),
-                                  child: const Center(
-                                    child: CircularProgressIndicator(
-                                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                                    ),
-                                  ),
+                                  ],
                                 ),
-                              Positioned(
-                                bottom: 0,
-                                right: 4,
-                                child: GestureDetector(
-                                  onTap: _pickAndUploadProfileImage,
-                                  child: Container(
+                                if (_isUpdatingProfileImage)
+                                  Container(
+                                    width: 100,
+                                    height: 100,
                                     decoration: BoxDecoration(
-                                      color: Colors.blue,
+                                      color: Colors.black.withOpacity(0.5),
                                       shape: BoxShape.circle,
-                                      border: Border.all(color: Colors.white, width: 2),
                                     ),
-                                    padding: const EdgeInsets.all(6),
-                                    child: const Icon(Icons.camera_alt, color: Colors.white, size: 20),
+                                    child: const Center(
+                                      child: CircularProgressIndicator(
+                                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                      ),
+                                    ),
                                   ),
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 16),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Text(
-                                _userData!.name,
-                                style: const TextStyle(
-                                  fontSize: 24,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.white,
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-                              GestureDetector(
-                                onTap: _editName,
-                                child: Container(
-                                  padding: const EdgeInsets.all(4),
-                                  decoration: BoxDecoration(
-                                    color: Colors.white.withOpacity(0.2),
-                                    shape: BoxShape.circle,
-                                  ),
-                                  child: const Icon(
-                                    Icons.edit,
-                                    color: Colors.white,
-                                    size: 16,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                          if (_userData!.bio != null) ...[
-                            const SizedBox(height: 8),
-                            Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 32),
-                              child: Text(
-                                _userData!.bio!,
-                                textAlign: TextAlign.center,
-                                style: const TextStyle(
-                                  color: Colors.white70,
-                                  fontSize: 16,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-
-              // Stats Cards
-              SliverToBoxAdapter(
-                child: Container(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    children: [
-                      Row(
-                        children: [
-                          Expanded(
-                            child: _buildStatCard(
-                              'Done',
-                              _userData!.portraitsCompleted.toString(),
-                              AppColors.forestGreen,
-                            ),
-                          ),
-                          const SizedBox(width: 16),
-                          Expanded(
-                            child: _buildStatCard(
-                              'Left',
-                              (100 - _userData!.portraitsCompleted).toString(),
-                              AppColors.rustyOrange,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-
-              // Portraits Grid
-              Consumer<PortraitProvider>(
-                builder: (context, portraitProvider, child) {
-                  return StreamBuilder<List<PortraitModel>>(
-                    stream: portraitProvider.getUserPortraitsReversed(widget.userId),
-                    builder: (context, snapshot) {
-                      if (snapshot.hasError) {
-                        return SliverToBoxAdapter(
-                          child: Center(
-                            child: Text('Error: ${snapshot.error}'),
-                          ),
-                        );
-                      }
-
-                      if (!snapshot.hasData) {
-                        return const SliverToBoxAdapter(
-                          child: Center(
-                            child: CircularProgressIndicator(),
-                          ),
-                        );
-                      }
-
-                      final portraits = snapshot.data!;
-                      _lastPortraitCount = portraits.length;
-
-                      if (portraits.isEmpty) {
-                        return SliverToBoxAdapter(
-                          child: Center(
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Icon(
-                                  Icons.photo_library,
-                                  size: 64,
-                                  color: AppColors.forestGreen.withOpacity(0.5),
-                                ),
-                                const SizedBox(height: 16),
-                                Text(
-                                  'No portraits yet',
-                                  style: TextStyle(
-                                    fontSize: 18,
-                                    color: AppColors.forestGreen,
-                                    fontWeight: FontWeight.bold,
+                                Positioned(
+                                  bottom: 0,
+                                  right: 4,
+                                  child: GestureDetector(
+                                    onTap: _pickAndUploadProfileImage,
+                                    child: Container(
+                                      decoration: BoxDecoration(
+                                        color: Colors.blue,
+                                        shape: BoxShape.circle,
+                                        border: Border.all(color: Colors.white, width: 2),
+                                      ),
+                                      padding: const EdgeInsets.all(6),
+                                      child: const Icon(Icons.camera_alt, color: Colors.white, size: 20),
+                                    ),
                                   ),
                                 ),
                               ],
                             ),
-                          ),
-                        );
-                      }
-
-                      return SliverPadding(
-                        padding: const EdgeInsets.all(16),
-                        sliver: SliverGrid(
-                          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                            crossAxisCount: 2,
-                            mainAxisSpacing: 16,
-                            crossAxisSpacing: 16,
-                            childAspectRatio: 1,
-                          ),
-                          delegate: SliverChildBuilderDelegate(
-                            (context, index) {
-                              final portrait = portraits[index];
-                              return GestureDetector(
-                                onTap: () {
-                                  showDialog(
-                                    context: context,
-                                    builder: (context) => PortraitDetailsDialog(
-                                      portrait: portrait,
-                                      user: _userData,
-                                      currentUserId: widget.userId,
-                                      onPortraitModified: () {
-                                        setState(() {});
-                                      },
+                            const SizedBox(height: 16),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Text(
+                                  _userData!.name,
+                                  style: const TextStyle(
+                                    fontSize: 24,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                GestureDetector(
+                                  onTap: _editName,
+                                  child: Container(
+                                    padding: const EdgeInsets.all(4),
+                                    decoration: BoxDecoration(
+                                      color: Colors.white.withOpacity(0.2),
+                                      shape: BoxShape.circle,
                                     ),
-                                  );
-                                },
-                                child: ClipRRect(
-                                  borderRadius: BorderRadius.circular(8),
-                                  child: CachedNetworkImage(
-                                    imageUrl: portrait.imageUrl,
-                                    fit: BoxFit.cover,
-                                    placeholder: (context, url) => Container(
-                                      color: Colors.grey[200],
-                                      child: const Center(
-                                        child: CircularProgressIndicator(),
-                                      ),
-                                    ),
-                                    errorWidget: (context, url, error) => Container(
-                                      color: Colors.grey[200],
-                                      child: const Icon(Icons.error),
+                                    child: const Icon(
+                                      Icons.edit,
+                                      color: Colors.white,
+                                      size: 16,
                                     ),
                                   ),
                                 ),
-                              );
-                            },
-                            childCount: portraits.length,
-                          ),
+                              ],
+                            ),
+                            if (_userData!.bio != null) ...[
+                              const SizedBox(height: 8),
+                              Padding(
+                                padding: const EdgeInsets.symmetric(horizontal: 32),
+                                child: Text(
+                                  _userData!.bio!,
+                                  textAlign: TextAlign.center,
+                                  style: const TextStyle(
+                                    color: Colors.white70,
+                                    fontSize: 16,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ],
                         ),
-                      );
-                    },
-                  );
-                },
-              ),
-            ],
+                      ),
+                    ),
+                  ),
+                ),
+
+                // Stats Cards
+                SliverToBoxAdapter(
+                  child: Container(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      children: [
+                        Row(
+                          children: [
+                            Expanded(
+                              child: _buildStatCard(
+                                'Done',
+                                _userData!.portraitsCompleted.toString(),
+                                AppColors.forestGreen,
+                              ),
+                            ),
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: _buildStatCard(
+                                'Left',
+                                (100 - _userData!.portraitsCompleted).toString(),
+                                AppColors.rustyOrange,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+
+                // Portraits Grid
+                Consumer<PortraitProvider>(
+                  builder: (context, portraitProvider, child) {
+                    return StreamBuilder<List<PortraitModel>>(
+                      stream: portraitProvider.getUserPortraitsReversed(widget.userId),
+                      builder: (context, snapshot) {
+                        if (snapshot.hasError) {
+                          return SliverToBoxAdapter(
+                            child: Center(
+                              child: Text('Error: ${snapshot.error}'),
+                            ),
+                          );
+                        }
+
+                        if (!snapshot.hasData) {
+                          return const SliverToBoxAdapter(
+                            child: Center(
+                              child: CircularProgressIndicator(),
+                            ),
+                          );
+                        }
+
+                        final portraits = snapshot.data!;
+                        _lastPortraitCount = portraits.length;
+
+                        if (portraits.isEmpty) {
+                          return SliverToBoxAdapter(
+                            child: Center(
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(
+                                    Icons.photo_library,
+                                    size: 64,
+                                    color: AppColors.forestGreen.withOpacity(0.5),
+                                  ),
+                                  const SizedBox(height: 16),
+                                  Text(
+                                    'No portraits yet',
+                                    style: TextStyle(
+                                      fontSize: 18,
+                                      color: AppColors.forestGreen,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          );
+                        }
+
+                        return SliverPadding(
+                          padding: const EdgeInsets.all(16),
+                          sliver: SliverGrid(
+                            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                              crossAxisCount: 2,
+                              mainAxisSpacing: 16,
+                              crossAxisSpacing: 16,
+                              childAspectRatio: 1,
+                            ),
+                            delegate: SliverChildBuilderDelegate(
+                              (context, index) {
+                                final portrait = portraits[index];
+                                return GestureDetector(
+                                  onTap: () {
+                                    showDialog(
+                                      context: context,
+                                      builder: (context) => PortraitDetailsDialog(
+                                        portrait: portrait,
+                                        user: _userData,
+                                        currentUserId: widget.userId,
+                                        onPortraitModified: () {
+                                          setState(() {});
+                                        },
+                                      ),
+                                    );
+                                  },
+                                  child: ClipRRect(
+                                    borderRadius: BorderRadius.circular(8),
+                                    child: CachedNetworkImage(
+                                      imageUrl: portrait.imageUrl,
+                                      fit: BoxFit.cover,
+                                      placeholder: (context, url) => Container(
+                                        color: Colors.grey[200],
+                                        child: const Center(
+                                          child: CircularProgressIndicator(),
+                                        ),
+                                      ),
+                                      errorWidget: (context, url, error) => Container(
+                                        color: Colors.grey[200],
+                                        child: const Icon(Icons.error),
+                                      ),
+                                    ),
+                                  ),
+                                );
+                              },
+                              childCount: portraits.length,
+                            ),
+                          ),
+                        );
+                      },
+                    );
+                  },
+                ),
+              ],
+            ),
           );
   }
 
