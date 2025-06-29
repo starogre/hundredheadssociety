@@ -63,7 +63,7 @@ class WeeklySessionProvider extends ChangeNotifier {
     _error = null;
     notifyListeners();
 
-    _weeklySessionService.getCurrentWeeklySession().listen(
+    _weeklySessionService.getNextWeeklySession().listen(
       (session) async {
         _currentSession = session;
         if (session != null) {

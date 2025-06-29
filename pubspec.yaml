@@ -50,6 +50,7 @@ dependencies:
 
   # Utilities
   uuid: ^4.2.2
+  intl: ^0.19.0
 
   # Custom gallery access
   photo_manager: ^3.7.1

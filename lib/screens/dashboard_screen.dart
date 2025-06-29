@@ -2,11 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
 import '../providers/portrait_provider.dart';
+import '../providers/notification_provider.dart';
 import '../models/portrait_model.dart';
 import '../models/user_model.dart';
 import '../widgets/portrait_slot.dart';
 import '../widgets/add_portrait_dialog.dart';
 import '../widgets/portrait_details_dialog.dart';
+import '../widgets/notification_badge.dart';
 import '../services/user_service.dart';
 import '../services/portrait_service.dart';
 import 'profile_screen.dart';
@@ -15,6 +17,7 @@ import '../theme/app_theme.dart';
 import 'add_portrait_screen.dart';
 import 'weekly_sessions_screen.dart';
 import 'settings_screen.dart';
+import 'notifications_screen.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -33,6 +36,19 @@ class _DashboardScreenState extends State<DashboardScreen> {
     // Fix week gaps when dashboard loads
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _fixWeekGaps();
+      _initializeNotifications();
+    });
+  }
+
+  void _initializeNotifications() {
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    
+    // Get the notification provider from the local context
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final notificationProvider = Provider.of<NotificationProvider>(context, listen: false);
+      if (authProvider.currentUser != null) {
+        notificationProvider.initializeNotifications(authProvider.currentUser!.uid);
+      }
     });
   }
 
@@ -71,90 +87,122 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<AuthProvider>(
-      builder: (context, authProvider, child) {
-        if (!authProvider.isAuthenticated) {
-          return const Scaffold(
-            body: Center(
-              child: CircularProgressIndicator(),
-            ),
-          );
-        }
+    return ChangeNotifierProvider(
+      create: (_) => NotificationProvider(),
+      child: Consumer<AuthProvider>(
+        builder: (context, authProvider, child) {
+          if (!authProvider.isAuthenticated) {
+            return const Scaffold(
+              body: Center(
+                child: CircularProgressIndicator(),
+              ),
+            );
+          }
 
-        // Determine AppBar title and actions based on selected tab
-        String appBarTitle = '';
-        List<Widget> appBarActions = [];
-        if (_selectedIndex == 0) {
-          appBarTitle = '100 Heads Society';
-        } else if (_selectedIndex == 1) {
-          appBarTitle = 'Community';
-        } else if (_selectedIndex == 2) {
-          appBarTitle = authProvider.userData?.name ?? 'Profile';
-          appBarActions = [
-            IconButton(
-              icon: const Icon(Icons.settings),
-              onPressed: () {
+          // Determine AppBar title and actions based on selected tab
+          String appBarTitle = '';
+          List<Widget> appBarActions = [];
+          
+          // Add notification badge to all tabs
+          appBarActions.add(
+            NotificationBadge(
+              onTap: () {
                 Navigator.of(context).push(
-                  MaterialPageRoute(builder: (context) => const SettingsScreen()),
+                  MaterialPageRoute(builder: (context) => const NotificationsScreen()),
                 );
               },
             ),
-          ];
-        } else if (_selectedIndex == 3) {
-          appBarTitle = 'Weekly Sessions';
-        }
+          );
+          
+          if (_selectedIndex == 0) {
+            appBarTitle = '100 Heads Society';
+          } else if (_selectedIndex == 1) {
+            appBarTitle = 'Community';
+          } else if (_selectedIndex == 2) {
+            appBarTitle = authProvider.userData?.name ?? 'Profile';
+            appBarActions.add(
+              IconButton(
+                icon: const Icon(Icons.settings),
+                onPressed: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(builder: (context) => const SettingsScreen()),
+                  );
+                },
+              ),
+            );
+            appBarActions.add(
+              IconButton(
+                icon: const Icon(Icons.notification_add),
+                onPressed: () {
+                  final notificationProvider = Provider.of<NotificationProvider>(context, listen: false);
+                  if (authProvider.currentUser != null) {
+                    notificationProvider.createTestNotification(authProvider.currentUser!.uid);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Test notification created!'),
+                        backgroundColor: AppColors.forestGreen,
+                      ),
+                    );
+                  }
+                },
+              ),
+            );
+          } else if (_selectedIndex == 3) {
+            appBarTitle = 'Weekly Sessions';
+          }
 
-        return Scaffold(
-          appBar: AppBar(
-            title: Text(appBarTitle),
-            actions: appBarActions,
-          ),
-          body: IndexedStack(
-            index: _selectedIndex,
-            children: [
-              _buildDashboardTab(authProvider),
-              const CommunityScreen(),
-              ProfileScreen(userId: authProvider.currentUser!.uid),
-              const WeeklySessionsScreen(),
-            ],
-          ),
-          bottomNavigationBar: BottomNavigationBar(
-            currentIndex: _selectedIndex,
-            onTap: (index) {
-              setState(() {
-                _selectedIndex = index;
-              });
-            },
-            selectedItemColor: AppColors.rustyOrange,
-            unselectedItemColor: AppColors.forestGreen,
-            items: const [
-              BottomNavigationBarItem(
-                icon: Icon(Icons.dashboard),
-                label: 'My Heads',
-              ),
-              BottomNavigationBarItem(
-                icon: Icon(Icons.people),
-                label: 'Community',
-              ),
-              BottomNavigationBarItem(
-                icon: Icon(Icons.person),
-                label: 'Profile',
-              ),
-              BottomNavigationBarItem(
-                icon: Icon(Icons.event),
-                label: 'Weekly Sessions',
-              ),
-            ],
-          ),
-          floatingActionButton: _selectedIndex == 0
-              ? FloatingActionButton(
-                  onPressed: () => _showAddPortraitDialog(context, authProvider, (authProvider.userData?.portraitsCompleted ?? 0) + 1),
-                  backgroundColor: AppColors.rustyOrange,
-                  child: const Icon(Icons.add_a_photo),
-                )
-              : null,
-        );
-      },
+          return Scaffold(
+            appBar: AppBar(
+              title: Text(appBarTitle),
+              actions: appBarActions,
+            ),
+            body: IndexedStack(
+              index: _selectedIndex,
+              children: [
+                _buildDashboardTab(authProvider),
+                const CommunityScreen(),
+                ProfileScreen(userId: authProvider.currentUser!.uid),
+                const WeeklySessionsScreen(),
+              ],
+            ),
+            bottomNavigationBar: BottomNavigationBar(
+              currentIndex: _selectedIndex,
+              onTap: (index) {
+                setState(() {
+                  _selectedIndex = index;
+                });
+              },
+              selectedItemColor: AppColors.rustyOrange,
+              unselectedItemColor: AppColors.forestGreen,
+              items: const [
+                BottomNavigationBarItem(
+                  icon: Icon(Icons.dashboard),
+                  label: 'My Heads',
+                ),
+                BottomNavigationBarItem(
+                  icon: Icon(Icons.people),
+                  label: 'Community',
+                ),
+                BottomNavigationBarItem(
+                  icon: Icon(Icons.person),
+                  label: 'Profile',
+                ),
+                BottomNavigationBarItem(
+                  icon: Icon(Icons.event),
+                  label: 'Weekly Sessions',
+                ),
+              ],
+            ),
+            floatingActionButton: _selectedIndex == 0
+                ? FloatingActionButton(
+                    onPressed: () => _showAddPortraitDialog(context, authProvider, (authProvider.userData?.portraitsCompleted ?? 0) + 1),
+                    backgroundColor: AppColors.rustyOrange,
+                    child: const Icon(Icons.add_a_photo),
+                  )
+                : null,
+          );
+        },
+      ),
     );
   }
 

@@ -210,4 +210,22 @@ class WeeklySessionService {
            sessionDate.month == now.month &&
            sessionDate.day == now.day;
   }
+
+  // Get the next upcoming weekly session (by date)
+  Stream<WeeklySessionModel?> getNextWeeklySession() {
+    final now = DateTime.now();
+    return _firestore
+        .collection('weekly_sessions')
+        .where('sessionDate', isGreaterThanOrEqualTo: now)
+        .orderBy('sessionDate')
+        .limit(1)
+        .snapshots()
+        .map((snapshot) {
+      if (snapshot.docs.isEmpty) return null;
+      return WeeklySessionModel.fromMap(
+        snapshot.docs.first.data(),
+        snapshot.docs.first.id,
+      );
+    });
+  }
 } 

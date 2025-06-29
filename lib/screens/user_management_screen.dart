@@ -378,7 +378,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
         children: [
           // Header
           Card(
-            color: AppColors.forestGreen.withValues(alpha: 0.1),
+            color: AppColors.lightCream,
             child: Padding(
               padding: const EdgeInsets.all(16),
               child: Column(
@@ -568,7 +568,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
         children: [
           // Header
           Card(
-            color: AppColors.forestGreen.withValues(alpha: 0.1),
+            color: AppColors.lightCream,
             child: Padding(
               padding: const EdgeInsets.all(16),
               child: Column(
@@ -818,7 +818,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
         children: [
           // Header
           Card(
-            color: AppColors.forestGreen.withValues(alpha: 0.1),
+            color: AppColors.lightCream,
             child: Padding(
               padding: const EdgeInsets.all(16),
               child: Column(

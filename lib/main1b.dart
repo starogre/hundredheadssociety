@@ -3,7 +3,6 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:provider/provider.dart';
 import 'firebase_options.dart';
 import 'providers/auth_provider.dart';
-import 'providers/notification_provider.dart';
 import 'providers/portrait_provider.dart';
 import 'providers/weekly_session_provider.dart';
 import 'screens/login_screen.dart';
@@ -30,7 +29,6 @@ class MyApp extends StatelessWidget {
     return MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => AuthProvider()),
-        ChangeNotifierProvider(create: (_) => NotificationProvider()),
         ChangeNotifierProvider(create: (_) => PortraitProvider()),
         ChangeNotifierProvider(create: (_) => WeeklySessionProvider()),
       ],

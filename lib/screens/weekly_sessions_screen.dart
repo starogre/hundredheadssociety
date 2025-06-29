@@ -156,7 +156,7 @@ class _WeeklySessionsScreenState extends State<WeeklySessionsScreen>
         children: [
           // Session Info Card
           Card(
-            color: AppColors.forestGreen.withValues(alpha: 0.1),
+            color: AppColors.lightCream,
             child: Padding(
               padding: const EdgeInsets.all(16),
               child: Column(
@@ -185,7 +185,7 @@ class _WeeklySessionsScreenState extends State<WeeklySessionsScreen>
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    'Time: 7:00 PM - 9:00 PM',
+                    'Time: 6:00 PM - 9:00 PM',
                     style: const TextStyle(fontSize: 16),
                   ),
                   const SizedBox(height: 4),
