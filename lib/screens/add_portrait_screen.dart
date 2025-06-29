@@ -76,6 +76,10 @@ class _AddPortraitScreenState extends State<AddPortraitScreen> {
   }
 
   Future<void> _pickBulkImages() async {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Opening image picker...')),
+    );
+    
     final result = await Navigator.of(context).push(
       MaterialPageRoute(
         builder: (context) => BulkImageGridPicker(
@@ -84,9 +88,17 @@ class _AddPortraitScreenState extends State<AddPortraitScreen> {
       ),
     );
     
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Picker returned: ${result?.length ?? 0} images')),
+    );
+    
     if (result != null && result is List<AssetEntity> && result.isNotEmpty) {
       final files = await Future.wait(result.map((a) => a.file).toList());
       final validFiles = files.whereType<File>().toList();
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Valid files: ${validFiles.length}')),
+      );
       
       if (validFiles.isNotEmpty) {
         // Find the next available week numbers without gaps
@@ -105,12 +117,17 @@ class _AddPortraitScreenState extends State<AddPortraitScreen> {
         }
         
         setState(() {
+          _isBulkMode = true; // Set bulk mode to true when images are selected
           _bulkImages = validFiles;
           _bulkTitleControllers = List.generate(_bulkImages.length, (_) => TextEditingController());
           _bulkDescriptionControllers = List.generate(_bulkImages.length, (_) => TextEditingController());
           _bulkModelNameControllers = List.generate(_bulkImages.length, (_) => TextEditingController());
           _bulkWeekNumbers = nextWeeks;
         });
+        
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Bulk mode activated with ${_bulkImages.length} images')),
+        );
       }
     }
   }

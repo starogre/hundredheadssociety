@@ -8,6 +8,7 @@ import 'providers/weekly_session_provider.dart';
 import 'screens/login_screen.dart';
 import 'screens/dashboard_screen.dart';
 import 'screens/splash_screen.dart';
+import 'screens/waiting_approval_screen.dart';
 import 'theme/app_theme.dart';
 
 void main() async {
@@ -77,17 +78,25 @@ class MyApp extends StatelessWidget {
             // Firebase initialized successfully, show the app
             return Consumer<AuthProvider>(
               builder: (context, authProvider, child) {
-                // Show loading while AuthProvider is initializing
-                if (!authProvider.isInitialized) {
+                if (!authProvider.isInitialized || authProvider.isLoading) {
                   return const SplashScreen();
                 }
-                
-                if (authProvider.isLoading) {
-                  return const SplashScreen();
-                }
-                
+
                 if (authProvider.isAuthenticated) {
-                  return const DashboardScreen();
+                  final userData = authProvider.userData;
+                  if (userData != null) {
+                    if (userData.isAdmin) {
+                      return const DashboardScreen();
+                    }
+                    if (userData.status == 'pending' || userData.status == 'denied') {
+                      return const WaitingApprovalScreen();
+                    }
+                    if (userData.status == 'approved') {
+                      return const DashboardScreen();
+                    }
+                  }
+                  // If userData is null, show splash/loading screen
+                  return const SplashScreen();
                 } else {
                   return const LoginScreen();
                 }

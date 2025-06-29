@@ -14,6 +14,7 @@ import 'community_screen.dart';
 import '../theme/app_theme.dart';
 import 'add_portrait_screen.dart';
 import 'weekly_sessions_screen.dart';
+import 'settings_screen.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -80,9 +81,33 @@ class _DashboardScreenState extends State<DashboardScreen> {
           );
         }
 
+        // Determine AppBar title and actions based on selected tab
+        String appBarTitle = '';
+        List<Widget> appBarActions = [];
+        if (_selectedIndex == 0) {
+          appBarTitle = '100 Heads Society';
+        } else if (_selectedIndex == 1) {
+          appBarTitle = 'Community';
+        } else if (_selectedIndex == 2) {
+          appBarTitle = authProvider.userData?.name ?? 'Profile';
+          appBarActions = [
+            IconButton(
+              icon: const Icon(Icons.settings),
+              onPressed: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(builder: (context) => const SettingsScreen()),
+                );
+              },
+            ),
+          ];
+        } else if (_selectedIndex == 3) {
+          appBarTitle = 'Weekly Sessions';
+        }
+
         return Scaffold(
           appBar: AppBar(
-            title: const Text('100 Heads Society'),
+            title: Text(appBarTitle),
+            actions: appBarActions,
           ),
           body: IndexedStack(
             index: _selectedIndex,

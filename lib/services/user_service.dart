@@ -76,4 +76,55 @@ class UserService {
           .toList();
     });
   }
+
+  // Create a new user
+  Future<void> createUser(UserModel user) async {
+    try {
+      await _firestore.collection('users').doc(user.id).set(user.toMap());
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  // Delete a user
+  Future<void> deleteUser(String userId) async {
+    try {
+      await _firestore.collection('users').doc(userId).delete();
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  // Update user's admin status
+  Future<void> updateAdminStatus(String userId, bool isAdmin) async {
+    try {
+      await _firestore.collection('users').doc(userId).update({
+        'isAdmin': isAdmin,
+      });
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  // Approve a user
+  Future<void> approveUser(String userId) async {
+    try {
+      await _firestore.collection('users').doc(userId).update({
+        'status': 'approved',
+      });
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  // Deny a user
+  Future<void> denyUser(String userId) async {
+    try {
+      await _firestore.collection('users').doc(userId).update({
+        'status': 'denied',
+      });
+    } catch (e) {
+      rethrow;
+    }
+  }
 } 

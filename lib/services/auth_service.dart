@@ -29,16 +29,42 @@ class AuthService {
       // Create user document in Firestore
       if (result.user != null) {
         print('Creating user document in Firestore...');
-        await _firestore.collection('users').doc(result.user!.uid).set({
-          'email': email,
-          'name': name,
-          'bio': null,
-          'profileImageUrl': null,
-          'createdAt': FieldValue.serverTimestamp(),
-          'portraitIds': [],
-          'portraitsCompleted': 0,
-        });
-        print('User document created successfully');
+        try {
+          // Use the same raw operation approach
+          final docRef = _firestore.collection('users').doc(result.user!.uid);
+          final data = <String, dynamic>{
+            'email': email,
+            'name': name,
+            'bio': null,
+            'profileImageUrl': null,
+            'createdAt': Timestamp.now(),
+            'portraitIds': <String>[],
+            'portraitsCompleted': 0,
+            'isAdmin': false,
+            'status': 'pending',
+          };
+          
+          await docRef.set(data);
+          print('User document created successfully');
+        } catch (firestoreError) {
+          print('Firestore error: $firestoreError');
+          print('Firestore error type: ${firestoreError.runtimeType}');
+          
+          // Try minimal document creation
+          try {
+            print('Trying minimal document creation...');
+            await _firestore.collection('users').doc(result.user!.uid).set({
+              'email': email,
+              'name': name,
+              'status': 'pending',
+            });
+            print('Minimal user document created');
+          } catch (minimalError) {
+            print('Minimal creation also failed: $minimalError');
+            // Don't rethrow - we still want to return the UserCredential
+            // The user document can be created later
+          }
+        }
       }
 
       return result;
@@ -83,6 +109,51 @@ class AuthService {
       return null;
     } catch (e) {
       rethrow;
+    }
+  }
+
+  // Create user document in Firestore (fallback method)
+  Future<void> createUserDocument({
+    required String userId,
+    required String email,
+    required String name,
+  }) async {
+    try {
+      print('Creating user document with raw operation...');
+      
+      // Try using a more direct approach
+      final docRef = _firestore.collection('users').doc(userId);
+      final data = <String, dynamic>{
+        'email': email,
+        'name': name,
+        'bio': null,
+        'profileImageUrl': null,
+        'createdAt': Timestamp.now(),
+        'portraitIds': <String>[],
+        'portraitsCompleted': 0,
+        'isAdmin': false,
+        'status': 'pending',
+      };
+      
+      await docRef.set(data);
+      print('User document created successfully with raw operation');
+    } catch (e) {
+      print('Error creating user document: $e');
+      print('Error type: ${e.runtimeType}');
+      
+      // Last resort: try without any complex types
+      try {
+        print('Trying minimal document creation...');
+        await _firestore.collection('users').doc(userId).set({
+          'email': email,
+          'name': name,
+          'status': 'pending',
+        });
+        print('Minimal user document created');
+      } catch (minimalError) {
+        print('Minimal creation also failed: $minimalError');
+        rethrow;
+      }
     }
   }
 

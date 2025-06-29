@@ -59,29 +59,6 @@ class _CommunityScreenState extends State<CommunityScreen>
       backgroundColor: AppColors.cream,
       body: Column(
         children: [
-          // Header
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(16),
-            color: AppColors.forestGreen.withValues(alpha: 0.1),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Community Gallery',
-                  style: Theme.of(context).textTheme.headlineMedium,
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'See what other artists are creating',
-                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                    color: AppColors.forestGreen.withValues(alpha: 0.7),
-                  ),
-                ),
-              ],
-            ),
-          ),
-
           // Tab Bar
           TabBar(
             controller: _tabController,

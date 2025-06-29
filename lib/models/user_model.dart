@@ -9,6 +9,8 @@ class UserModel {
   final DateTime createdAt;
   final List<String> portraitIds;
   final int portraitsCompleted;
+  final bool isAdmin;
+  final String status; // 'pending', 'approved', 'denied'
 
   UserModel({
     required this.id,
@@ -19,6 +21,8 @@ class UserModel {
     required this.createdAt,
     required this.portraitIds,
     required this.portraitsCompleted,
+    this.isAdmin = false,
+    this.status = 'pending', // Default to pending for new users
   });
 
   factory UserModel.fromMap(Map<String, dynamic> map, String id) {
@@ -31,6 +35,8 @@ class UserModel {
       createdAt: (map['createdAt'] as Timestamp).toDate(),
       portraitIds: List<String>.from(map['portraitIds'] ?? []),
       portraitsCompleted: map['portraitsCompleted'] ?? 0,
+      isAdmin: map['isAdmin'] ?? false,
+      status: map['status'] ?? 'pending',
     );
   }
 
@@ -43,6 +49,8 @@ class UserModel {
       'createdAt': createdAt,
       'portraitIds': portraitIds,
       'portraitsCompleted': portraitsCompleted,
+      'isAdmin': isAdmin,
+      'status': status,
     };
   }
 
@@ -55,6 +63,8 @@ class UserModel {
     DateTime? createdAt,
     List<String>? portraitIds,
     int? portraitsCompleted,
+    bool? isAdmin,
+    String? status,
   }) {
     return UserModel(
       id: id ?? this.id,
@@ -65,6 +75,8 @@ class UserModel {
       createdAt: createdAt ?? this.createdAt,
       portraitIds: portraitIds ?? this.portraitIds,
       portraitsCompleted: portraitsCompleted ?? this.portraitsCompleted,
+      isAdmin: isAdmin ?? this.isAdmin,
+      status: status ?? this.status,
     );
   }
 } 

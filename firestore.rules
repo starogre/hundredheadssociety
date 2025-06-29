@@ -8,11 +8,17 @@ service cloud.firestore {
       // Allow any authenticated user to read user profiles (for community/artist lists)
       allow read: if request.auth != null;
 
-      // Allow a user to create their own document
-      allow create: if request.auth != null && request.auth.uid == userId;
+      // Allow creation of test users (IDs starting with 'test_') by any authenticated user
+      allow create: if request.auth != null && (
+        request.auth.uid == userId || 
+        userId.matches('test_.*')
+      );
       
-      // Only allow a user to update or delete their own document
-      allow update, delete: if request.auth != null && request.auth.uid == userId;
+      // Allow update/delete of own document or test users
+      allow update, delete: if request.auth != null && (
+        request.auth.uid == userId || 
+        userId.matches('test_.*')
+      );
     }
 
     // Portraits collection

@@ -38,9 +38,7 @@ class _SignupScreenState extends State<SignupScreen> {
       );
 
       if (success && mounted) {
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (context) => const DashboardScreen()),
-        );
+        Navigator.of(context).pop(); // Optionally, just pop back to login or do nothing
       }
     }
   }

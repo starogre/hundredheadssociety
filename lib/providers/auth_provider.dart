@@ -22,6 +22,7 @@ class AuthProvider extends ChangeNotifier {
   AuthProvider() {
     // Delay initialization to ensure Firebase is ready
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      print('[AuthProvider] Initializing...');
       _init();
     });
   }
@@ -31,11 +32,15 @@ class AuthProvider extends ChangeNotifier {
     
     try {
       _isInitialized = true;
+      print('[AuthProvider] Setting up authStateChanges listener');
       _authService.authStateChanges.listen((User? user) {
+        print('[AuthProvider] authStateChanges event: user=${user?.uid}');
         _currentUser = user;
         if (user != null) {
+          print('[AuthProvider] User is logged in, loading user data...');
           _loadUserData();
         } else {
+          print('[AuthProvider] User is logged out, clearing userData');
           _userData = null;
         }
         notifyListeners();
@@ -51,6 +56,26 @@ class AuthProvider extends ChangeNotifier {
     if (_currentUser != null) {
       try {
         _userData = await _authService.getUserData(_currentUser!.uid);
+        
+        // If user data doesn't exist, create it (fallback for failed initial creation)
+        if (_userData == null) {
+          print('[AuthProvider] User document not found, creating fallback document...');
+          try {
+            await _authService.createUserDocument(
+              userId: _currentUser!.uid,
+              email: _currentUser!.email ?? '',
+              name: _currentUser!.displayName ?? 'User',
+            );
+            print('[AuthProvider] Fallback user document created');
+            
+            // Try to load the data again
+            _userData = await _authService.getUserData(_currentUser!.uid);
+          } catch (fallbackError) {
+            print('[AuthProvider] Fallback document creation failed: $fallbackError');
+            _error = 'Failed to create user profile: $fallbackError';
+          }
+        }
+        
         notifyListeners();
       } catch (e) {
         _error = 'Failed to load user data: $e';

@@ -76,29 +76,32 @@ class _WeeklySessionsScreenState extends State<WeeklySessionsScreen>
         }
 
         return Scaffold(
-          appBar: AppBar(
-            title: const Text('Weekly Sessions'),
-            backgroundColor: AppColors.forestGreen,
-            foregroundColor: AppColors.white,
-            bottom: TabBar(
-              controller: _tabController,
-              indicatorColor: AppColors.rustyOrange,
-              labelColor: AppColors.white,
-              unselectedLabelColor: AppColors.cream,
-              tabs: const [
-                Tab(text: 'RSVP'),
-                Tab(text: 'Submissions'),
-                Tab(text: 'Winners'),
+          body: SafeArea(
+            child: Column(
+              children: [
+                TabBar(
+                  controller: _tabController,
+                  indicatorColor: AppColors.rustyOrange,
+                  labelColor: AppColors.forestGreen,
+                  unselectedLabelColor: AppColors.forestGreen.withValues(alpha: 0.7),
+                  tabs: const [
+                    Tab(text: 'RSVP'),
+                    Tab(text: 'Submissions'),
+                    Tab(text: 'Winners'),
+                  ],
+                ),
+                Expanded(
+                  child: TabBarView(
+                    controller: _tabController,
+                    children: [
+                      _buildRsvpTab(context, weeklySessionProvider, currentSession),
+                      _buildSubmissionsTab(context, weeklySessionProvider, currentSession),
+                      _buildWinnersTab(context, weeklySessionProvider),
+                    ],
+                  ),
+                ),
               ],
             ),
-          ),
-          body: TabBarView(
-            controller: _tabController,
-            children: [
-              _buildRsvpTab(context, weeklySessionProvider, currentSession),
-              _buildSubmissionsTab(context, weeklySessionProvider, currentSession),
-              _buildWinnersTab(context, weeklySessionProvider),
-            ],
           ),
         );
       },
@@ -106,13 +109,8 @@ class _WeeklySessionsScreenState extends State<WeeklySessionsScreen>
   }
 
   Widget _buildNoSessionView(WeeklySessionProvider weeklySessionProvider) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Weekly Sessions'),
-        backgroundColor: AppColors.forestGreen,
-        foregroundColor: AppColors.white,
-      ),
-      body: Center(
+    return SafeArea(
+      child: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
