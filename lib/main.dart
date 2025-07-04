@@ -11,6 +11,7 @@ import 'screens/dashboard_screen.dart';
 import 'screens/splash_screen.dart';
 import 'screens/waiting_approval_screen.dart';
 import 'theme/app_theme.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();

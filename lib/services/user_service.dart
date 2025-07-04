@@ -36,12 +36,16 @@ class UserService {
     String? name,
     String? bio,
     String? profileImageUrl,
+    String? instagram,
+    String? contactEmail,
   }) async {
     try {
       Map<String, dynamic> updates = {};
       if (name != null) updates['name'] = name;
       if (bio != null) updates['bio'] = bio;
       if (profileImageUrl != null) updates['profileImageUrl'] = profileImageUrl;
+      if (instagram != null) updates['instagram'] = instagram;
+      if (contactEmail != null) updates['contactEmail'] = contactEmail;
 
       await _firestore.collection('users').doc(userId).update(updates);
     } catch (e) {

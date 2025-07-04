@@ -11,6 +11,8 @@ class UserModel {
   final int portraitsCompleted;
   final bool isAdmin;
   final String status; // 'pending', 'approved', 'denied'
+  final String? instagram;
+  final String? contactEmail;
 
   UserModel({
     required this.id,
@@ -23,6 +25,8 @@ class UserModel {
     required this.portraitsCompleted,
     this.isAdmin = false,
     this.status = 'pending', // Default to pending for new users
+    this.instagram,
+    this.contactEmail,
   });
 
   factory UserModel.fromMap(Map<String, dynamic> map, String id) {
@@ -37,6 +41,8 @@ class UserModel {
       portraitsCompleted: map['portraitsCompleted'] ?? 0,
       isAdmin: map['isAdmin'] ?? false,
       status: map['status'] ?? 'pending',
+      instagram: map['instagram'],
+      contactEmail: map['contactEmail'],
     );
   }
 
@@ -51,6 +57,8 @@ class UserModel {
       'portraitsCompleted': portraitsCompleted,
       'isAdmin': isAdmin,
       'status': status,
+      'instagram': instagram,
+      'contactEmail': contactEmail,
     };
   }
 
@@ -65,6 +73,8 @@ class UserModel {
     int? portraitsCompleted,
     bool? isAdmin,
     String? status,
+    String? instagram,
+    String? contactEmail,
   }) {
     return UserModel(
       id: id ?? this.id,
@@ -77,6 +87,8 @@ class UserModel {
       portraitsCompleted: portraitsCompleted ?? this.portraitsCompleted,
       isAdmin: isAdmin ?? this.isAdmin,
       status: status ?? this.status,
+      instagram: instagram ?? this.instagram,
+      contactEmail: contactEmail ?? this.contactEmail,
     );
   }
 } 

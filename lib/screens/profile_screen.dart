@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import '../providers/auth_provider.dart';
 import '../providers/portrait_provider.dart';
 import '../models/portrait_model.dart';
@@ -13,6 +14,7 @@ import '../widgets/profile_image_picker_dialog.dart';
 import '../theme/app_theme.dart';
 import '../widgets/portrait_details_dialog.dart';
 import '../screens/settings_screen.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class ProfileScreen extends StatefulWidget {
   final String userId;
@@ -148,182 +150,262 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return (difference ~/ 7) + 1;
   }
 
+  PreferredSizeWidget? _buildAppBar() {
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final currentUser = authProvider.currentUser;
+    
+    // Always show app bar when viewing someone else's profile
+    if (currentUser != null && currentUser.uid != widget.userId) {
+      return AppBar(
+        backgroundColor: AppColors.forestGreen,
+        foregroundColor: Colors.white,
+        title: Text(_userData?.name ?? 'User'),
+        elevation: 0,
+      );
+    }
+    
+    // Show app bar for own profile when navigated from other screens
+    // Check if we can pop (meaning we navigated here from another screen)
+    if (Navigator.of(context).canPop()) {
+      return AppBar(
+        backgroundColor: AppColors.forestGreen,
+        foregroundColor: Colors.white,
+        title: const Text('My Profile'),
+        elevation: 0,
+      );
+    }
+    
+    return null; // No app bar when accessed directly (e.g., from bottom nav)
+  }
+
   @override
   Widget build(BuildContext context) {
     return _userData == null
         ? const Center(child: CircularProgressIndicator())
         : Scaffold(
             backgroundColor: AppColors.cream,
+            appBar: _buildAppBar(),
             body: CustomScrollView(
               slivers: [
                 // Profile Header
-                SliverAppBar(
-                  expandedHeight: 200,
-                  pinned: true,
-                  flexibleSpace: FlexibleSpaceBar(
-                    background: Container(
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          begin: Alignment.topCenter,
-                          end: Alignment.bottomCenter,
-                          colors: [
-                            AppColors.forestGreen,
-                            AppColors.forestGreen.withOpacity(0.8),
-                          ],
-                        ),
-                      ),
-                      child: SafeArea(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Portrait
+                        Stack(
                           children: [
-                            Stack(
-                              children: [
-                                Stack(
-                                  alignment: Alignment.center,
-                                  children: [
-                                    CircleAvatar(
-                                      key: ValueKey('profile-${_userData!.profileImageUrl ?? 'no-image'}'),
-                                      radius: 50,
-                                      backgroundColor: Colors.white,
-                                      backgroundImage: null,
-                                      child: _userData!.profileImageUrl == null
-                                          ? Text(
-                                              _userData!.name.isNotEmpty
-                                                  ? _userData!.name[0].toUpperCase()
-                                                  : 'A',
-                                              style: const TextStyle(
-                                                fontSize: 32,
-                                                fontWeight: FontWeight.bold,
-                                                color: Colors.blue,
-                                              ),
-                                            )
-                                          : null,
-                                    ),
-                                    if (_userData!.profileImageUrl != null)
-                                      Positioned.fill(
-                                        child: ClipOval(
-                                          child: CachedNetworkImage(
-                                            key: ValueKey(_imageRefreshKey),
-                                            imageUrl: _userData!.profileImageUrl!,
-                                            fit: BoxFit.cover,
-                                            placeholder: (context, url) => Center(
-                                              child: CircularProgressIndicator(strokeWidth: 2),
-                                            ),
-                                            errorWidget: (context, url, error) => Center(
-                                              child: Icon(Icons.error, color: Colors.red, size: 32),
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-                                  ],
-                                ),
-                                if (_isUpdatingProfileImage)
-                                  Container(
-                                    width: 100,
-                                    height: 100,
-                                    decoration: BoxDecoration(
-                                      color: Colors.black.withOpacity(0.5),
-                                      shape: BoxShape.circle,
-                                    ),
-                                    child: const Center(
-                                      child: CircularProgressIndicator(
-                                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                                      ),
-                                    ),
-                                  ),
-                                Positioned(
-                                  bottom: 0,
-                                  right: 4,
-                                  child: GestureDetector(
-                                    onTap: _pickAndUploadProfileImage,
-                                    child: Container(
-                                      decoration: BoxDecoration(
+                            CircleAvatar(
+                              key: ValueKey('profile-${_userData!.profileImageUrl ?? 'no-image'}'),
+                              radius: 40,
+                              backgroundColor: Colors.white,
+                              backgroundImage: null,
+                              child: _userData!.profileImageUrl == null
+                                  ? Text(
+                                      _userData!.name.isNotEmpty
+                                          ? _userData!.name[0].toUpperCase()
+                                          : 'A',
+                                      style: const TextStyle(
+                                        fontSize: 32,
+                                        fontWeight: FontWeight.bold,
                                         color: Colors.blue,
-                                        shape: BoxShape.circle,
-                                        border: Border.all(color: Colors.white, width: 2),
                                       ),
-                                      padding: const EdgeInsets.all(6),
-                                      child: const Icon(Icons.camera_alt, color: Colors.white, size: 20),
-                                    ),
-                                  ),
-                                ),
-                              ],
+                                    )
+                                  : null,
                             ),
-                            const SizedBox(height: 16),
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Text(
-                                  _userData!.name,
-                                  style: const TextStyle(
-                                    fontSize: 24,
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.white,
-                                  ),
-                                ),
-                                const SizedBox(width: 8),
-                                GestureDetector(
-                                  onTap: _editName,
-                                  child: Container(
-                                    padding: const EdgeInsets.all(4),
-                                    decoration: BoxDecoration(
-                                      color: Colors.white.withOpacity(0.2),
-                                      shape: BoxShape.circle,
+                            if (_userData!.profileImageUrl != null)
+                              Positioned.fill(
+                                child: ClipOval(
+                                  child: CachedNetworkImage(
+                                    key: ValueKey(_imageRefreshKey),
+                                    imageUrl: _userData!.profileImageUrl!,
+                                    fit: BoxFit.cover,
+                                    placeholder: (context, url) => Center(
+                                      child: CircularProgressIndicator(strokeWidth: 2),
                                     ),
-                                    child: const Icon(
-                                      Icons.edit,
-                                      color: Colors.white,
-                                      size: 16,
+                                    errorWidget: (context, url, error) => Center(
+                                      child: Icon(Icons.error, color: Colors.red, size: 32),
                                     ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                            if (_userData!.bio != null) ...[
-                              const SizedBox(height: 8),
-                              Padding(
-                                padding: const EdgeInsets.symmetric(horizontal: 32),
-                                child: Text(
-                                  _userData!.bio!,
-                                  textAlign: TextAlign.center,
-                                  style: const TextStyle(
-                                    color: Colors.white70,
-                                    fontSize: 16,
                                   ),
                                 ),
                               ),
-                            ],
+                            if (_isUpdatingProfileImage)
+                              Container(
+                                width: 80,
+                                height: 80,
+                                decoration: BoxDecoration(
+                                  color: Colors.black.withOpacity(0.5),
+                                  shape: BoxShape.circle,
+                                ),
+                                child: const Center(
+                                  child: CircularProgressIndicator(
+                                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                  ),
+                                ),
+                              ),
+
                           ],
                         ),
-                      ),
+                        const SizedBox(width: 20),
+                        // Name and contact info
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                _userData!.name,
+                                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                                  color: AppColors.forestGreen,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              // Instagram
+                              Consumer<AuthProvider>(
+                                builder: (context, authProvider, child) {
+                                  final currentUser = authProvider.currentUser;
+                                  final isOwnProfile = currentUser?.uid == widget.userId;
+                                  
+                                  // Only show if Instagram is set OR if it's the user's own profile
+                                  if (_userData!.instagram?.isNotEmpty != true && !isOwnProfile) {
+                                    return const SizedBox.shrink();
+                                  }
+                                  
+                                  return Column(
+                                    children: [
+                                      GestureDetector(
+                                        onTap: () async {
+                                          final handle = _userData!.instagram;
+                                          if (handle != null && handle.isNotEmpty) {
+                                            final url = handle.startsWith('@')
+                                                ? 'https://instagram.com/${handle.substring(1)}'
+                                                : 'https://instagram.com/$handle';
+                                            await launchUrl(Uri.parse(url));
+                                          }
+                                        },
+                                        child: Row(
+                                          children: [
+                                            Icon(FontAwesomeIcons.instagram, color: AppColors.forestGreen, size: 20),
+                                            const SizedBox(width: 6),
+                                            Expanded(
+                                              child: Text(
+                                                _userData!.instagram?.isNotEmpty == true
+                                                    ? '@${_userData!.instagram!.replaceAll('@', '')}'
+                                                    : 'Add Instagram',
+                                                style: TextStyle(
+                                                  color: AppColors.forestGreen,
+                                                  fontSize: 15,
+                                                  decoration: TextDecoration.underline,
+                                                ),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                      const SizedBox(height: 8),
+                                    ],
+                                  );
+                                },
+                              ),
+                              // Email
+                              Consumer<AuthProvider>(
+                                builder: (context, authProvider, child) {
+                                  final currentUser = authProvider.currentUser;
+                                  final isOwnProfile = currentUser?.uid == widget.userId;
+                                  
+                                  // Always show email (either contact email or login email)
+                                  return GestureDetector(
+                                    onTap: () async {
+                                      final email = _userData!.contactEmail ?? _userData!.email;
+                                      final url = 'mailto:$email';
+                                      await launchUrl(Uri.parse(url));
+                                    },
+                                    child: Row(
+                                      children: [
+                                        Icon(Icons.email, color: AppColors.forestGreen, size: 20),
+                                        const SizedBox(width: 6),
+                                        Expanded(
+                                          child: Text(
+                                            _userData!.contactEmail?.isNotEmpty == true
+                                                ? _userData!.contactEmail!
+                                                : _userData!.email,
+                                            style: TextStyle(
+                                              color: AppColors.forestGreen,
+                                              fontSize: 15,
+                                              decoration: TextDecoration.underline,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  );
+                                },
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
                     ),
                   ),
+                ),
+
+                // Edit Profile Button (only show to profile owner or admin for test users)
+                Consumer<AuthProvider>(
+                  builder: (context, authProvider, child) {
+                    final currentUser = authProvider.currentUser;
+                    if (currentUser == null) return const SliverToBoxAdapter(child: SizedBox.shrink());
+                    
+                    // Check if current user can edit this profile
+                    final canEdit = currentUser.uid == widget.userId || 
+                        (widget.userId.startsWith('test_') && authProvider.userData?.isAdmin == true);
+                    
+                    if (!canEdit) return const SliverToBoxAdapter(child: SizedBox.shrink());
+                    
+                    return SliverToBoxAdapter(
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+                        child: Align(
+                          alignment: Alignment.centerLeft,
+                          child: ElevatedButton(
+                            onPressed: _showEditProfileDialog,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppColors.forestGreen,
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                            ),
+                            child: const Text('Edit Profile'),
+                          ),
+                        ),
+                      ),
+                    );
+                  },
                 ),
 
                 // Stats Cards
                 SliverToBoxAdapter(
                   child: Container(
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    child: Row(
                       children: [
-                        Row(
-                          children: [
-                            Expanded(
-                              child: _buildStatCard(
-                                'Done',
-                                _userData!.portraitsCompleted.toString(),
-                                AppColors.forestGreen,
-                              ),
-                            ),
-                            const SizedBox(width: 16),
-                            Expanded(
-                              child: _buildStatCard(
-                                'Left',
-                                (100 - _userData!.portraitsCompleted).toString(),
-                                AppColors.rustyOrange,
-                              ),
-                            ),
-                          ],
+                        Expanded(
+                          child: _buildStatCard(
+                            'Done',
+                            _userData!.portraitsCompleted.toString(),
+                            AppColors.forestGreen,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: _buildStatCard(
+                            'Left',
+                            (100 - _userData!.portraitsCompleted).toString(),
+                            AppColors.rustyOrange,
+                          ),
                         ),
                       ],
                     ),
@@ -442,21 +524,23 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Widget _buildStatCard(String title, String value, Color color) {
     return Card(
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         child: Column(
+          mainAxisSize: MainAxisSize.min,
           children: [
             Text(
               value,
               style: TextStyle(
-                fontSize: 36,
+                fontSize: 28,
                 fontWeight: FontWeight.bold,
                 color: color,
               ),
             ),
+            const SizedBox(height: 2),
             Text(
               title,
               style: TextStyle(
-                fontSize: 16,
+                fontSize: 14,
                 color: AppColors.forestGreen.withOpacity(0.7),
               ),
             ),
@@ -547,5 +631,257 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
     print('Using original URL (no conversion): $originalUrl');
     return originalUrl;
+  }
+
+  void _showEditProfileDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Edit Profile'),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Profile Picture Section
+              const Text(
+                'Profile Picture',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+              ),
+              const SizedBox(height: 8),
+              // Show current profile picture
+              if (_userData!.profileImageUrl != null)
+                CircleAvatar(
+                  radius: 30,
+                  backgroundImage: CachedNetworkImageProvider(_userData!.profileImageUrl!),
+                )
+              else
+                CircleAvatar(
+                  radius: 30,
+                  backgroundColor: Colors.grey[300],
+                  child: Text(
+                    _userData!.name.isNotEmpty ? _userData!.name[0].toUpperCase() : 'A',
+                    style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                  ),
+                ),
+              const SizedBox(height: 8),
+              ElevatedButton.icon(
+                onPressed: () {
+                  Navigator.of(context).pop();
+                  _pickAndUploadProfileImage();
+                },
+                icon: const Icon(Icons.camera_alt, size: 18),
+                label: const Text('Change Picture'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.forestGreen,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  minimumSize: const Size(0, 36),
+                ),
+              ),
+              const SizedBox(height: 20),
+              
+              // Name Section
+              const Text(
+                'Name',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+              ),
+              const SizedBox(height: 8),
+              // Show current name
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.grey[100],
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.grey[300]!),
+                ),
+                child: Text(
+                  _userData!.name.isNotEmpty ? _userData!.name : 'No name set',
+                  style: TextStyle(
+                    fontSize: 16,
+                    color: _userData!.name.isNotEmpty ? Colors.black87 : Colors.grey[600],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 8),
+              ElevatedButton.icon(
+                onPressed: () {
+                  Navigator.of(context).pop();
+                  _editName();
+                },
+                icon: const Icon(Icons.edit, size: 18),
+                label: const Text('Edit Name'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.forestGreen,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  minimumSize: const Size(0, 36),
+                ),
+              ),
+              const SizedBox(height: 20),
+              
+              // Instagram Section
+              const Text(
+                'Instagram Handle',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+              ),
+              const SizedBox(height: 8),
+              // Show current Instagram handle
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.grey[100],
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.grey[300]!),
+                ),
+                child: Row(
+                  children: [
+                    Icon(FontAwesomeIcons.instagram, color: AppColors.forestGreen, size: 16),
+                    const SizedBox(width: 8),
+                    Text(
+                      _userData!.instagram?.isNotEmpty == true
+                          ? '@${_userData!.instagram!.replaceAll('@', '')}'
+                          : 'No Instagram handle set',
+                      style: TextStyle(
+                        fontSize: 16,
+                        color: _userData!.instagram?.isNotEmpty == true ? Colors.black87 : Colors.grey[600],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 8),
+              ElevatedButton.icon(
+                onPressed: () async {
+                  Navigator.of(context).pop();
+                  final newHandle = await _showEditDialog(
+                    context,
+                    title: 'Edit Instagram',
+                    initialValue: _userData!.instagram ?? '',
+                    hintText: 'Enter Instagram handle',
+                    prefixText: '@',
+                  );
+                  if (newHandle != null) {
+                    await _userService.updateUserProfile(
+                      userId: widget.userId,
+                      instagram: newHandle,
+                    );
+                    await _loadUserData();
+                  }
+                },
+                icon: const Icon(Icons.edit, size: 18),
+                label: const Text('Edit Instagram'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.forestGreen,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  minimumSize: const Size(0, 36),
+                ),
+              ),
+              const SizedBox(height: 20),
+              
+              // Email Section
+              const Text(
+                'Contact Email',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+              ),
+              const SizedBox(height: 8),
+              // Show current email
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.grey[100],
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.grey[300]!),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.email, color: AppColors.forestGreen, size: 16),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        _userData!.contactEmail?.isNotEmpty == true
+                            ? _userData!.contactEmail!
+                            : _userData!.email,
+                        style: const TextStyle(fontSize: 16, color: Colors.black87),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 8),
+              ElevatedButton.icon(
+                onPressed: () async {
+                  Navigator.of(context).pop();
+                  final newEmail = await _showEditDialog(
+                    context,
+                    title: 'Edit Contact Email',
+                    initialValue: _userData!.contactEmail ?? _userData!.email,
+                    hintText: 'Enter contact email',
+                  );
+                  if (newEmail != null) {
+                    await _userService.updateUserProfile(
+                      userId: widget.userId,
+                      contactEmail: newEmail,
+                    );
+                    await _loadUserData();
+                  }
+                },
+                icon: const Icon(Icons.edit, size: 18),
+                label: const Text('Edit Email'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.forestGreen,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  minimumSize: const Size(0, 36),
+                ),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Close'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<String?> _showEditDialog(BuildContext context, {
+    required String title,
+    required String initialValue,
+    required String hintText,
+    String? prefixText,
+  }) {
+    final TextEditingController controller = TextEditingController(text: initialValue);
+
+    return showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(title),
+        content: TextField(
+          controller: controller,
+          decoration: InputDecoration(
+            labelText: hintText,
+            prefixText: prefixText,
+          ),
+          autofocus: true,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(controller.text.trim()),
+            child: const Text('Save'),
+          ),
+        ],
+      ),
+    );
   }
 } 
