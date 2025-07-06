@@ -38,5 +38,15 @@ service cloud.firestore {
       // Any authenticated user can update a session (for RSVPs and submissions)
       allow update: if request.auth != null;
     }
+
+    // Upgrade Requests collection
+    match /upgrade_requests/{requestId} {
+      // Allow authenticated users to create a request for themselves
+      allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
+
+      // Allow only admins to read, update, or delete upgrade requests
+      allow read, update, delete: if request.auth != null &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true;
+    }
   }
 } 

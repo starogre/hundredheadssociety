@@ -201,13 +201,43 @@ class _CommunityScreenState extends State<CommunityScreen>
                                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                     children: [
                                       Expanded(
-                                        child: Text(
-                                          user.name,
-                                          style: const TextStyle(
-                                            fontWeight: FontWeight.bold,
-                                            fontSize: 16,
-                                          ),
-                                          overflow: TextOverflow.ellipsis,
+                                        child: Row(
+                                          children: [
+                                            Text(
+                                              user.name,
+                                              style: const TextStyle(
+                                                fontWeight: FontWeight.bold,
+                                                fontSize: 16,
+                                              ),
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
+                                            const SizedBox(width: 8),
+                                            // Role Badge
+                                            Container(
+                                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                              decoration: BoxDecoration(
+                                                color: user.isArtist 
+                                                    ? Colors.blue.shade100 
+                                                    : Colors.green.shade100,
+                                                borderRadius: BorderRadius.circular(12),
+                                                border: Border.all(
+                                                  color: user.isArtist 
+                                                      ? Colors.blue.shade300 
+                                                      : Colors.green.shade300,
+                                                ),
+                                              ),
+                                              child: Text(
+                                                user.isArtist ? 'Artist' : 'Appreciator',
+                                                style: TextStyle(
+                                                  fontSize: 10,
+                                                  fontWeight: FontWeight.w600,
+                                                  color: user.isArtist 
+                                                      ? Colors.blue.shade700 
+                                                      : Colors.green.shade700,
+                                                ),
+                                              ),
+                                            ),
+                                          ],
                                         ),
                                       ),
                                       Text(
@@ -453,14 +483,46 @@ class _CommunityScreenState extends State<CommunityScreen>
                                         ),
                                         const SizedBox(width: 8),
                                         Expanded(
-                                          child: Text(
-                                            user?.name ?? 'Anonymous',
-                                            style: TextStyle(
-                                              color: AppColors.forestGreen.withValues(alpha: 0.7),
-                                              fontSize: 14,
-                                            ),
-                                            maxLines: 1,
-                                            overflow: TextOverflow.ellipsis,
+                                          child: Row(
+                                            children: [
+                                              Text(
+                                                user?.name ?? 'Anonymous',
+                                                style: TextStyle(
+                                                  color: AppColors.forestGreen.withValues(alpha: 0.7),
+                                                  fontSize: 14,
+                                                ),
+                                                maxLines: 1,
+                                                overflow: TextOverflow.ellipsis,
+                                              ),
+                                              if (user != null) ...[
+                                                const SizedBox(width: 6),
+                                                // Role Badge
+                                                Container(
+                                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+                                                  decoration: BoxDecoration(
+                                                    color: user.isArtist 
+                                                        ? Colors.blue.shade100 
+                                                        : Colors.green.shade100,
+                                                    borderRadius: BorderRadius.circular(8),
+                                                    border: Border.all(
+                                                      color: user.isArtist 
+                                                          ? Colors.blue.shade300 
+                                                          : Colors.green.shade300,
+                                                    ),
+                                                  ),
+                                                  child: Text(
+                                                    user.isArtist ? 'Artist' : 'Appreciator',
+                                                    style: TextStyle(
+                                                      fontSize: 8,
+                                                      fontWeight: FontWeight.w600,
+                                                      color: user.isArtist 
+                                                          ? Colors.blue.shade700 
+                                                          : Colors.green.shade700,
+                                                    ),
+                                                  ),
+                                                ),
+                                              ],
+                                            ],
                                           ),
                                         ),
                                       ],

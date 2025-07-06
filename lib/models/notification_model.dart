@@ -74,6 +74,8 @@ class NotificationModel {
   bool get isRSVPConfirmation => type == 'rsvp_confirmation';
   bool get isNewSubmission => type == 'new_submission';
   bool get isSessionCompleted => type == 'session_completed';
+  bool get isUpgradeRequest => type == 'upgrade_request';
+  bool get isNewArtistSignup => type == 'new_artist_signup';
 
   // Get session date from data if available
   DateTime? get sessionDate {
@@ -89,4 +91,13 @@ class NotificationModel {
   String? get portraitTitle => data?['portraitTitle'];
   String? get sessionId => data?['sessionId'];
   int? get totalSubmissions => data?['totalSubmissions'];
+
+  // Get upgrade request info from data if available
+  String? get requestingUserId => data?['requestingUserId'];
+  String? get requestingUserName => data?['requestingUserName'];
+  String? get action => data?['action'];
+
+  // Get new artist signup info from data if available
+  String? get newUserId => data?['newUserId'];
+  String? get newUserName => data?['newUserName'];
 } 

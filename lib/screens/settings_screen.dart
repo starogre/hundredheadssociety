@@ -14,11 +14,12 @@ class SettingsScreen extends StatelessWidget {
         builder: (context, authProvider, child) {
           final userData = authProvider.userData;
           final isAdmin = userData?.isAdmin ?? false;
+          final isModerator = userData?.isModerator ?? false;
           
           return ListView(
             children: [
-              // Only show User Management for admins
-              if (isAdmin)
+              // Show User Management for admins and moderators
+              if (isAdmin || isModerator)
                 ListTile(
                   leading: const Icon(Icons.manage_accounts),
                   title: const Text('User Management'),

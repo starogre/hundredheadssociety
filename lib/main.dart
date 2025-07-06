@@ -12,6 +12,7 @@ import 'screens/splash_screen.dart';
 import 'screens/waiting_approval_screen.dart';
 import 'theme/app_theme.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'screens/profile_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -38,6 +39,12 @@ class MyApp extends StatelessWidget {
       child: MaterialApp(
         title: '100 Heads Society',
         theme: AppTheme.lightTheme,
+        routes: {
+          '/profile': (context) {
+            final userId = ModalRoute.of(context)!.settings.arguments as String;
+            return ProfileScreen(userId: userId);
+          },
+        },
         home: FutureBuilder(
           future: Firebase.initializeApp(
             options: DefaultFirebaseOptions.currentPlatform,

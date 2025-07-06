@@ -17,6 +17,7 @@ class AuthService {
     required String email,
     required String password,
     required String name,
+    required String userRole,
   }) async {
     try {
       print('Attempting to create user with email: $email');
@@ -41,11 +42,20 @@ class AuthService {
             'portraitIds': <String>[],
             'portraitsCompleted': 0,
             'isAdmin': false,
-            'status': 'pending',
+            'status': 'approved',
+            'userRole': userRole,
+            'isModerator': false,
+            'awards': <String>[],
+            'totalVotesCast': 0,
           };
           
           await docRef.set(data);
           print('User document created successfully');
+
+          // Send notification to admins if this is a new artist signup
+          if (userRole == 'artist') {
+            await _sendNewArtistSignupNotification(result.user!.uid, name);
+          }
         } catch (firestoreError) {
           print('Firestore error: $firestoreError');
           print('Firestore error type: ${firestoreError.runtimeType}');
@@ -56,7 +66,9 @@ class AuthService {
             await _firestore.collection('users').doc(result.user!.uid).set({
               'email': email,
               'name': name,
-              'status': 'pending',
+              'status': 'approved',
+              'userRole': userRole,
+              'isModerator': false,
             });
             print('Minimal user document created');
           } catch (minimalError) {
@@ -72,6 +84,52 @@ class AuthService {
       print('Error in signUpWithEmailAndPassword: $e');
       print('Error type: ${e.runtimeType}');
       rethrow;
+    }
+  }
+
+  // Send notification to admins for new artist signup
+  Future<void> _sendNewArtistSignupNotification(String userId, String userName) async {
+    try {
+      // Get all admin users
+      final adminUsers = await _firestore
+          .collection('users')
+          .where('isAdmin', isEqualTo: true)
+          .get();
+
+      // Create notification for each admin
+      final batch = _firestore.batch();
+      
+      for (final adminDoc in adminUsers.docs) {
+        final adminId = adminDoc.id;
+        
+        // Create notification in admin's notifications subcollection
+        final notificationRef = _firestore
+            .collection('users')
+            .doc(adminId)
+            .collection('notifications')
+            .doc();
+
+        final notification = {
+          'userId': adminId,
+          'type': 'new_artist_signup',
+          'title': 'New Artist Registration',
+          'message': '$userName has signed up as an artist',
+          'createdAt': Timestamp.fromDate(DateTime.now()),
+          'read': false,
+          'data': {
+            'newUserId': userId,
+            'newUserName': userName,
+            'action': 'view_approvals',
+          },
+        };
+
+        batch.set(notificationRef, notification);
+      }
+
+      await batch.commit();
+    } catch (e) {
+      // Log error but don't fail the signup process
+      print('Error sending admin notifications for new artist: $e');
     }
   }
 
@@ -117,6 +175,7 @@ class AuthService {
     required String userId,
     required String email,
     required String name,
+    String userRole = 'artist',
   }) async {
     try {
       print('Creating user document with raw operation...');
@@ -132,7 +191,11 @@ class AuthService {
         'portraitIds': <String>[],
         'portraitsCompleted': 0,
         'isAdmin': false,
-        'status': 'pending',
+        'status': 'approved',
+        'userRole': userRole,
+        'isModerator': false,
+        'awards': <String>[],
+        'totalVotesCast': 0,
       };
       
       await docRef.set(data);
@@ -147,7 +210,9 @@ class AuthService {
         await _firestore.collection('users').doc(userId).set({
           'email': email,
           'name': name,
-          'status': 'pending',
+          'status': 'approved',
+          'userRole': userRole,
+          'isModerator': false,
         });
         print('Minimal user document created');
       } catch (minimalError) {

@@ -99,6 +99,58 @@ class _DashboardScreenState extends State<DashboardScreen> {
             );
           }
 
+          // Get user data and determine available tabs based on role
+          final userData = authProvider.userData;
+          final isArtAppreciator = userData?.isArtAppreciator ?? true;
+          
+          // Determine available tabs based on user role
+          List<Widget> availableTabs = [];
+          List<BottomNavigationBarItem> navigationItems = [];
+          
+          if (isArtAppreciator) {
+            // Art appreciators only see Community and Profile
+            availableTabs = [
+              const CommunityScreen(),
+              ProfileScreen(userId: authProvider.currentUser!.uid),
+            ];
+            navigationItems = [
+              const BottomNavigationBarItem(
+                icon: Icon(Icons.people),
+                label: 'Community',
+              ),
+              const BottomNavigationBarItem(
+                icon: Icon(Icons.person),
+                label: 'Profile',
+              ),
+            ];
+          } else {
+            // Artists see all tabs
+            availableTabs = [
+              _buildDashboardTab(authProvider),
+              const CommunityScreen(),
+              ProfileScreen(userId: authProvider.currentUser!.uid),
+              const WeeklySessionsScreen(),
+            ];
+            navigationItems = [
+              const BottomNavigationBarItem(
+                icon: Icon(Icons.dashboard),
+                label: 'My Heads',
+              ),
+              const BottomNavigationBarItem(
+                icon: Icon(Icons.people),
+                label: 'Community',
+              ),
+              const BottomNavigationBarItem(
+                icon: Icon(Icons.person),
+                label: 'Profile',
+              ),
+              const BottomNavigationBarItem(
+                icon: Icon(Icons.event),
+                label: 'Weekly Sessions',
+              ),
+            ];
+          }
+
           // Determine AppBar title and actions based on selected tab
           String appBarTitle = '';
           List<Widget> appBarActions = [];
@@ -114,41 +166,59 @@ class _DashboardScreenState extends State<DashboardScreen> {
             ),
           );
           
-          if (_selectedIndex == 0) {
-            appBarTitle = '100 Heads Society';
-          } else if (_selectedIndex == 1) {
-            appBarTitle = 'Community';
-          } else if (_selectedIndex == 2) {
-            appBarTitle = authProvider.userData?.name ?? 'Profile';
-            appBarActions.add(
-              IconButton(
-                icon: const Icon(Icons.settings),
-                onPressed: () {
-                  Navigator.of(context).push(
-                    MaterialPageRoute(builder: (context) => const SettingsScreen()),
-                  );
-                },
-              ),
-            );
-            appBarActions.add(
-              IconButton(
-                icon: const Icon(Icons.notification_add),
-                onPressed: () {
-                  final notificationProvider = Provider.of<NotificationProvider>(context, listen: false);
-                  if (authProvider.currentUser != null) {
-                    notificationProvider.createTestNotification(authProvider.currentUser!.uid);
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Test notification created!'),
-                        backgroundColor: AppColors.forestGreen,
-                      ),
+          if (isArtAppreciator) {
+            if (_selectedIndex == 0) {
+              appBarTitle = 'Community';
+            } else if (_selectedIndex == 1) {
+              appBarTitle = userData?.name ?? 'Profile';
+              appBarActions.add(
+                IconButton(
+                  icon: const Icon(Icons.settings),
+                  onPressed: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(builder: (context) => const SettingsScreen()),
                     );
-                  }
-                },
-              ),
-            );
-          } else if (_selectedIndex == 3) {
-            appBarTitle = 'Weekly Sessions';
+                  },
+                ),
+              );
+            }
+          } else {
+            if (_selectedIndex == 0) {
+              appBarTitle = '100 Heads Society';
+            } else if (_selectedIndex == 1) {
+              appBarTitle = 'Community';
+            } else if (_selectedIndex == 2) {
+              appBarTitle = userData?.name ?? 'Profile';
+              appBarActions.add(
+                IconButton(
+                  icon: const Icon(Icons.settings),
+                  onPressed: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(builder: (context) => const SettingsScreen()),
+                    );
+                  },
+                ),
+              );
+              appBarActions.add(
+                IconButton(
+                  icon: const Icon(Icons.notification_add),
+                  onPressed: () {
+                    final notificationProvider = Provider.of<NotificationProvider>(context, listen: false);
+                    if (authProvider.currentUser != null) {
+                      notificationProvider.createTestNotification(authProvider.currentUser!.uid);
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Test notification created!'),
+                          backgroundColor: AppColors.forestGreen,
+                        ),
+                      );
+                    }
+                  },
+                ),
+              );
+            } else if (_selectedIndex == 3) {
+              appBarTitle = 'Weekly Sessions';
+            }
           }
 
           return Scaffold(
@@ -158,12 +228,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             ),
             body: IndexedStack(
               index: _selectedIndex,
-              children: [
-                _buildDashboardTab(authProvider),
-                const CommunityScreen(),
-                ProfileScreen(userId: authProvider.currentUser!.uid),
-                const WeeklySessionsScreen(),
-              ],
+              children: availableTabs,
             ),
             bottomNavigationBar: BottomNavigationBar(
               currentIndex: _selectedIndex,
@@ -174,32 +239,17 @@ class _DashboardScreenState extends State<DashboardScreen> {
               },
               selectedItemColor: AppColors.rustyOrange,
               unselectedItemColor: AppColors.forestGreen,
-              items: const [
-                BottomNavigationBarItem(
-                  icon: Icon(Icons.dashboard),
-                  label: 'My Heads',
-                ),
-                BottomNavigationBarItem(
-                  icon: Icon(Icons.people),
-                  label: 'Community',
-                ),
-                BottomNavigationBarItem(
-                  icon: Icon(Icons.person),
-                  label: 'Profile',
-                ),
-                BottomNavigationBarItem(
-                  icon: Icon(Icons.event),
-                  label: 'Weekly Sessions',
-                ),
-              ],
+              items: navigationItems,
             ),
-            floatingActionButton: _selectedIndex == 0
-                ? FloatingActionButton(
-                    onPressed: () => _showAddPortraitDialog(context, authProvider, (authProvider.userData?.portraitsCompleted ?? 0) + 1),
-                    backgroundColor: AppColors.rustyOrange,
-                    child: const Icon(Icons.add_a_photo),
-                  )
-                : null,
+            floatingActionButton: isArtAppreciator 
+                ? null // No FAB for art appreciators
+                : _selectedIndex == 0
+                    ? FloatingActionButton(
+                        onPressed: () => _showAddPortraitDialog(context, authProvider, (authProvider.userData?.portraitsCompleted ?? 0) + 1),
+                        backgroundColor: AppColors.rustyOrange,
+                        child: const Icon(Icons.add_a_photo),
+                      )
+                    : null,
           );
         },
       ),

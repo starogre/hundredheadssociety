@@ -35,20 +35,104 @@ class _ProfileScreenState extends State<ProfileScreen> {
   int _lastPortraitCount = 0;
   bool _isUpdatingProfileImage = false;
   int _imageRefreshKey = 0;
+  bool _justSubmittedUpgradeRequest = false;
 
   @override
   void initState() {
     super.initState();
+    print('DEBUG: ProfileScreen initState called for userId: ${widget.userId}');
     _loadUserData();
   }
 
   Future<void> _loadUserData() async {
-    final userData = await _userService.getUserById(widget.userId);
-    if (mounted) {
-      setState(() {
-        _userData = userData;
-      });
+    try {
+      print('DEBUG: Loading user data for userId: ${widget.userId}');
+      final userData = await _userService.getUserById(widget.userId);
+      print('DEBUG: User data loaded: ${userData?.name}, role: ${userData?.userRole}, isArtAppreciator: ${userData?.isArtAppreciator}');
+      if (mounted) {
+        setState(() {
+          _userData = userData;
+        });
+      }
+    } catch (e) {
+      print('Error loading user data: $e');
     }
+  }
+
+  Future<void> _requestArtistUpgrade() async {
+    print('=== PROFILE SCREEN: Upgrade button clicked ===');
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Request Artist Upgrade'),
+        content: const Text(
+          'This will send a request to the community managers to upgrade your account to an Artist role. '
+          'You\'ll be notified once your request is approved or denied.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              print('User cancelled upgrade request');
+              Navigator.of(context).pop();
+            },
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              print('User confirmed upgrade request');
+              Navigator.of(context).pop();
+              
+              try {
+                print('Getting current user from AuthProvider...');
+                final authProvider = Provider.of<AuthProvider>(context, listen: false);
+                final currentUser = authProvider.currentUser;
+                
+                if (currentUser == null) {
+                  print('ERROR: No current user found');
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Error: No user logged in')),
+                  );
+                  return;
+                }
+                
+                print('Current user ID: ${currentUser.uid}');
+                print('Current user email: ${currentUser.email}');
+                print('Current user display name: [38;5;9m${currentUser.displayName}[0m');
+                print('Current user Firestore name: ${_userData?.name}');
+                
+                print('Calling createUpgradeRequest...');
+                await _userService.createUpgradeRequest(
+                  userId: currentUser.uid,
+                  userEmail: currentUser.email ?? '',
+                  userName: _userData?.name ?? 'Unknown User',
+                );
+                
+                print('Upgrade request completed successfully');
+                setState(() {
+                  _justSubmittedUpgradeRequest = true;
+                });
+                
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Upgrade request submitted successfully!'),
+                    backgroundColor: Colors.green,
+                  ),
+                );
+              } catch (e) {
+                print('ERROR in _requestArtistUpgrade: $e');
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Error: ${e.toString()}'),
+                    backgroundColor: Colors.red,
+                  ),
+                );
+              }
+            },
+            child: const Text('Submit Request'),
+          ),
+        ],
+      ),
+    );
   }
 
   Future<void> _pickAndUploadProfileImage() async {
@@ -261,6 +345,51 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                   fontWeight: FontWeight.bold,
                                 ),
                               ),
+                              Consumer<AuthProvider>(
+                                builder: (context, authProvider, child) {
+                                  final viewer = authProvider.userData;
+                                  final showBadges = viewer?.isAdmin == true || viewer?.isModerator == true;
+                                  if (!showBadges) return const SizedBox.shrink();
+                                  return Row(
+                                    children: [
+                                      if (_userData?.isAdmin == true)
+                                        Container(
+                                          margin: const EdgeInsets.only(top: 6, right: 8),
+                                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                          decoration: BoxDecoration(
+                                            color: AppColors.rustyOrange,
+                                            borderRadius: BorderRadius.circular(12),
+                                          ),
+                                          child: const Text(
+                                            'ADMIN',
+                                            style: TextStyle(
+                                              color: Colors.white,
+                                              fontSize: 10,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                        ),
+                                      if (_userData?.isModerator == true)
+                                        Container(
+                                          margin: const EdgeInsets.only(top: 6, right: 8),
+                                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                          decoration: BoxDecoration(
+                                            color: Colors.purple,
+                                            borderRadius: BorderRadius.circular(12),
+                                          ),
+                                          child: const Text(
+                                            'MODERATOR',
+                                            style: TextStyle(
+                                              color: Colors.white,
+                                              fontSize: 10,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                        ),
+                                    ],
+                                  );
+                                },
+                              ),
                               const SizedBox(height: 8),
                               // Instagram
                               Consumer<AuthProvider>(
@@ -351,6 +480,127 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   ),
                 ),
 
+                // Art Appreciator Upgrade Request (only show to art appreciators viewing their own profile)
+                Consumer<AuthProvider>(
+                  builder: (context, authProvider, child) {
+                    print('DEBUG: Consumer<AuthProvider> builder called');
+                    final currentUser = authProvider.currentUser;
+                    print('DEBUG: currentUser: ${currentUser?.uid}');
+                    print('DEBUG: _userData: ${_userData?.name}, role: ${_userData?.userRole}, isArtAppreciator: ${_userData?.isArtAppreciator}');
+                    
+                    if (currentUser == null) {
+                      print('DEBUG: No current user found');
+                      return const SliverToBoxAdapter(child: SizedBox.shrink());
+                    }
+                    
+                    // Only show to art appreciators viewing their own profile
+                    final isOwnProfile = currentUser.uid == widget.userId;
+                    final isArtAppreciator = _userData?.isArtAppreciator ?? false;
+                    
+                    print('DEBUG: Upgrade section - isOwnProfile: $isOwnProfile, isArtAppreciator: $isArtAppreciator');
+                    print('DEBUG: currentUser.uid: ${currentUser.uid}, widget.userId: ${widget.userId}');
+                    print('DEBUG: _userData?.userRole: ${_userData?.userRole}');
+                    print('DEBUG: _userData?.isArtAppreciator: ${_userData?.isArtAppreciator}');
+                    
+                    if (!isOwnProfile || !isArtAppreciator) {
+                      print('DEBUG: Not showing upgrade section - conditions not met');
+                      print('DEBUG: !isOwnProfile: ${!isOwnProfile}, !isArtAppreciator: ${!isArtAppreciator}');
+                      return const SliverToBoxAdapter(child: SizedBox.shrink());
+                    }
+
+                    print('DEBUG: Showing upgrade section');
+                    return FutureBuilder<bool>(
+                      future: _userService.hasPendingUpgradeRequest(currentUser.uid),
+                      builder: (context, snapshot) {
+                        final hasPending = snapshot.data ?? false;
+                        final shouldDisable = hasPending || _justSubmittedUpgradeRequest;
+                        print('DEBUG: hasPending: $hasPending, _justSubmittedUpgradeRequest: $_justSubmittedUpgradeRequest, shouldDisable: $shouldDisable');
+                        
+                        return SliverToBoxAdapter(
+                          child: Container(
+                            margin: const EdgeInsets.all(16),
+                            padding: const EdgeInsets.all(20),
+                            decoration: BoxDecoration(
+                              color: Colors.orange.shade50,
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(color: Colors.orange.shade200),
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    Icon(
+                                      Icons.brush,
+                                      color: Colors.orange.shade700,
+                                      size: 24,
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      'Want to Create Art?',
+                                      style: TextStyle(
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.orange.shade700,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 12),
+                                Text(
+                                  'Upgrade to an Artist account to create and submit your own portraits, participate in weekly sessions, and join the full 100 Heads Society experience.',
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    color: Colors.orange.shade800,
+                                  ),
+                                ),
+                                const SizedBox(height: 16),
+                                if (shouldDisable)
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+                                    decoration: BoxDecoration(
+                                      color: Colors.orange.shade100,
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    child: Row(
+                                      children: [
+                                        Icon(Icons.hourglass_top, color: Colors.orange.shade700),
+                                        const SizedBox(width: 8),
+                                        const Expanded(
+                                          child: Text(
+                                            'You have already submitted an upgrade request. Please wait for review.',
+                                            style: TextStyle(color: Colors.orange, fontWeight: FontWeight.bold),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  )
+                                else
+                                  ElevatedButton(
+                                    onPressed: () {
+                                      print('DEBUG: Upgrade button clicked!');
+                                      print('DEBUG: About to call _requestArtistUpgrade');
+                                      _requestArtistUpgrade();
+                                    },
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: Colors.orange.shade600,
+                                      foregroundColor: Colors.white,
+                                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                    ),
+                                    child: const Text('Request Artist Upgrade'),
+                                  ),
+                              ],
+                            ),
+                          ),
+                        );
+                      },
+                    );
+                  },
+                ),
+
                 // Edit Profile Button (only show to profile owner or admin for test users)
                 Consumer<AuthProvider>(
                   builder: (context, authProvider, child) {
@@ -386,131 +636,199 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   },
                 ),
 
-                // Stats Cards
-                SliverToBoxAdapter(
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: _buildStatCard(
-                            'Done',
-                            _userData!.portraitsCompleted.toString(),
-                            AppColors.forestGreen,
+                // Stats Cards (only show for artists or when viewing own profile)
+                Consumer<AuthProvider>(
+                  builder: (context, authProvider, child) {
+                    final currentUser = authProvider.currentUser;
+                    final isOwnProfile = currentUser?.uid == widget.userId;
+                    final isArtist = _userData?.isArtist ?? false;
+                    
+                    // Show stats for artists or when viewing own profile
+                    if (isArtist || isOwnProfile) {
+                      return SliverToBoxAdapter(
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                          child: Row(
+                            children: [
+                              Expanded(
+                                child: _buildStatCard(
+                                  'Done',
+                                  _userData!.portraitsCompleted.toString(),
+                                  AppColors.forestGreen,
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: _buildStatCard(
+                                  'Left',
+                                  (100 - _userData!.portraitsCompleted).toString(),
+                                  AppColors.rustyOrange,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: _buildStatCard(
-                            'Left',
-                            (100 - _userData!.portraitsCompleted).toString(),
-                            AppColors.rustyOrange,
+                      );
+                    } else {
+                      // For art appreciators viewing other profiles, show limited info
+                      return SliverToBoxAdapter(
+                        child: Container(
+                          margin: const EdgeInsets.all(16),
+                          padding: const EdgeInsets.all(20),
+                          decoration: BoxDecoration(
+                            color: Colors.grey.shade50,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: Colors.grey.shade200),
                           ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-
-                // Portraits Grid
-                Consumer<PortraitProvider>(
-                  builder: (context, portraitProvider, child) {
-                    return StreamBuilder<List<PortraitModel>>(
-                      stream: portraitProvider.getUserPortraitsReversed(widget.userId),
-                      builder: (context, snapshot) {
-                        if (snapshot.hasError) {
-                          return SliverToBoxAdapter(
-                            child: Center(
-                              child: Text('Error: ${snapshot.error}'),
-                            ),
-                          );
-                        }
-
-                        if (!snapshot.hasData) {
-                          return const SliverToBoxAdapter(
-                            child: Center(
-                              child: CircularProgressIndicator(),
-                            ),
-                          );
-                        }
-
-                        final portraits = snapshot.data!;
-                        _lastPortraitCount = portraits.length;
-
-                        if (portraits.isEmpty) {
-                          return SliverToBoxAdapter(
-                            child: Center(
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
                                 children: [
                                   Icon(
-                                    Icons.photo_library,
-                                    size: 64,
-                                    color: AppColors.forestGreen.withOpacity(0.5),
+                                    Icons.info_outline,
+                                    color: Colors.grey.shade600,
+                                    size: 20,
                                   ),
-                                  const SizedBox(height: 16),
+                                  const SizedBox(width: 8),
                                   Text(
-                                    'No portraits yet',
+                                    'Art Appreciator Profile',
                                     style: TextStyle(
-                                      fontSize: 18,
-                                      color: AppColors.forestGreen,
+                                      fontSize: 16,
                                       fontWeight: FontWeight.bold,
+                                      color: Colors.grey.shade700,
                                     ),
                                   ),
                                 ],
                               ),
-                            ),
-                          );
-                        }
+                              const SizedBox(height: 12),
+                              Text(
+                                'This user is an art appreciator. Only basic profile information is displayed.',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  color: Colors.grey.shade600,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    }
+                  },
+                ),
 
-                        return SliverPadding(
-                          padding: const EdgeInsets.all(16),
-                          sliver: SliverGrid(
-                            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                              crossAxisCount: 2,
-                              mainAxisSpacing: 16,
-                              crossAxisSpacing: 16,
-                              childAspectRatio: 1,
-                            ),
-                            delegate: SliverChildBuilderDelegate(
-                              (context, index) {
-                                final portrait = portraits[index];
-                                return GestureDetector(
-                                  onTap: () {
-                                    showDialog(
-                                      context: context,
-                                      builder: (context) => PortraitDetailsDialog(
-                                        portrait: portrait,
-                                        user: _userData,
-                                        currentUserId: widget.userId,
-                                        onPortraitModified: () {
-                                          setState(() {});
-                                        },
+                // Portraits Grid (only show for artists or when viewing own profile)
+                Consumer<AuthProvider>(
+                  builder: (context, authProvider, child) {
+                    final currentUser = authProvider.currentUser;
+                    final isOwnProfile = currentUser?.uid == widget.userId;
+                    final isArtist = _userData?.isArtist ?? false;
+                    
+                    // Only show portraits for artists or when viewing own profile
+                    if (!isArtist && !isOwnProfile) {
+                      return const SliverToBoxAdapter(child: SizedBox.shrink());
+                    }
+                    
+                    return Consumer<PortraitProvider>(
+                      builder: (context, portraitProvider, child) {
+                        return StreamBuilder<List<PortraitModel>>(
+                          stream: portraitProvider.getUserPortraitsReversed(widget.userId),
+                          builder: (context, snapshot) {
+                            if (snapshot.hasError) {
+                              return SliverToBoxAdapter(
+                                child: Center(
+                                  child: Text('Error: ${snapshot.error}'),
+                                ),
+                              );
+                            }
+
+                            if (!snapshot.hasData) {
+                              return const SliverToBoxAdapter(
+                                child: Center(
+                                  child: CircularProgressIndicator(),
+                                ),
+                              );
+                            }
+
+                            final portraits = snapshot.data!;
+                            _lastPortraitCount = portraits.length;
+
+                            if (portraits.isEmpty) {
+                              return SliverToBoxAdapter(
+                                child: Center(
+                                  child: Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Icon(
+                                        Icons.photo_library,
+                                        size: 64,
+                                        color: AppColors.forestGreen.withOpacity(0.5),
+                                      ),
+                                      const SizedBox(height: 16),
+                                      Text(
+                                        'No portraits yet',
+                                        style: TextStyle(
+                                          fontSize: 18,
+                                          color: AppColors.forestGreen,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              );
+                            }
+
+                            return SliverPadding(
+                              padding: const EdgeInsets.all(16),
+                              sliver: SliverGrid(
+                                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                                  crossAxisCount: 2,
+                                  mainAxisSpacing: 16,
+                                  crossAxisSpacing: 16,
+                                  childAspectRatio: 1,
+                                ),
+                                delegate: SliverChildBuilderDelegate(
+                                  (context, index) {
+                                    final portrait = portraits[index];
+                                    return GestureDetector(
+                                      onTap: () {
+                                        showDialog(
+                                          context: context,
+                                          builder: (context) => PortraitDetailsDialog(
+                                            portrait: portrait,
+                                            user: _userData,
+                                            currentUserId: widget.userId,
+                                            onPortraitModified: () {
+                                              setState(() {});
+                                            },
+                                          ),
+                                        );
+                                      },
+                                      child: ClipRRect(
+                                        borderRadius: BorderRadius.circular(8),
+                                        child: CachedNetworkImage(
+                                          imageUrl: portrait.imageUrl,
+                                          fit: BoxFit.cover,
+                                          placeholder: (context, url) => Container(
+                                            color: Colors.grey[200],
+                                            child: const Center(
+                                              child: CircularProgressIndicator(),
+                                            ),
+                                          ),
+                                          errorWidget: (context, url, error) => Container(
+                                            color: Colors.grey[200],
+                                            child: const Icon(Icons.error),
+                                          ),
+                                        ),
                                       ),
                                     );
                                   },
-                                  child: ClipRRect(
-                                    borderRadius: BorderRadius.circular(8),
-                                    child: CachedNetworkImage(
-                                      imageUrl: portrait.imageUrl,
-                                      fit: BoxFit.cover,
-                                      placeholder: (context, url) => Container(
-                                        color: Colors.grey[200],
-                                        child: const Center(
-                                          child: CircularProgressIndicator(),
-                                        ),
-                                      ),
-                                      errorWidget: (context, url, error) => Container(
-                                        color: Colors.grey[200],
-                                        child: const Icon(Icons.error),
-                                      ),
-                                    ),
-                                  ),
-                                );
-                              },
-                              childCount: portraits.length,
-                            ),
-                          ),
+                                  childCount: portraits.length,
+                                ),
+                              ),
+                            );
+                          },
                         );
                       },
                     );

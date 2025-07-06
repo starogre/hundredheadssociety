@@ -54,7 +54,7 @@ class UserModel {
       status: map['status'] ?? 'pending',
       instagram: map['instagram'],
       contactEmail: map['contactEmail'],
-      userRole: map['userRole'] ?? 'art_appreciator',
+      userRole: map['userRole'] ?? 'artist', // Default existing users to artist
       isModerator: map['isModerator'] ?? false,
       awards: List<String>.from(map['awards'] ?? []),
       totalVotesCast: map['totalVotesCast'] ?? 0,

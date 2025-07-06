@@ -5,6 +5,7 @@ import '../providers/notification_provider.dart';
 import '../providers/auth_provider.dart';
 import '../models/notification_model.dart';
 import '../theme/app_theme.dart';
+import '../screens/user_management_screen.dart';
 
 class NotificationsScreen extends StatefulWidget {
   const NotificationsScreen({Key? key}) : super(key: key);
@@ -214,6 +215,14 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         iconData = Icons.celebration;
         iconColor = Colors.pink;
         break;
+      case 'upgrade_request':
+        iconData = Icons.upgrade;
+        iconColor = Colors.orange;
+        break;
+      case 'new_artist_signup':
+        iconData = Icons.person_add;
+        iconColor = Colors.green;
+        break;
       default:
         iconData = Icons.notifications;
         iconColor = Colors.grey;
@@ -309,6 +318,18 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       case 'new_submission':
         // Navigate to weekly sessions screen to see the new submission
         Navigator.of(context).pushNamed('/weekly-sessions');
+        break;
+      case 'upgrade_request':
+        // Navigate to user management screen with upgrade requests tab (index 3)
+        Navigator.of(context).push(MaterialPageRoute(
+          builder: (_) => UserManagementScreen(initialTab: 3),
+        ));
+        break;
+      case 'new_artist_signup':
+        // Navigate to user management screen with approvals tab (index 2)
+        Navigator.of(context).push(MaterialPageRoute(
+          builder: (_) => UserManagementScreen(initialTab: 2),
+        ));
         break;
       default:
         // Show notification details in a dialog

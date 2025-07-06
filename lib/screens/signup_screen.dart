@@ -18,6 +18,7 @@ class _SignupScreenState extends State<SignupScreen> {
   final _confirmPasswordController = TextEditingController();
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
+  String _selectedRole = 'artist'; // Default to artist for consistency
 
   @override
   void dispose() {
@@ -35,6 +36,7 @@ class _SignupScreenState extends State<SignupScreen> {
         email: _emailController.text.trim(),
         password: _passwordController.text,
         name: _nameController.text.trim(),
+        userRole: _selectedRole, // Pass the selected role
       );
 
       if (success && mounted) {
@@ -127,6 +129,174 @@ class _SignupScreenState extends State<SignupScreen> {
                         }
                         return null;
                       },
+                    ),
+                    const SizedBox(height: 16),
+
+                    // Role Selection
+                    Container(
+                      decoration: BoxDecoration(
+                        border: Border.all(color: Colors.grey.shade400),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Padding(
+                            padding: const EdgeInsets.all(16),
+                            child: Text(
+                              'Choose your role:',
+                              style: TextStyle(
+                                color: Colors.grey.shade700,
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                          // Art Appreciator Option
+                          Container(
+                            margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            decoration: BoxDecoration(
+                              border: Border.all(
+                                color: _selectedRole == 'art_appreciator' 
+                                    ? Colors.blue 
+                                    : Colors.grey.shade300,
+                                width: _selectedRole == 'art_appreciator' ? 2 : 1,
+                              ),
+                              borderRadius: BorderRadius.circular(8),
+                              color: _selectedRole == 'art_appreciator' 
+                                  ? Colors.blue.shade50 
+                                  : Colors.transparent,
+                            ),
+                            child: RadioListTile<String>(
+                              title: Row(
+                                children: [
+                                  const Text('Art Appreciator'),
+                                  const SizedBox(width: 8),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                    decoration: BoxDecoration(
+                                      color: Colors.green.shade100,
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    child: Text(
+                                      'Instant Access',
+                                      style: TextStyle(
+                                        color: Colors.green.shade700,
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              subtitle: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const SizedBox(height: 4),
+                                  const Text('• View and vote on portraits'),
+                                  const Text('• Browse community gallery'),
+                                  const Text('• No approval required'),
+                                  const Text('• Cannot submit your own art'),
+                                ],
+                              ),
+                              value: 'art_appreciator',
+                              groupValue: _selectedRole,
+                              onChanged: (value) {
+                                setState(() {
+                                  _selectedRole = value!;
+                                });
+                              },
+                            ),
+                          ),
+                          // Artist Option
+                          Container(
+                            margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            decoration: BoxDecoration(
+                              border: Border.all(
+                                color: _selectedRole == 'artist' 
+                                    ? Colors.blue 
+                                    : Colors.grey.shade300,
+                                width: _selectedRole == 'artist' ? 2 : 1,
+                              ),
+                              borderRadius: BorderRadius.circular(8),
+                              color: _selectedRole == 'artist' 
+                                  ? Colors.blue.shade50 
+                                  : Colors.transparent,
+                            ),
+                            child: RadioListTile<String>(
+                              title: Row(
+                                children: [
+                                  const Text('Artist'),
+                                  const SizedBox(width: 8),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                    decoration: BoxDecoration(
+                                      color: Colors.orange.shade100,
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    child: Text(
+                                      'Approval Required',
+                                      style: TextStyle(
+                                        color: Colors.orange.shade700,
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              subtitle: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const SizedBox(height: 4),
+                                  const Text('• Create and submit portraits'),
+                                  const Text('• Participate in weekly sessions'),
+                                  const Text('• Community manager approval needed'),
+                                  const Text('• Full access to all features'),
+                                ],
+                              ),
+                              value: 'artist',
+                              groupValue: _selectedRole,
+                              onChanged: (value) {
+                                setState(() {
+                                  _selectedRole = value!;
+                                });
+                              },
+                            ),
+                          ),
+                          // Info Box
+                          Container(
+                            margin: const EdgeInsets.all(16),
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: Colors.blue.shade50,
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(color: Colors.blue.shade200),
+                            ),
+                            child: Row(
+                              children: [
+                                Icon(
+                                  Icons.info_outline,
+                                  color: Colors.blue.shade700,
+                                  size: 20,
+                                ),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Text(
+                                    _selectedRole == 'artist' 
+                                        ? 'Artist accounts require approval from a community manager. You\'ll be notified once your account is approved.'
+                                        : 'Art Appreciator accounts are activated immediately. You can start browsing the community right away!',
+                                    style: TextStyle(
+                                      color: Colors.blue.shade700,
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                     const SizedBox(height: 16),
 
@@ -225,9 +395,9 @@ class _SignupScreenState extends State<SignupScreen> {
                                 valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                               ),
                             )
-                          : const Text(
-                              'Sign Up',
-                              style: TextStyle(fontSize: 16),
+                          : Text(
+                              _selectedRole == 'artist' ? 'Sign Up & Request Approval' : 'Sign Up',
+                              style: const TextStyle(fontSize: 16),
                             ),
                     ),
                     const SizedBox(height: 16),
