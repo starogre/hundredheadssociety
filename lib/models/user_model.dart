@@ -13,6 +13,12 @@ class UserModel {
   final String status; // 'pending', 'approved', 'denied'
   final String? instagram;
   final String? contactEmail;
+  // User roles and permissions
+  final String userRole; // 'art_appreciator', 'artist' - chosen during signup
+  final bool isModerator; // assigned by admin only
+  final List<String> awards; // List of award IDs
+  final int totalVotesCast;
+  final DateTime? lastActiveAt;
 
   UserModel({
     required this.id,
@@ -27,6 +33,11 @@ class UserModel {
     this.status = 'pending', // Default to pending for new users
     this.instagram,
     this.contactEmail,
+    required this.userRole, // Required - user must choose during signup
+    this.isModerator = false, // Admin-assigned moderator status only
+    this.awards = const [],
+    this.totalVotesCast = 0,
+    this.lastActiveAt,
   });
 
   factory UserModel.fromMap(Map<String, dynamic> map, String id) {
@@ -43,6 +54,13 @@ class UserModel {
       status: map['status'] ?? 'pending',
       instagram: map['instagram'],
       contactEmail: map['contactEmail'],
+      userRole: map['userRole'] ?? 'art_appreciator',
+      isModerator: map['isModerator'] ?? false,
+      awards: List<String>.from(map['awards'] ?? []),
+      totalVotesCast: map['totalVotesCast'] ?? 0,
+      lastActiveAt: map['lastActiveAt'] != null 
+          ? (map['lastActiveAt'] as Timestamp).toDate() 
+          : null,
     );
   }
 
@@ -59,6 +77,11 @@ class UserModel {
       'status': status,
       'instagram': instagram,
       'contactEmail': contactEmail,
+      'userRole': userRole,
+      'isModerator': isModerator,
+      'awards': awards,
+      'totalVotesCast': totalVotesCast,
+      'lastActiveAt': lastActiveAt,
     };
   }
 
@@ -75,6 +98,11 @@ class UserModel {
     String? status,
     String? instagram,
     String? contactEmail,
+    String? userRole,
+    bool? isModerator,
+    List<String>? awards,
+    int? totalVotesCast,
+    DateTime? lastActiveAt,
   }) {
     return UserModel(
       id: id ?? this.id,
@@ -89,6 +117,24 @@ class UserModel {
       status: status ?? this.status,
       instagram: instagram ?? this.instagram,
       contactEmail: contactEmail ?? this.contactEmail,
+      userRole: userRole ?? this.userRole,
+      isModerator: isModerator ?? this.isModerator,
+      awards: awards ?? this.awards,
+      totalVotesCast: totalVotesCast ?? this.totalVotesCast,
+      lastActiveAt: lastActiveAt ?? this.lastActiveAt,
     );
   }
+
+  // Helper methods for role-based access control
+  bool get isArtist => userRole == 'artist';
+  bool get isArtAppreciator => userRole == 'art_appreciator';
+  bool get hasModeratorAccess => isModerator || isAdmin;
+  bool get hasAdminAccess => isAdmin;
+  
+  // Check if user can access specific features
+  bool canCreatePortraits() => isArtist || hasModeratorAccess;
+  bool canVote() => true; // Both roles can vote
+  bool canModerate() => hasModeratorAccess;
+  bool canManageUsers() => hasAdminAccess;
+  bool canManageSessions() => hasModeratorAccess;
 } 
