@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
 import 'user_management_screen.dart';
+import 'app_updates_screen.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
@@ -30,6 +31,16 @@ class SettingsScreen extends StatelessWidget {
                     );
                   },
                 ),
+              ListTile(
+                leading: const Icon(Icons.system_update),
+                title: const Text('App Updates'),
+                subtitle: const Text('See what\'s new and what\'s coming soon'),
+                onTap: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(builder: (context) => const AppUpdatesScreen()),
+                  );
+                },
+              ),
               ListTile(
                 leading: const Icon(Icons.logout),
                 title: const Text('Sign Out'),
