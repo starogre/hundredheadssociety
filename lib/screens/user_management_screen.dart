@@ -576,8 +576,8 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                         }
                                       },
                                     ),
-                                  // Delete button (only for non-admin users)
-                                  if (!user.isAdmin)
+                                  // Delete button (admins only, cannot delete other admins or themselves)
+                                  if (currentUser != null && currentUser.isAdmin && !user.isAdmin && user.id != currentUser.id)
                                     IconButton(
                                       icon: const Icon(Icons.delete, color: Colors.red),
                                       onPressed: () async {
