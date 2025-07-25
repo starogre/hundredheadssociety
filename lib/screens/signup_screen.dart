@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
+import '../theme/app_theme.dart';
 import 'dashboard_screen.dart';
+import 'privacy_policy_screen.dart';
+import 'terms_of_service_screen.dart';
+import 'code_of_conduct_screen.dart';
 
 class SignupScreen extends StatefulWidget {
   const SignupScreen({super.key});
@@ -50,7 +54,8 @@ class _SignupScreenState extends State<SignupScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Sign Up'),
-        backgroundColor: Colors.transparent,
+        backgroundColor: AppColors.forestGreen,
+        foregroundColor: AppColors.white,
         elevation: 0,
       ),
       body: Consumer<AuthProvider>(
@@ -65,10 +70,10 @@ class _SignupScreenState extends State<SignupScreen> {
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     // App Logo/Title
-                    const Icon(
-                      Icons.face,
-                      size: 60,
-                      color: Colors.blue,
+                    Image.asset(
+                      'assets/images/app_icon.png',
+                      width: 60,
+                      height: 60,
                     ),
                     const SizedBox(height: 16),
                     const Text(
@@ -77,7 +82,7 @@ class _SignupScreenState extends State<SignupScreen> {
                       style: TextStyle(
                         fontSize: 24,
                         fontWeight: FontWeight.bold,
-                        color: Colors.blue,
+                        color: AppColors.rustyOrange,
                       ),
                     ),
                     const SizedBox(height: 8),
@@ -361,6 +366,49 @@ class _SignupScreenState extends State<SignupScreen> {
                       },
                     ),
                     const SizedBox(height: 24),
+
+                    // Legal Links
+                    Column(
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            TextButton(
+                              onPressed: () {
+                                Navigator.of(context).push(
+                                  MaterialPageRoute(
+                                    builder: (context) => const PrivacyPolicyScreen(),
+                                  ),
+                                );
+                              },
+                              child: const Text('Privacy Policy'),
+                            ),
+                            const Text(' • '),
+                            TextButton(
+                              onPressed: () {
+                                Navigator.of(context).push(
+                                  MaterialPageRoute(
+                                    builder: (context) => const TermsOfServiceScreen(),
+                                  ),
+                                );
+                              },
+                              child: const Text('Terms of Service'),
+                            ),
+                          ],
+                        ),
+                        TextButton(
+                          onPressed: () {
+                            Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (context) => const CodeOfConductScreen(),
+                              ),
+                            );
+                          },
+                          child: const Text('Code of Conduct'),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
 
                     // Error Message
                     if (authProvider.error != null)
