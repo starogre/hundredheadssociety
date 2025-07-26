@@ -276,7 +276,11 @@ class _UserManagementScreenState extends State<UserManagementScreen>
           stream: _userService.getAllUsers(),
           builder: (context, snapshot) {
             final allUsers = snapshot.data ?? [];
-            final pendingUsers = allUsers.where((user) => user.status == 'pending' && !user.id.startsWith('test_')).toList();
+            final pendingUsers = allUsers.where((user) => 
+              user.status == 'pending' && 
+              !user.id.startsWith('test_') &&
+              user.userRole == 'artist' // Only count artists in pending approvals
+            ).toList();
             final count = pendingUsers.length;
             return Row(
               mainAxisSize: MainAxisSize.min,
@@ -461,10 +465,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                           final currentUser = Provider.of<AuthProvider>(context, listen: false).userData;
                           return Card(
                             margin: const EdgeInsets.only(bottom: 8),
-                            child: ListTile(
-                              onTap: () {
-                                Navigator.of(context).pushNamed('/profile', arguments: user.id);
-                              },
+                            child: ExpansionTile(
                               leading: CircleAvatar(
                                 backgroundColor: user.isAdmin ? AppColors.rustyOrange : AppColors.forestGreen,
                                 child: Text(
@@ -477,6 +478,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(user.email),
+                                  const SizedBox(height: 4),
                                   Row(
                                     children: [
                                       // Role Badge
@@ -545,87 +547,217 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                   ),
                                 ],
                               ),
-                              trailing: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  // Moderator toggle (only for admins, not for self or other admins)
-                                  if (currentUser != null && currentUser.isAdmin && !user.isAdmin && user.id != currentUser.id)
-                                    Switch(
-                                      value: user.isModerator,
-                                      activeColor: Colors.purple,
-                                      onChanged: (value) async {
-                                        try {
-                                          await _userService.updateUser(user.id, {'isModerator': value});
-                                          if (mounted) {
-                                            ScaffoldMessenger.of(context).showSnackBar(
-                                              SnackBar(
-                                                content: Text(value ? 'Granted moderator to "${user.name}"' : 'Removed moderator from "${user.name}"'),
+                              children: [
+                                Padding(
+                                  padding: const EdgeInsets.all(16),
+                                  child: Column(
+                                    children: [
+                                      // Action Buttons Row
+                                      Row(
+                                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                                        children: [
+                                          // View Profile Button
+                                          Expanded(
+                                            child: ElevatedButton.icon(
+                                              onPressed: () {
+                                                Navigator.of(context).pushNamed('/profile', arguments: user.id);
+                                              },
+                                              icon: const Icon(Icons.person, size: 16),
+                                              label: const Text('Profile', style: TextStyle(fontSize: 12)),
+                                              style: ElevatedButton.styleFrom(
                                                 backgroundColor: AppColors.forestGreen,
+                                                foregroundColor: Colors.white,
+                                                padding: const EdgeInsets.symmetric(vertical: 8),
                                               ),
-                                            );
-                                          }
-                                        } catch (e) {
-                                          if (mounted) {
-                                            ScaffoldMessenger.of(context).showSnackBar(
-                                              SnackBar(
-                                                content: Text('Error updating moderator status: $e'),
-                                                backgroundColor: Colors.red,
-                                              ),
-                                            );
-                                          }
-                                        }
-                                      },
-                                    ),
-                                  // Delete button (admins only, cannot delete other admins or themselves)
-                                  if (currentUser != null && currentUser.isAdmin && !user.isAdmin && user.id != currentUser.id)
-                                    IconButton(
-                                      icon: const Icon(Icons.delete, color: Colors.red),
-                                      onPressed: () async {
-                                        final confirmed = await showDialog<bool>(
-                                          context: context,
-                                          builder: (context) => AlertDialog(
-                                            title: const Text('Delete User'),
-                                            content: Text('Are you sure you want to delete "${user.name}"? This action cannot be undone.'),
-                                            actions: [
-                                              TextButton(
-                                                onPressed: () => Navigator.of(context).pop(false),
-                                                child: const Text('Cancel'),
-                                              ),
-                                              TextButton(
-                                                onPressed: () => Navigator.of(context).pop(true),
-                                                style: TextButton.styleFrom(foregroundColor: Colors.red),
-                                                child: const Text('Delete'),
-                                              ),
-                                            ],
+                                            ),
                                           ),
-                                        );
+                                          const SizedBox(width: 8),
+                                          
+                                          // Moderator Toggle (only for admins, not for self or other admins)
+                                          if (currentUser != null && currentUser.isAdmin && !user.isAdmin && user.id != currentUser.id)
+                                            Expanded(
+                                              child: ElevatedButton.icon(
+                                                onPressed: () async {
+                                                  try {
+                                                    await _userService.updateUser(
+                                                      user.id, 
+                                                      {'isModerator': !user.isModerator},
+                                                      performedBy: currentUser?.id ?? '',
+                                                      performedByName: currentUser?.name ?? 'Unknown Admin',
+                                                    );
+                                                    if (mounted) {
+                                                      ScaffoldMessenger.of(context).showSnackBar(
+                                                        SnackBar(
+                                                          content: Text(!user.isModerator ? 'Granted moderator to "${user.name}"' : 'Removed moderator from "${user.name}"'),
+                                                          backgroundColor: AppColors.forestGreen,
+                                                        ),
+                                                      );
+                                                    }
+                                                  } catch (e) {
+                                                    if (mounted) {
+                                                      ScaffoldMessenger.of(context).showSnackBar(
+                                                        SnackBar(
+                                                          content: Text('Error updating moderator status: $e'),
+                                                          backgroundColor: Colors.red,
+                                                        ),
+                                                      );
+                                                    }
+                                                  }
+                                                },
+                                                icon: Icon(
+                                                  user.isModerator ? Icons.admin_panel_settings : Icons.admin_panel_settings_outlined,
+                                                  size: 16,
+                                                ),
+                                                label: Text(
+                                                  user.isModerator ? 'Remove Mod' : 'Make Mod',
+                                                  style: const TextStyle(fontSize: 12),
+                                                ),
+                                                style: ElevatedButton.styleFrom(
+                                                  backgroundColor: user.isModerator ? Colors.purple : Colors.grey,
+                                                  foregroundColor: Colors.white,
+                                                  padding: const EdgeInsets.symmetric(vertical: 8),
+                                                ),
+                                              ),
+                                            ),
+                                        ],
+                                      ),
+                                      
+                                      if (currentUser != null && currentUser.isAdmin && !user.isAdmin && user.id != currentUser.id) ...[
+                                        const SizedBox(height: 8),
+                                        Row(
+                                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                                          children: [
+                                            // Switch to Appreciator Button (for artists only)
+                                            if (user.isArtist)
+                                              Expanded(
+                                                child: ElevatedButton.icon(
+                                                  onPressed: () async {
+                                                    final confirmed = await showDialog<bool>(
+                                                      context: context,
+                                                      builder: (context) => AlertDialog(
+                                                        title: const Text('Switch to Appreciator'),
+                                                        content: Text('Are you sure you want to switch "${user.name}" from Artist to Art Appreciator?\n\nThis will remove their ability to create portraits and they will only be able to view art.'),
+                                                        actions: [
+                                                          TextButton(
+                                                            onPressed: () => Navigator.of(context).pop(false),
+                                                            child: const Text('Cancel'),
+                                                          ),
+                                                          TextButton(
+                                                            onPressed: () => Navigator.of(context).pop(true),
+                                                            style: TextButton.styleFrom(foregroundColor: Colors.orange),
+                                                            child: const Text('Switch to Appreciator'),
+                                                          ),
+                                                        ],
+                                                      ),
+                                                    );
 
-                                        if (confirmed == true) {
-                                          try {
-                                            await _userService.deleteUser(user.id);
-                                            if (mounted) {
-                                              ScaffoldMessenger.of(context).showSnackBar(
-                                                SnackBar(
-                                                  content: Text('Deleted user "${user.name}"'),
-                                                  backgroundColor: AppColors.forestGreen,
+                                                    if (confirmed == true) {
+                                                      try {
+                                                        await _userService.updateUser(
+                                                          user.id, 
+                                                          {
+                                                            'userRole': 'art_appreciator',
+                                                            'status': 'approved', // Auto-approve since appreciators don't need approval
+                                                          },
+                                                          performedBy: currentUser?.id ?? '',
+                                                          performedByName: currentUser?.name ?? 'Unknown Admin',
+                                                        );
+                                                        if (mounted) {
+                                                          ScaffoldMessenger.of(context).showSnackBar(
+                                                            SnackBar(
+                                                              content: Text('Switched "${user.name}" to Art Appreciator'),
+                                                              backgroundColor: AppColors.forestGreen,
+                                                            ),
+                                                          );
+                                                        }
+                                                      } catch (e) {
+                                                        if (mounted) {
+                                                          ScaffoldMessenger.of(context).showSnackBar(
+                                                            SnackBar(
+                                                              content: Text('Error switching user role: $e'),
+                                                              backgroundColor: Colors.red,
+                                                            ),
+                                                          );
+                                                        }
+                                                      }
+                                                    }
+                                                  },
+                                                  icon: const Icon(Icons.swap_horiz, size: 16),
+                                                  label: const Text('Switch to Appreciator', style: TextStyle(fontSize: 12)),
+                                                  style: ElevatedButton.styleFrom(
+                                                    backgroundColor: Colors.orange,
+                                                    foregroundColor: Colors.white,
+                                                    padding: const EdgeInsets.symmetric(vertical: 8),
+                                                  ),
                                                 ),
-                                              );
-                                            }
-                                          } catch (e) {
-                                            if (mounted) {
-                                              ScaffoldMessenger.of(context).showSnackBar(
-                                                SnackBar(
-                                                  content: Text('Error deleting user: $e'),
+                                              ),
+                                            
+                                            // Delete Button
+                                            Expanded(
+                                              child: ElevatedButton.icon(
+                                                onPressed: () async {
+                                                  final confirmed = await showDialog<bool>(
+                                                    context: context,
+                                                    builder: (context) => AlertDialog(
+                                                      title: const Text('Delete User'),
+                                                      content: Text('Are you sure you want to delete "${user.name}"? This action cannot be undone.'),
+                                                      actions: [
+                                                        TextButton(
+                                                          onPressed: () => Navigator.of(context).pop(false),
+                                                          child: const Text('Cancel'),
+                                                        ),
+                                                        TextButton(
+                                                          onPressed: () => Navigator.of(context).pop(true),
+                                                          style: TextButton.styleFrom(foregroundColor: Colors.red),
+                                                          child: const Text('Delete'),
+                                                        ),
+                                                      ],
+                                                    ),
+                                                  );
+
+                                                  if (confirmed == true) {
+                                                    try {
+                                                      await _userService.deleteUser(
+                                                        user.id,
+                                                        performedBy: currentUser?.id ?? '',
+                                                        performedByName: currentUser?.name ?? 'Unknown Admin',
+                                                      );
+                                                      if (mounted) {
+                                                        ScaffoldMessenger.of(context).showSnackBar(
+                                                          SnackBar(
+                                                            content: Text('Deleted user "${user.name}"'),
+                                                            backgroundColor: AppColors.forestGreen,
+                                                          ),
+                                                        );
+                                                      }
+                                                    } catch (e) {
+                                                      if (mounted) {
+                                                        ScaffoldMessenger.of(context).showSnackBar(
+                                                          SnackBar(
+                                                            content: Text('Error deleting user: $e'),
+                                                            backgroundColor: Colors.red,
+                                                          ),
+                                                        );
+                                                      }
+                                                    }
+                                                  }
+                                                },
+                                                icon: const Icon(Icons.delete, size: 16),
+                                                label: const Text('Delete', style: TextStyle(fontSize: 12)),
+                                                style: ElevatedButton.styleFrom(
                                                   backgroundColor: Colors.red,
+                                                  foregroundColor: Colors.white,
+                                                  padding: const EdgeInsets.symmetric(vertical: 8),
                                                 ),
-                                              );
-                                            }
-                                          }
-                                        }
-                                      },
-                                    ),
-                                ],
-                              ),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ],
+                                    ],
+                                  ),
+                                ),
+                              ],
                             ),
                           );
                         },
@@ -921,7 +1053,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'Review and approve new user registrations',
+                    'Review and approve new artist registrations',
                     style: TextStyle(color: AppColors.forestGreen.withValues(alpha: 0.7)),
                   ),
                 ],
@@ -938,7 +1070,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Users Awaiting Approval',
+                    'Artists Awaiting Approval',
                     style: Theme.of(context).textTheme.titleLarge?.copyWith(
                       color: AppColors.forestGreen,
                       fontWeight: FontWeight.bold,
@@ -960,7 +1092,9 @@ class _UserManagementScreenState extends State<UserManagementScreen>
 
                       final allUsers = snapshot.data!;
                       final pendingUsers = allUsers.where((user) => 
-                        user.status == 'pending' && !user.id.startsWith('test_')
+                        user.status == 'pending' && 
+                        !user.id.startsWith('test_') &&
+                        user.userRole == 'artist' // Only show artists in pending approvals, not art appreciators
                       ).toList();
 
                       if (pendingUsers.isEmpty) {
@@ -1075,7 +1209,12 @@ class _UserManagementScreenState extends State<UserManagementScreen>
 
                                       if (confirmed == true) {
                                         try {
-                                          await _userService.approveUser(user.id);
+                                          final currentUser = Provider.of<AuthProvider>(context, listen: false).userData;
+                                          await _userService.approveUser(
+                                            user.id,
+                                            performedBy: currentUser?.id ?? '',
+                                            performedByName: currentUser?.name ?? 'Unknown Admin',
+                                          );
                                           if (mounted) {
                                             ScaffoldMessenger.of(context).showSnackBar(
                                               SnackBar(

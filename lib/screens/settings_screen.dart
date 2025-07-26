@@ -4,6 +4,7 @@ import '../providers/auth_provider.dart';
 import 'user_management_screen.dart';
 import 'app_updates_screen.dart';
 import 'about_screen.dart';
+import 'activity_log_screen.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
@@ -29,6 +30,18 @@ class SettingsScreen extends StatelessWidget {
                   onTap: () {
                     Navigator.of(context).push(
                       MaterialPageRoute(builder: (context) => const UserManagementScreen()),
+                    );
+                  },
+                ),
+              // Show Activity Log for admins only
+              if (isAdmin)
+                ListTile(
+                  leading: const Icon(Icons.history),
+                  title: const Text('Activity Log'),
+                  subtitle: const Text('View admin and moderator actions'),
+                  onTap: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(builder: (context) => const ActivityLogScreen()),
                     );
                   },
                 ),

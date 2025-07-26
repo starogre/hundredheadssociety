@@ -19,6 +19,8 @@ class UserModel {
   final List<String> awards; // List of award IDs
   final int totalVotesCast;
   final DateTime? lastActiveAt;
+  final bool emailVerified; // Track email verification status
+  final DateTime? lastVerificationTimestamp; // Track when user last verified email
 
   UserModel({
     required this.id,
@@ -27,17 +29,19 @@ class UserModel {
     this.bio,
     this.profileImageUrl,
     required this.createdAt,
-    required this.portraitIds,
-    required this.portraitsCompleted,
+    this.portraitIds = const <String>[],
+    this.portraitsCompleted = 0,
     this.isAdmin = false,
-    this.status = 'pending', // Default to pending for new users
+    this.status = 'pending',
     this.instagram,
     this.contactEmail,
-    required this.userRole, // Required - user must choose during signup
-    this.isModerator = false, // Admin-assigned moderator status only
-    this.awards = const [],
+    this.userRole = 'artist',
+    this.isModerator = false,
+    this.awards = const <String>[],
     this.totalVotesCast = 0,
     this.lastActiveAt,
+    this.emailVerified = false, // Initialize emailVerified
+    this.lastVerificationTimestamp, // Initialize lastVerificationTimestamp
   });
 
   factory UserModel.fromMap(Map<String, dynamic> map, String id) {
@@ -61,6 +65,10 @@ class UserModel {
       lastActiveAt: map['lastActiveAt'] != null 
           ? (map['lastActiveAt'] as Timestamp).toDate() 
           : null,
+      emailVerified: map['emailVerified'] ?? false, // Parse emailVerified
+      lastVerificationTimestamp: map['lastVerificationTimestamp'] != null
+          ? (map['lastVerificationTimestamp'] as Timestamp).toDate()
+          : null, // Parse lastVerificationTimestamp
     );
   }
 
@@ -82,6 +90,8 @@ class UserModel {
       'awards': awards,
       'totalVotesCast': totalVotesCast,
       'lastActiveAt': lastActiveAt,
+      'emailVerified': emailVerified, // Include emailVerified in toMap
+      'lastVerificationTimestamp': lastVerificationTimestamp, // Include lastVerificationTimestamp in toMap
     };
   }
 
@@ -103,6 +113,8 @@ class UserModel {
     List<String>? awards,
     int? totalVotesCast,
     DateTime? lastActiveAt,
+    bool? emailVerified, // Add emailVerified to copyWith
+    DateTime? lastVerificationTimestamp, // Add lastVerificationTimestamp to copyWith
   }) {
     return UserModel(
       id: id ?? this.id,
@@ -122,6 +134,8 @@ class UserModel {
       awards: awards ?? this.awards,
       totalVotesCast: totalVotesCast ?? this.totalVotesCast,
       lastActiveAt: lastActiveAt ?? this.lastActiveAt,
+      emailVerified: emailVerified ?? this.emailVerified, // Copy emailVerified
+      lastVerificationTimestamp: lastVerificationTimestamp ?? this.lastVerificationTimestamp, // Copy lastVerificationTimestamp
     );
   }
 

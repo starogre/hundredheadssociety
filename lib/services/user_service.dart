@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/user_model.dart';
 import '../models/upgrade_request_model.dart';
+import 'activity_log_service.dart';
 
 class UserService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -92,9 +93,30 @@ class UserService {
   }
 
   // Delete a user
-  Future<void> deleteUser(String userId) async {
+  Future<void> deleteUser(String userId, {
+    String? performedBy,
+    String? performedByName,
+  }) async {
+    final ActivityLogService _activityLogService = ActivityLogService();
+    
     try {
+      // Get the user data before deleting to log their name
+      final userDoc = await _firestore.collection('users').doc(userId).get();
+      final userData = userDoc.data();
+      final targetUserName = userData?['name'] ?? 'Unknown User';
+      
       await _firestore.collection('users').doc(userId).delete();
+      
+      // Log the activity if admin info is provided
+      if (performedBy != null && performedByName != null) {
+        await _activityLogService.logActivity(
+          action: 'user_deleted',
+          performedBy: performedBy,
+          performedByName: performedByName,
+          targetUserId: userId,
+          targetUserName: targetUserName,
+        );
+      }
     } catch (e) {
       rethrow;
     }
@@ -112,11 +134,32 @@ class UserService {
   }
 
   // Approve a user
-  Future<void> approveUser(String userId) async {
+  Future<void> approveUser(String userId, {
+    String? performedBy,
+    String? performedByName,
+  }) async {
+    final ActivityLogService _activityLogService = ActivityLogService();
+    
     try {
+      // Get the user data before updating to log their name
+      final userDoc = await _firestore.collection('users').doc(userId).get();
+      final userData = userDoc.data();
+      final targetUserName = userData?['name'] ?? 'Unknown User';
+      
       await _firestore.collection('users').doc(userId).update({
         'status': 'approved',
       });
+      
+      // Log the activity if admin info is provided
+      if (performedBy != null && performedByName != null) {
+        await _activityLogService.logActivity(
+          action: 'user_approved',
+          performedBy: performedBy,
+          performedByName: performedByName,
+          targetUserId: userId,
+          targetUserName: targetUserName,
+        );
+      }
     } catch (e) {
       rethrow;
     }
@@ -266,6 +309,8 @@ class UserService {
     required String adminId,
     required String adminName,
   }) async {
+    final ActivityLogService _activityLogService = ActivityLogService();
+    
     try {
       final batch = _firestore.batch();
 
@@ -283,12 +328,22 @@ class UserService {
       final requestData = requestDoc.data();
       if (requestData != null) {
         final userId = requestData['userId'] as String;
+        final userName = requestData['userName'] as String;
         
         // Update the user's role to artist
         final userRef = _firestore.collection('users').doc(userId);
         batch.update(userRef, {
           'userRole': 'artist',
         });
+        
+        // Log the activity
+        await _activityLogService.logActivity(
+          action: 'user_approved',
+          performedBy: adminId,
+          performedByName: adminName,
+          targetUserId: userId,
+          targetUserName: userName,
+        );
       }
 
       await batch.commit();
@@ -333,7 +388,57 @@ class UserService {
   }
 
   // Update user fields by userId
-  Future<void> updateUser(String userId, Map<String, dynamic> data) async {
-    await FirebaseFirestore.instance.collection('users').doc(userId).update(data);
+  Future<void> updateUser(String userId, Map<String, dynamic> data, {
+    String? performedBy,
+    String? performedByName,
+  }) async {
+    final ActivityLogService _activityLogService = ActivityLogService();
+    
+    try {
+      // Get the user data BEFORE updating to capture old values for logging
+      final userDoc = await FirebaseFirestore.instance.collection('users').doc(userId).get();
+      final userData = userDoc.data();
+      final targetUserName = userData?['name'] ?? 'Unknown User';
+      
+      // Capture old values for logging before updating
+      String? oldRole;
+      if (data.containsKey('userRole')) {
+        oldRole = userData?['userRole'];
+      }
+      
+      await FirebaseFirestore.instance.collection('users').doc(userId).update(data);
+      
+      // Log the activity if admin info is provided
+      if (performedBy != null && performedByName != null) {
+        // Determine what type of action was performed
+        String action = 'user_edited';
+        Map<String, dynamic>? details;
+        
+        if (data.containsKey('isModerator')) {
+          action = data['isModerator'] ? 'moderator_granted' : 'moderator_removed';
+        } else if (data.containsKey('userRole')) {
+          action = 'role_changed';
+          details = {
+            'newRole': data['userRole'],
+            'oldRole': oldRole ?? 'unknown',
+          };
+        } else if (data.containsKey('status')) {
+          if (data['status'] == 'approved') {
+            action = 'user_approved';
+          }
+        }
+        
+        await _activityLogService.logActivity(
+          action: action,
+          performedBy: performedBy,
+          performedByName: performedByName,
+          targetUserId: userId,
+          targetUserName: targetUserName,
+          details: details,
+        );
+      }
+    } catch (e) {
+      rethrow;
+    }
   }
 } 

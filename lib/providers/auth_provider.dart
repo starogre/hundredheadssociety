@@ -74,6 +74,54 @@ class AuthProvider extends ChangeNotifier {
             print('[AuthProvider] Fallback document creation failed: $fallbackError');
             _error = 'Failed to create user profile: $fallbackError';
           }
+        } else {
+          // For existing non-admin users, ensure they have emailVerified field set to true
+          if (_userData!.emailVerified == false && _userData!.status == 'approved' && !_userData!.isAdmin) {
+            print('[AuthProvider] Updating existing non-admin user to mark email as verified');
+            try {
+              await _authService.updateUserEmailVerificationStatus(_currentUser!.uid, true);
+              // Reload user data to get updated values
+              _userData = await _authService.getUserData(_currentUser!.uid);
+            } catch (e) {
+              print('[AuthProvider] Failed to update existing user email verification: $e');
+            }
+          }
+        }
+        
+        // Check email verification status - only for new users (created after email verification was implemented)
+        if (_userData != null && 
+            _userData!.emailVerified == false && 
+            _userData!.status == 'pending' && 
+            !_authService.isUserVerified()) {
+          print('[AuthProvider] New user email not verified');
+          _error = 'Please verify your email address to continue.';
+        }
+        
+        // For admin users, always require email verification on every login
+        if (_userData != null && _userData!.isAdmin) {
+          print('[AuthProvider] Admin user detected - checking verification timestamp');
+          
+          // Check if admin has verified their email since the last login
+          final lastVerification = _userData!.lastVerificationTimestamp;
+          final now = DateTime.now();
+          
+          // If no verification timestamp or verification is older than 1 minute, require re-verification
+          if (lastVerification == null || now.difference(lastVerification).inMinutes > 1) {
+            print('[AuthProvider] Admin user needs re-verification - sending new email');
+            
+            // Send a new verification email for admin users
+            try {
+              await _authService.sendAdminEmailVerification();
+              print('[AuthProvider] New verification email sent to admin user');
+            } catch (e) {
+              print('[AuthProvider] Failed to send verification email to admin: $e');
+            }
+            
+            // Don't set error here - let needsEmailVerification handle the routing
+            print('[AuthProvider] Admin user needs verification - will be handled by routing');
+          } else {
+            print('[AuthProvider] Admin user recently verified - allowing access');
+          }
         }
         
         notifyListeners();
@@ -82,6 +130,63 @@ class AuthProvider extends ChangeNotifier {
         notifyListeners();
       }
     }
+  }
+
+  // Check if user needs email verification
+  bool get needsEmailVerification {
+    if (_currentUser == null || _userData == null) {
+      print('[AuthProvider] needsEmailVerification: User or userData is null');
+      return false;
+    }
+    
+    print('[AuthProvider] needsEmailVerification check:');
+    print('  - Is admin: ${_userData!.isAdmin}');
+    print('  - User role: ${_userData!.userRole}');
+    print('  - Email verified: ${_userData!.emailVerified}');
+    print('  - Status: ${_userData!.status}');
+    print('  - Firebase verified: ${_authService.isUserVerified()}');
+    print('  - Last verification timestamp: ${_userData!.lastVerificationTimestamp}');
+    
+    // For regular users: check if they're new and haven't verified
+    if (!_userData!.isAdmin) {
+      // Art appreciators don't need approval, so they only need email verification if they're new
+      if (_userData!.userRole == 'art_appreciator') {
+        final needsVerification = _userData!.emailVerified == false && !_authService.isUserVerified();
+        print('[AuthProvider] Art appreciator needs verification: $needsVerification');
+        return needsVerification;
+      }
+      
+      // Artists need both email verification and approval
+      if (_userData!.userRole == 'artist') {
+        final needsVerification = _userData!.emailVerified == false && 
+               _userData!.status == 'pending' && 
+               !_authService.isUserVerified();
+        print('[AuthProvider] Artist needs verification: $needsVerification');
+        return needsVerification;
+      }
+    }
+    
+    // For admin users: check if they need re-verification based on timestamp
+    if (_userData!.isAdmin) {
+      final lastVerification = _userData!.lastVerificationTimestamp;
+      final now = DateTime.now();
+      
+      // Require re-verification if no timestamp or verification is older than 1 minute
+      final needsVerification = lastVerification == null || now.difference(lastVerification).inMinutes > 1;
+      print('[AuthProvider] Admin user needs verification: $needsVerification');
+      print('  - Last verification: $lastVerification');
+      print('  - Time difference: ${lastVerification != null ? now.difference(lastVerification).inMinutes : 'null'} minutes');
+      return needsVerification;
+    }
+    
+    print('[AuthProvider] No verification needed');
+    return false;
+  }
+
+  // Reload user data (useful after email verification)
+  Future<void> reloadUserData() async {
+    await _authService.reloadUser();
+    await _loadUserData();
   }
 
   Future<bool> signUp({
@@ -114,7 +219,7 @@ class AuthProvider extends ChangeNotifier {
     required String password,
   }) async {
     _setLoading(true);
-    _clearError();
+    _clearError(); // Clear any previous errors
     
     try {
       await _authService.signInWithEmailAndPassword(
@@ -169,10 +274,6 @@ class AuthProvider extends ChangeNotifier {
       _setLoading(false);
       return false;
     }
-  }
-
-  Future<void> reloadUserData() async {
-    await _loadUserData();
   }
 
   void _setLoading(bool loading) {

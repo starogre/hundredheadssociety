@@ -10,6 +10,7 @@ import 'screens/login_screen.dart';
 import 'screens/dashboard_screen.dart';
 import 'screens/splash_screen.dart';
 import 'screens/waiting_approval_screen.dart';
+import 'screens/email_verification_screen.dart';
 import 'theme/app_theme.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'screens/profile_screen.dart';
@@ -95,19 +96,58 @@ class MyApp extends StatelessWidget {
                 if (authProvider.isAuthenticated) {
                   final userData = authProvider.userData;
                   if (userData != null) {
+                    print('=== MAIN ROUTING DEBUG ===');
+                    print('User authenticated: ${authProvider.currentUser?.uid}');
+                    print('User data: ${userData.toMap()}');
+                    print('Needs email verification: ${authProvider.needsEmailVerification}');
+                    print('Is admin: ${userData.isAdmin}');
+                    print('Status: ${userData.status}');
+                    print('Email verified: ${userData.emailVerified}');
+                    print('Last verification timestamp: ${userData.lastVerificationTimestamp}');
+                    print('All user data fields:');
+                    userData.toMap().forEach((key, value) {
+                      print('  - $key: $value');
+                    });
+                    
+                    // Check if user needs email verification
+                    if (authProvider.needsEmailVerification) {
+                      print('Routing to EmailVerificationScreen');
+                      return const EmailVerificationScreen();
+                    }
+                    
                     if (userData.isAdmin) {
+                      print('Routing to DashboardScreen (admin)');
+                      print('Admin details:');
+                      print('  - ID: ${userData.id}');
+                      print('  - Name: ${userData.name}');
+                      print('  - Email: ${userData.email}');
+                      print('  - Status: ${userData.status}');
                       return const DashboardScreen();
                     }
-                    if (userData.status == 'pending' || userData.status == 'denied') {
-                      return const WaitingApprovalScreen();
-                    }
-                    if (userData.status == 'approved') {
+                    
+                    // For non-admin users, check role and status
+                    if (userData.userRole == 'artist') {
+                      // Artists need approval
+                      if (userData.status == 'pending' || userData.status == 'denied') {
+                        print('Routing to WaitingApprovalScreen (artist needs approval)');
+                        return const WaitingApprovalScreen();
+                      }
+                      if (userData.status == 'approved') {
+                        print('Routing to DashboardScreen (artist approved)');
+                        return const DashboardScreen();
+                      }
+                    } else if (userData.userRole == 'art_appreciator') {
+                      // Art appreciators can access immediately
+                      print('Routing to DashboardScreen (art appreciator - no approval needed)');
                       return const DashboardScreen();
                     }
+                    
+                    print('No matching route found - showing splash screen');
                   }
                   // If userData is null, show splash/loading screen
                   return const SplashScreen();
                 } else {
+                  print('User not authenticated - showing login screen');
                   return const LoginScreen();
                 }
               },

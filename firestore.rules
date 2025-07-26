@@ -44,9 +44,28 @@ service cloud.firestore {
       // Allow authenticated users to create a request for themselves
       allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
 
-      // Allow only admins to read, update, or delete upgrade requests
+      // Allow users to read their own requests
+      allow read: if request.auth != null && resource.data.userId == request.auth.uid;
+
+      // Allow only admins or moderators to read, update, or delete any upgrade requests
       allow read, update, delete: if request.auth != null &&
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true;
+        (
+          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true ||
+          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isModerator == true
+        );
+    }
+
+    // Activity Logs collection
+    match /activity_logs/{logId} {
+      // Allow only admins or moderators to read activity logs
+      allow read: if request.auth != null &&
+        (
+          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true ||
+          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isModerator == true
+        );
+      
+      // Allow the system to create activity logs (for user signups and other automated actions)
+      allow create: if request.auth != null;
     }
   }
 } 
