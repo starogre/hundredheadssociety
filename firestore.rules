@@ -67,5 +67,18 @@ service cloud.firestore {
       // Allow the system to create activity logs (for user signups and other automated actions)
       allow create: if request.auth != null;
     }
+
+    // Models collection
+    match /models/{modelId} {
+      // Allow all authenticated users to read models (for portrait creation)
+      allow read: if request.auth != null;
+      
+      // Allow only admins or moderators to create, update, or delete models
+      allow create, update, delete: if request.auth != null &&
+        (
+          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true ||
+          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isModerator == true
+        );
+    }
   }
 } 

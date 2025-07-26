@@ -5,6 +5,7 @@ import 'user_management_screen.dart';
 import 'app_updates_screen.dart';
 import 'about_screen.dart';
 import 'activity_log_screen.dart';
+import 'model_management_screen.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
@@ -42,6 +43,18 @@ class SettingsScreen extends StatelessWidget {
                   onTap: () {
                     Navigator.of(context).push(
                       MaterialPageRoute(builder: (context) => const ActivityLogScreen()),
+                    );
+                  },
+                ),
+              // Show Model Management for admins and moderators
+              if (isAdmin || isModerator)
+                ListTile(
+                  leading: const Icon(Icons.person_add),
+                  title: const Text('Manage Models'),
+                  subtitle: const Text('Add, edit, and manage model data'),
+                  onTap: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(builder: (context) => const ModelManagementScreen()),
                     );
                   },
                 ),
