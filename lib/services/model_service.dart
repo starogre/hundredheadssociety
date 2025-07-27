@@ -143,35 +143,7 @@ class ModelService {
     }
   }
 
-  // Bulk import models from CSV data
-  Future<void> importModelsFromCSVData(List<Map<String, dynamic>> csvData) async {
-    try {
-      final batch = _firestore.batch();
-      final now = DateTime.now();
 
-      for (final row in csvData) {
-        if (row['name'] != null && row['name'].toString().isNotEmpty) {
-          final modelRef = _firestore.collection('models').doc();
-          final modelData = {
-            'name': row['name'],
-            'date': Timestamp.fromDate(row['date']),
-            'imageUrl': null,
-            'notes': row['notes'],
-            'isActive': row['isActive'] ?? true,
-            'createdAt': Timestamp.fromDate(now),
-            'updatedAt': Timestamp.fromDate(now),
-          };
-          batch.set(modelRef, modelData);
-        }
-      }
-
-      await batch.commit();
-      print('Bulk import completed: ${csvData.length} models imported');
-    } catch (e) {
-      print('Error importing models: $e');
-      rethrow;
-    }
-  }
 
   // Get models for a specific date range
   Stream<List<ModelModel>> getModelsByDateRange(DateTime startDate, DateTime endDate) {
@@ -192,81 +164,5 @@ class ModelService {
     return getModelsByDateRange(thirtyDaysAgo, DateTime.now());
   }
 
-  // Import models from CSV string
-  Future<void> importModelsFromCSV(String csvData) async {
-    try {
-      // Parse CSV data and convert to list of maps
-      final lines = csvData.trim().split('\n');
-      final List<Map<String, dynamic>> parsedData = [];
-      
-      for (final line in lines.skip(1)) { // Skip header
-        final parts = line.split(',');
-        if (parts.length >= 2) {
-          final dateStr = parts[0].trim();
-          final name = parts[1].trim();
-          
-          if (name.isNotEmpty) {
-            // Parse date (assuming format like "January 9" or "1/6/2025")
-            DateTime date;
-            try {
-              if (dateStr.contains('/')) {
-                // Format: "1/6/2025"
-                final dateParts = dateStr.split('/');
-                date = DateTime(
-                  int.parse(dateParts[2]),
-                  int.parse(dateParts[0]),
-                  int.parse(dateParts[1]),
-                );
-              } else {
-                // Format: "January 9" (assume current year)
-                final monthNames = [
-                  'January', 'February', 'March', 'April', 'May', 'June',
-                  'July', 'August', 'September', 'October', 'November', 'December'
-                ];
-                final monthDay = dateStr.split(' ');
-                final month = monthNames.indexOf(monthDay[0]) + 1;
-                final day = int.parse(monthDay[1]);
-                date = DateTime(DateTime.now().year, month, day);
-              }
-            } catch (e) {
-              print('Error parsing date: $dateStr, using current date');
-              date = DateTime.now();
-            }
-            
-            parsedData.add({
-              'name': name,
-              'date': date,
-              'notes': parts.length > 2 ? parts[2].trim() : null,
-              'isActive': true,
-            });
-          }
-        }
-      }
-      
-      await importModelsFromCSVData(parsedData);
-    } catch (e) {
-      print('Error importing CSV: $e');
-      rethrow;
-    }
-  }
 
-  // Export models to CSV string
-  Future<String> exportModelsToCSV() async {
-    try {
-      final modelsSnapshot = await _firestore.collection('models').get();
-      final models = modelsSnapshot.docs
-          .map((doc) => ModelModel.fromMap(doc.data() as Map<String, dynamic>, doc.id))
-          .toList();
-      
-      final csvLines = ['Date,Name,Notes,Active'];
-      for (final model in models) {
-        csvLines.add('${model.date.toString().split(' ')[0]},${model.name},${model.notes ?? ''},${model.isActive}');
-      }
-      
-      return csvLines.join('\n');
-    } catch (e) {
-      print('Error exporting CSV: $e');
-      rethrow;
-    }
-  }
 } 

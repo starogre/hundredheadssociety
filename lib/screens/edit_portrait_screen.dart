@@ -23,7 +23,7 @@ class EditPortraitScreen extends StatefulWidget {
 
 class _EditPortraitScreenState extends State<EditPortraitScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _titleController = TextEditingController();
+
   final _descriptionController = TextEditingController();
   File? _newImageFile;
   final ImagePicker _picker = ImagePicker();
@@ -40,7 +40,7 @@ class _EditPortraitScreenState extends State<EditPortraitScreen> {
   @override
   void initState() {
     super.initState();
-    _titleController.text = widget.portrait.title;
+
     _descriptionController.text = widget.portrait.description ?? '';
     _selectedModelName = widget.portrait.modelName;
     _selectedWeek = widget.portrait.weekNumber;
@@ -49,7 +49,6 @@ class _EditPortraitScreenState extends State<EditPortraitScreen> {
 
   @override
   void dispose() {
-    _titleController.dispose();
     _descriptionController.dispose();
     super.dispose();
   }
@@ -130,7 +129,7 @@ class _EditPortraitScreenState extends State<EditPortraitScreen> {
       // Update portrait in Firestore
       await portraitService.updatePortrait(
         portraitId: widget.portrait.id,
-        title: _titleController.text.trim(),
+        title: '', // Title deprecated
         description: _descriptionController.text.trim().isEmpty ? null : _descriptionController.text.trim(),
         imageUrl: newImageUrl,
         modelName: _selectedModelName,
@@ -321,37 +320,6 @@ class _EditPortraitScreenState extends State<EditPortraitScreen> {
                           ),
                         ),
                 ),
-              ),
-              const SizedBox(height: 16),
-              
-              // Title Field
-              Row(
-                children: [
-                  Icon(Icons.title, color: AppColors.forestGreen, size: 20),
-                  const SizedBox(width: 8),
-                  const Text(
-                    'Title',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 8),
-              TextFormField(
-                controller: _titleController,
-                decoration: const InputDecoration(
-                  border: OutlineInputBorder(),
-                  hintText: 'Enter portrait title',
-                  contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-                ),
-                validator: (value) {
-                  if (value == null || value.trim().isEmpty) {
-                    return 'Please enter a title';
-                  }
-                  return null;
-                },
               ),
               const SizedBox(height: 16),
               

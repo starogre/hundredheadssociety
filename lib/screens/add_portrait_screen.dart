@@ -27,7 +27,7 @@ class AddPortraitScreen extends StatefulWidget {
 
 class _AddPortraitScreenState extends State<AddPortraitScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _titleController = TextEditingController();
+
   final _descriptionController = TextEditingController();
   File? _selectedImage;
   bool _isLoading = false;
@@ -35,7 +35,7 @@ class _AddPortraitScreenState extends State<AddPortraitScreen> {
   List<int> _availableWeeks = [];
   bool _isBulkMode = false;
   List<File> _bulkImages = [];
-  List<TextEditingController> _bulkTitleControllers = [];
+
   List<TextEditingController> _bulkDescriptionControllers = [];
   List<int> _bulkWeekNumbers = [];
   
@@ -126,7 +126,7 @@ class _AddPortraitScreenState extends State<AddPortraitScreen> {
         setState(() {
           _isBulkMode = true; // Set bulk mode to true when images are selected
           _bulkImages = validFiles;
-          _bulkTitleControllers = List.generate(_bulkImages.length, (_) => TextEditingController());
+    
           _bulkDescriptionControllers = List.generate(_bulkImages.length, (_) => TextEditingController());
           _bulkModelIds = List.generate(_bulkImages.length, (_) => null);
           _bulkModelNames = List.generate(_bulkImages.length, (_) => null);
@@ -154,7 +154,7 @@ class _AddPortraitScreenState extends State<AddPortraitScreen> {
       await portraitProvider.addPortrait(
         userId: widget.userId,
         imageFile: _selectedImage!,
-        title: _titleController.text.trim(),
+        title: '', // Title deprecated
         description: _descriptionController.text.trim().isEmpty 
             ? null 
             : _descriptionController.text.trim(),
@@ -201,19 +201,12 @@ class _AddPortraitScreenState extends State<AddPortraitScreen> {
     
     final portraitProvider = Provider.of<PortraitProvider>(context, listen: false);
     for (int i = 0; i < _bulkImages.length; i++) {
-      final title = _bulkTitleControllers[i].text.trim();
-      if (title.isEmpty) {
-        hasError = true;
-        setState(() {
-          _bulkUploadProgress = i + 1;
-        });
-        continue;
-      }
+
       try {
         await portraitProvider.addPortrait(
           userId: widget.userId,
           imageFile: _bulkImages[i],
-          title: title,
+          title: '', // Title deprecated
           description: _bulkDescriptionControllers[i].text.trim().isEmpty ? null : _bulkDescriptionControllers[i].text.trim(),
           weekNumber: _bulkWeekNumbers[i],
           modelName: _bulkModelNames[i],
@@ -232,7 +225,6 @@ class _AddPortraitScreenState extends State<AddPortraitScreen> {
     setState(() {
       _isLoading = false;
       _bulkImages.clear();
-      _bulkTitleControllers.clear();
       _bulkDescriptionControllers.clear();
       _bulkModelIds.clear();
       _bulkModelNames.clear();
@@ -299,17 +291,6 @@ class _AddPortraitScreenState extends State<AddPortraitScreen> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Image.file(file, height: 100, width: double.infinity, fit: BoxFit.cover),
-                            const SizedBox(height: 8),
-                            TextFormField(
-                              controller: _bulkTitleControllers[i],
-                              decoration: const InputDecoration(labelText: 'Title *'),
-                              validator: (value) {
-                                if (value == null || value.trim().isEmpty) {
-                                  return 'Please enter a title';
-                                }
-                                return null;
-                              },
-                            ),
                             const SizedBox(height: 8),
                             TextFormField(
                               controller: _bulkDescriptionControllers[i],
@@ -396,10 +377,9 @@ class _AddPortraitScreenState extends State<AddPortraitScreen> {
                               _isBulkMode = val;
                               if (!val) {
                                 _bulkImages.clear();
-                                _bulkTitleControllers.clear();
                                 _bulkDescriptionControllers.clear();
                                 _bulkModelIds.clear();
-        _bulkModelNames.clear();
+                                _bulkModelNames.clear();
                                 _bulkWeekNumbers.clear();
                               }
                             });
@@ -521,22 +501,6 @@ class _AddPortraitScreenState extends State<AddPortraitScreen> {
                       ],
                     ),
                     const SizedBox(height: 20),
-                    // Title Field
-                    TextFormField(
-                      controller: _titleController,
-                      decoration: const InputDecoration(
-                        labelText: 'Title *',
-                        border: OutlineInputBorder(),
-                        contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                      ),
-                      validator: (value) {
-                        if (value == null || value.trim().isEmpty) {
-                          return 'Please enter a title';
-                        }
-                        return null;
-                      },
-                    ),
-                    const SizedBox(height: 16),
                     // Description Field
                     TextFormField(
                       controller: _descriptionController,
@@ -591,7 +555,6 @@ class _AddPortraitScreenState extends State<AddPortraitScreen> {
 
   @override
   void dispose() {
-    _titleController.dispose();
     _descriptionController.dispose();
     super.dispose();
   }

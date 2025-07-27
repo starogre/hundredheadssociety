@@ -135,31 +135,7 @@ class ModelProvider extends ChangeNotifier {
     }
   }
 
-  // Import models from CSV
-  Future<bool> importModelsFromCSV(String csvData) async {
-    _setLoading(true);
-    _clearError();
-    
-    try {
-      await _modelService.importModelsFromCSV(csvData);
-      _setLoading(false);
-      return true;
-    } catch (e) {
-      _setError('Failed to import models: $e');
-      _setLoading(false);
-      return false;
-    }
-  }
 
-  // Export models to CSV
-  Future<String> exportModelsToCSV() async {
-    try {
-      return await _modelService.exportModelsToCSV();
-    } catch (e) {
-      _setError('Failed to export models: $e');
-      return '';
-    }
-  }
 
   void _setLoading(bool loading) {
     _isLoading = loading;

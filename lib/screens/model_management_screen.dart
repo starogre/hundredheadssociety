@@ -55,40 +55,7 @@ class _ModelManagementScreenState extends State<ModelManagementScreen> {
             onPressed: () => _showAddModelDialog(context),
             tooltip: 'Add New Model',
           ),
-          PopupMenuButton<String>(
-            onSelected: (value) {
-              switch (value) {
-                case 'import_csv':
-                  _showImportDialog(context);
-                  break;
-                case 'export_csv':
-                  _exportToCSV(context);
-                  break;
-              }
-            },
-            itemBuilder: (context) => [
-              const PopupMenuItem(
-                value: 'import_csv',
-                child: Row(
-                  children: [
-                    Icon(Icons.upload_file),
-                    SizedBox(width: 8),
-                    Text('Import CSV'),
-                  ],
-                ),
-              ),
-              const PopupMenuItem(
-                value: 'export_csv',
-                child: Row(
-                  children: [
-                    Icon(Icons.download),
-                    SizedBox(width: 8),
-                    Text('Export CSV'),
-                  ],
-                ),
-              ),
-            ],
-          ),
+
         ],
       ),
       backgroundColor: AppColors.cream,
@@ -390,51 +357,7 @@ class _ModelManagementScreenState extends State<ModelManagementScreen> {
     );
   }
 
-  void _showImportDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('Import Models'),
-        content: const Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text('This will import model data from CSV files.'),
-            SizedBox(height: 16),
-            Text('Note: This will add new models but won\'t overwrite existing ones.'),
-            SizedBox(height: 8),
-            Text('Supported formats:'),
-            Text('• 2024: "January 9,TRUE,Kristine"'),
-            Text('• 2025: "1/6/2025 21:00:00,Geoffrey Barber"'),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.of(dialogContext).pop();
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('CSV import functionality coming soon!'),
-                ),
-              );
-            },
-            child: const Text('Import'),
-          ),
-        ],
-      ),
-    );
-  }
 
-  void _exportToCSV(BuildContext context) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('CSV export functionality coming soon!'),
-      ),
-    );
-  }
 }
 
 class AddModelScreen extends StatefulWidget {

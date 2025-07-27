@@ -6,7 +6,9 @@ import '../services/user_service.dart';
 import '../services/portrait_service.dart';
 import '../models/user_model.dart';
 import '../models/portrait_model.dart';
+import '../models/model_model.dart';
 import '../providers/auth_provider.dart';
+import '../providers/model_provider.dart';
 import 'profile_screen.dart';
 import '../theme/app_theme.dart';
 import '../widgets/portrait_details_dialog.dart';
@@ -428,45 +430,11 @@ class _CommunityScreenState extends State<CommunityScreen>
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    Text(
-                                      portrait.title,
-                                      style: const TextStyle(
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 18,
-                                      ),
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                    if (portrait.modelName != null && portrait.modelName!.isNotEmpty) ...[
-                                      const SizedBox(height: 6),
-                                      Chip(
-                                        label: Text(
-                                          portrait.modelName!,
-                                          style: const TextStyle(color: AppColors.rustyOrange, fontWeight: FontWeight.bold),
-                                        ),
-                                        backgroundColor: AppColors.lightRustyOrange,
-                                        shape: RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.circular(50),
-                                        ),
-                                        side: BorderSide.none,
-                                        visualDensity: VisualDensity.compact,
-                                      ),
-                                    ],
-                                    if (portrait.description != null && portrait.description!.isNotEmpty) ...[
-                                      const SizedBox(height: 6),
-                                      Text(
-                                        portrait.description!,
-                                        style: TextStyle(
-                                          color: AppColors.forestGreen.withOpacity(0.8),
-                                          fontSize: 14,
-                                        ),
-                                      ),
-                                    ],
-                                    const SizedBox(height: 8),
+                                    // Artist section - most prominent at top
                                     Row(
                                       children: [
                                         CircleAvatar(
-                                          radius: 14,
+                                          radius: 18,
                                           backgroundColor: AppColors.forestGreen,
                                           backgroundImage: user?.profileImageUrl != null && user!.profileImageUrl!.isNotEmpty
                                               ? NetworkImage(user.profileImageUrl!)
@@ -475,35 +443,38 @@ class _CommunityScreenState extends State<CommunityScreen>
                                               ? Text(
                                                   user?.name.isNotEmpty == true ? user!.name[0].toUpperCase() : 'A',
                                                   style: const TextStyle(
-                                                    fontSize: 12,
+                                                    fontSize: 14,
                                                     color: Colors.white,
+                                                    fontWeight: FontWeight.bold,
                                                   ),
                                                 )
                                               : null,
                                         ),
-                                        const SizedBox(width: 8),
+                                        const SizedBox(width: 12),
                                         Expanded(
-                                          child: Row(
+                                          child: Column(
+                                            crossAxisAlignment: CrossAxisAlignment.start,
                                             children: [
                                               Text(
                                                 user?.name ?? 'Anonymous',
-                                                style: TextStyle(
-                                                  color: AppColors.forestGreen.withValues(alpha: 0.7),
-                                                  fontSize: 14,
+                                                style: const TextStyle(
+                                                  fontSize: 18,
+                                                  fontWeight: FontWeight.bold,
+                                                  color: AppColors.forestGreen,
                                                 ),
                                                 maxLines: 1,
                                                 overflow: TextOverflow.ellipsis,
                                               ),
                                               if (user != null) ...[
-                                                const SizedBox(width: 6),
+                                                const SizedBox(height: 2),
                                                 // Role Badge
                                                 Container(
-                                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+                                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                                                   decoration: BoxDecoration(
                                                     color: user.isArtist 
                                                         ? Colors.blue.shade100 
                                                         : Colors.green.shade100,
-                                                    borderRadius: BorderRadius.circular(8),
+                                                    borderRadius: BorderRadius.circular(12),
                                                     border: Border.all(
                                                       color: user.isArtist 
                                                           ? Colors.blue.shade300 
@@ -513,7 +484,7 @@ class _CommunityScreenState extends State<CommunityScreen>
                                                   child: Text(
                                                     user.isArtist ? 'Artist' : 'Appreciator',
                                                     style: TextStyle(
-                                                      fontSize: 8,
+                                                      fontSize: 10,
                                                       fontWeight: FontWeight.w600,
                                                       color: user.isArtist 
                                                           ? Colors.blue.shade700 
@@ -527,6 +498,114 @@ class _CommunityScreenState extends State<CommunityScreen>
                                         ),
                                       ],
                                     ),
+                                    // Model section - below artist
+                                    if (portrait.modelName != null && portrait.modelName!.isNotEmpty) ...[
+                                      const SizedBox(height: 12),
+                                      Consumer<ModelProvider>(
+                                        builder: (context, modelProvider, child) {
+                                          return StreamBuilder<List<ModelModel>>(
+                                            stream: modelProvider.getModels(),
+                                            builder: (context, snapshot) {
+                                              ModelModel? model;
+                                              if (snapshot.hasData) {
+                                                model = snapshot.data!.firstWhere(
+                                                  (m) => m.name.toLowerCase() == portrait.modelName!.toLowerCase(),
+                                                  orElse: () => ModelModel(
+                                                    id: '',
+                                                    name: portrait.modelName!,
+                                                    date: DateTime.now(),
+                                                    isActive: true,
+                                                    createdAt: DateTime.now(),
+                                                    updatedAt: DateTime.now(),
+                                                  ),
+                                                );
+                                              }
+                                              
+                                              return Column(
+                                                crossAxisAlignment: CrossAxisAlignment.start,
+                                                children: [
+                                                  Row(
+                                                    children: [
+                                                      // Model image
+                                                      Container(
+                                                        width: 28,
+                                                        height: 28,
+                                                        decoration: BoxDecoration(
+                                                          borderRadius: BorderRadius.circular(14),
+                                                          border: Border.all(color: AppColors.forestGreen, width: 1.5),
+                                                        ),
+                                                        child: model?.imageUrl != null
+                                                            ? ClipRRect(
+                                                                borderRadius: BorderRadius.circular(12.5),
+                                                                child: Image.network(
+                                                                  model!.imageUrl!,
+                                                                  width: 28,
+                                                                  height: 28,
+                                                                  fit: BoxFit.cover,
+                                                                  errorBuilder: (context, error, stackTrace) {
+                                                                    return Container(
+                                                                      decoration: BoxDecoration(
+                                                                        color: AppColors.forestGreen,
+                                                                        borderRadius: BorderRadius.circular(12.5),
+                                                                      ),
+                                                                      child: const Icon(
+                                                                        Icons.person,
+                                                                        color: Colors.white,
+                                                                        size: 14,
+                                                                      ),
+                                                                    );
+                                                                  },
+                                                                ),
+                                                              )
+                                                            : Container(
+                                                                decoration: BoxDecoration(
+                                                                  color: AppColors.forestGreen,
+                                                                  borderRadius: BorderRadius.circular(12.5),
+                                                                ),
+                                                                child: const Icon(
+                                                                  Icons.person,
+                                                                  color: Colors.white,
+                                                                  size: 14,
+                                                                ),
+                                                              ),
+                                                      ),
+                                                      const SizedBox(width: 8),
+                                                      // Model name
+                                                      Expanded(
+                                                        child: Text(
+                                                          portrait.modelName!,
+                                                          style: const TextStyle(
+                                                            fontSize: 16,
+                                                            fontWeight: FontWeight.w600,
+                                                            color: AppColors.forestGreen,
+                                                          ),
+                                                        ),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                  // Model date - smaller and below
+                                                  if (model != null) ...[
+                                                    const SizedBox(height: 4),
+                                                    Padding(
+                                                      padding: const EdgeInsets.only(left: 36),
+                                                      child: Text(
+                                                        'Modeled ${_formatDate(model.date)}',
+                                                        style: TextStyle(
+                                                          fontSize: 12,
+                                                          color: AppColors.forestGreen.withValues(alpha: 0.6),
+                                                          fontStyle: FontStyle.italic,
+                                                        ),
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ],
+                                              );
+                                            },
+                                          );
+                                        },
+                                      ),
+                                    ],
+
                                   ],
                                 ),
                               ),
@@ -543,5 +622,13 @@ class _CommunityScreenState extends State<CommunityScreen>
         ),
       ],
     );
+  }
+
+  String _formatDate(DateTime date) {
+    const months = [
+      'January', 'February', 'March', 'April', 'May', 'June',
+      'July', 'August', 'September', 'October', 'November', 'December'
+    ];
+    return '${months[date.month - 1]} ${date.day}, ${date.year}';
   }
 } 

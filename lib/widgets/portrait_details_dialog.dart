@@ -56,7 +56,90 @@ class _PortraitDetailsDialogState extends State<PortraitDetailsDialog> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Model name section - prominent display above title
+                // Artist section - most prominent at top
+                Row(
+                  children: [
+                    CircleAvatar(
+                      radius: 20,
+                      backgroundColor: AppColors.forestGreen,
+                      backgroundImage: widget.user?.profileImageUrl != null 
+                          ? NetworkImage(widget.user!.profileImageUrl!)
+                          : null,
+                      child: widget.user?.profileImageUrl == null
+                          ? Text(
+                              widget.user?.name.isNotEmpty == true ? widget.user!.name[0].toUpperCase() : 'A',
+                              style: const TextStyle(
+                                fontSize: 16,
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            )
+                          : null,
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            widget.user?.name ?? 'Anonymous',
+                            style: const TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.forestGreen,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          if (widget.user != null) ...[
+                            const SizedBox(height: 2),
+                            // Role Badge
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: widget.user!.isArtist 
+                                    ? Colors.blue.shade100 
+                                    : Colors.green.shade100,
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(
+                                  color: widget.user!.isArtist 
+                                      ? Colors.blue.shade300 
+                                      : Colors.green.shade300,
+                                ),
+                              ),
+                              child: Text(
+                                widget.user!.isArtist ? 'Artist' : 'Appreciator',
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w600,
+                                  color: widget.user!.isArtist 
+                                      ? Colors.blue.shade700 
+                                      : Colors.green.shade700,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                    if (isOwner && !_showDeleteConfirmation) ...[
+                      IconButton(
+                        icon: const Icon(Icons.edit, color: Colors.blue),
+                        onPressed: () => _editPortrait(context),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.delete, color: Colors.red),
+                        onPressed: () {
+                          setState(() {
+                            _showDeleteConfirmation = true;
+                          });
+                        },
+                      ),
+                    ],
+                  ],
+                ),
+                const SizedBox(height: 16),
+                // Model section - below artist
                 if (widget.portrait.modelName != null && widget.portrait.modelName!.isNotEmpty) ...[
                   Consumer<ModelProvider>(
                     builder: (context, modelProvider, child) {
@@ -78,63 +161,83 @@ class _PortraitDetailsDialogState extends State<PortraitDetailsDialog> {
                             );
                           }
                           
-                          return Row(
+                          return Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              // Model image
-                              Container(
-                                width: 40,
-                                height: 40,
-                                decoration: BoxDecoration(
-                                  borderRadius: BorderRadius.circular(20),
-                                  border: Border.all(color: AppColors.forestGreen, width: 2),
-                                ),
-                                child: model?.imageUrl != null
-                                    ? ClipRRect(
-                                        borderRadius: BorderRadius.circular(18),
-                                        child: Image.network(
-                                          model!.imageUrl!,
-                                          width: 40,
-                                          height: 40,
-                                          fit: BoxFit.cover,
-                                          errorBuilder: (context, error, stackTrace) {
-                                            return Container(
-                                              decoration: BoxDecoration(
-                                                color: AppColors.forestGreen,
-                                                borderRadius: BorderRadius.circular(18),
-                                              ),
-                                              child: const Icon(
-                                                Icons.person,
-                                                color: Colors.white,
-                                                size: 20,
-                                              ),
-                                            );
-                                          },
-                                        ),
-                                      )
-                                    : Container(
-                                        decoration: BoxDecoration(
-                                          color: AppColors.forestGreen,
-                                          borderRadius: BorderRadius.circular(18),
-                                        ),
-                                        child: const Icon(
-                                          Icons.person,
-                                          color: Colors.white,
-                                          size: 20,
-                                        ),
-                                      ),
-                              ),
-                              const SizedBox(width: 12),
-                              // Model name
-                              Expanded(
-                                child: Text(
-                                  widget.portrait.modelName!,
-                                  style: const TextStyle(
-                                    fontSize: 20,
-                                    fontWeight: FontWeight.bold,
-                                    color: AppColors.forestGreen,
+                              Row(
+                                children: [
+                                  // Model image
+                                  Container(
+                                    width: 36,
+                                    height: 36,
+                                    decoration: BoxDecoration(
+                                      borderRadius: BorderRadius.circular(18),
+                                      border: Border.all(color: AppColors.forestGreen, width: 1.5),
+                                    ),
+                                    child: model?.imageUrl != null
+                                        ? ClipRRect(
+                                            borderRadius: BorderRadius.circular(16.5),
+                                            child: Image.network(
+                                              model!.imageUrl!,
+                                              width: 36,
+                                              height: 36,
+                                              fit: BoxFit.cover,
+                                              errorBuilder: (context, error, stackTrace) {
+                                                return Container(
+                                                  decoration: BoxDecoration(
+                                                    color: AppColors.forestGreen,
+                                                    borderRadius: BorderRadius.circular(16.5),
+                                                  ),
+                                                  child: const Icon(
+                                                    Icons.person,
+                                                    color: Colors.white,
+                                                    size: 18,
+                                                  ),
+                                                );
+                                              },
+                                            ),
+                                          )
+                                        : Container(
+                                            decoration: BoxDecoration(
+                                              color: AppColors.forestGreen,
+                                              borderRadius: BorderRadius.circular(16.5),
+                                            ),
+                                            child: const Icon(
+                                              Icons.person,
+                                              color: Colors.white,
+                                              size: 18,
+                                            ),
+                                          ),
                                   ),
-                                ),
+                                  const SizedBox(width: 12),
+                                  // Model name
+                                  Expanded(
+                                    child: Text(
+                                      widget.portrait.modelName!,
+                                      style: const TextStyle(
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.w600,
+                                        color: AppColors.forestGreen,
+                                      ),
+                                    ),
+                                  ),
+                                ],
                               ),
+                              // Model date - smaller and below
+                              if (model != null) ...[
+                                const SizedBox(height: 4),
+                                Padding(
+                                  padding: const EdgeInsets.only(left: 48),
+                                                                     child: Text(
+                                     'Modeled ${_formatDate(model.date)}',
+                                     style: TextStyle(
+                                       fontSize: 14,
+                                       color: AppColors.forestGreen.withValues(alpha: 0.6),
+                                       fontStyle: FontStyle.italic,
+                                     ),
+                                   ),
+                                ),
+                              ],
                             ],
                           );
                         },
@@ -143,84 +246,18 @@ class _PortraitDetailsDialogState extends State<PortraitDetailsDialog> {
                   ),
                   const SizedBox(height: 16),
                 ],
-                // Title section
-                Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        widget.portrait.title,
-                        style: const TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                    if (isOwner && !_showDeleteConfirmation) ...[
-                      IconButton(
-                        icon: const Icon(Icons.edit, color: Colors.blue),
-                        onPressed: () => _editPortrait(context),
-                      ),
-                      IconButton(
-                        icon: const Icon(Icons.delete, color: Colors.red),
-                        onPressed: () {
-                          setState(() {
-                            _showDeleteConfirmation = true;
-                          });
-                        },
-                      ),
-                    ],
-                  ],
-                ),
+                // Description section - at the bottom
                 if (widget.portrait.description != null && widget.portrait.description!.isNotEmpty) ...[
-                  const SizedBox(height: 8),
                   Text(
                     widget.portrait.description!,
                     style: TextStyle(
-                      color: AppColors.forestGreen.withOpacity(0.7),
+                      fontSize: 16,
+                      color: AppColors.forestGreen.withValues(alpha: 0.8),
+                      height: 1.4,
                     ),
                   ),
+                  const SizedBox(height: 16),
                 ],
-                const SizedBox(height: 8),
-                Row(
-                  children: [
-                    CircleAvatar(
-                      radius: 14,
-                      backgroundColor: AppColors.forestGreen,
-                      backgroundImage: widget.user?.profileImageUrl != null 
-                          ? NetworkImage(widget.user!.profileImageUrl!)
-                          : null,
-                      child: widget.user?.profileImageUrl == null
-                          ? Text(
-                              widget.user?.name.isNotEmpty == true ? widget.user!.name[0].toUpperCase() : 'A',
-                              style: const TextStyle(
-                                fontSize: 12,
-                                color: Colors.white,
-                              ),
-                            )
-                          : null,
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        widget.user?.name ?? 'Anonymous',
-                        style: TextStyle(
-                          color: AppColors.forestGreen.withOpacity(0.7),
-                          fontSize: 14,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      'Week ${widget.portrait.weekNumber}',
-                      style: TextStyle(
-                        color: AppColors.rustyOrange,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ],
-                ),
                 // Model name section
 
                 // Delete confirmation section
@@ -355,5 +392,13 @@ class _PortraitDetailsDialogState extends State<PortraitDetailsDialog> {
         });
       }
     }
+  }
+
+  String _formatDate(DateTime date) {
+    const months = [
+      'January', 'February', 'March', 'April', 'May', 'June',
+      'July', 'August', 'September', 'October', 'November', 'December'
+    ];
+    return '${months[date.month - 1]} ${date.day}, ${date.year}';
   }
 } 

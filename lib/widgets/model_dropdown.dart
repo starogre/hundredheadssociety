@@ -161,7 +161,7 @@ class _ModelDropdownState extends State<ModelDropdown> {
                             overflow: TextOverflow.ellipsis,
                           ),
                           Text(
-                            model.date.toString().split(' ')[0],
+                            _formatDate(model.date),
                             style: TextStyle(
                               fontSize: 12,
                               color: Colors.grey.shade600,
@@ -248,5 +248,13 @@ class _ModelDropdownState extends State<ModelDropdown> {
         );
       },
     );
+  }
+
+  String _formatDate(DateTime date) {
+    const months = [
+      'January', 'February', 'March', 'April', 'May', 'June',
+      'July', 'August', 'September', 'October', 'November', 'December'
+    ];
+    return '${months[date.month - 1]} ${date.day}, ${date.year}';
   }
 } 
