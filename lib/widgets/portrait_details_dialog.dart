@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:provider/provider.dart';
 import '../models/portrait_model.dart';
 import '../models/user_model.dart';
+import '../models/model_model.dart';
 import '../theme/app_theme.dart';
 import '../screens/edit_portrait_screen.dart';
 import '../services/portrait_service.dart';
-import 'dart:io';
+import '../providers/model_provider.dart';
 
 class PortraitDetailsDialog extends StatefulWidget {
   final PortraitModel portrait;
@@ -54,6 +56,94 @@ class _PortraitDetailsDialogState extends State<PortraitDetailsDialog> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                // Model name section - prominent display above title
+                if (widget.portrait.modelName != null && widget.portrait.modelName!.isNotEmpty) ...[
+                  Consumer<ModelProvider>(
+                    builder: (context, modelProvider, child) {
+                      return StreamBuilder<List<ModelModel>>(
+                        stream: modelProvider.getModels(),
+                        builder: (context, snapshot) {
+                          ModelModel? model;
+                          if (snapshot.hasData) {
+                            model = snapshot.data!.firstWhere(
+                              (m) => m.name.toLowerCase() == widget.portrait.modelName!.toLowerCase(),
+                              orElse: () => ModelModel(
+                                id: '',
+                                name: widget.portrait.modelName!,
+                                date: DateTime.now(),
+                                isActive: true,
+                                createdAt: DateTime.now(),
+                                updatedAt: DateTime.now(),
+                              ),
+                            );
+                          }
+                          
+                          return Row(
+                            children: [
+                              // Model image
+                              Container(
+                                width: 40,
+                                height: 40,
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(20),
+                                  border: Border.all(color: AppColors.forestGreen, width: 2),
+                                ),
+                                child: model?.imageUrl != null
+                                    ? ClipRRect(
+                                        borderRadius: BorderRadius.circular(18),
+                                        child: Image.network(
+                                          model!.imageUrl!,
+                                          width: 40,
+                                          height: 40,
+                                          fit: BoxFit.cover,
+                                          errorBuilder: (context, error, stackTrace) {
+                                            return Container(
+                                              decoration: BoxDecoration(
+                                                color: AppColors.forestGreen,
+                                                borderRadius: BorderRadius.circular(18),
+                                              ),
+                                              child: const Icon(
+                                                Icons.person,
+                                                color: Colors.white,
+                                                size: 20,
+                                              ),
+                                            );
+                                          },
+                                        ),
+                                      )
+                                    : Container(
+                                        decoration: BoxDecoration(
+                                          color: AppColors.forestGreen,
+                                          borderRadius: BorderRadius.circular(18),
+                                        ),
+                                        child: const Icon(
+                                          Icons.person,
+                                          color: Colors.white,
+                                          size: 20,
+                                        ),
+                                      ),
+                              ),
+                              const SizedBox(width: 12),
+                              // Model name
+                              Expanded(
+                                child: Text(
+                                  widget.portrait.modelName!,
+                                  style: const TextStyle(
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.bold,
+                                    color: AppColors.forestGreen,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          );
+                        },
+                      );
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                ],
+                // Title section
                 Row(
                   children: [
                     Expanded(
@@ -132,26 +222,7 @@ class _PortraitDetailsDialogState extends State<PortraitDetailsDialog> {
                   ],
                 ),
                 // Model name section
-                if (widget.portrait.modelName != null && widget.portrait.modelName!.isNotEmpty) ...[
-                  const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      Icon(
-                        Icons.person,
-                        size: 16,
-                        color: AppColors.forestGreen.withOpacity(0.7),
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        'Model: ${widget.portrait.modelName}',
-                        style: TextStyle(
-                          color: AppColors.forestGreen.withOpacity(0.7),
-                          fontSize: 14,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
+
                 // Delete confirmation section
                 if (_showDeleteConfirmation) ...[
                   const SizedBox(height: 16),
