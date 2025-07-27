@@ -76,6 +76,21 @@ class _ChangesTab extends StatelessWidget {
           title: Text('User Role Refinements'),
           subtitle: Text('Art appreciators are now auto-approved, only artists require admin approval. Updated approval workflows.'),
         ),
+        ListTile(
+          leading: Icon(Icons.model_training, color: AppColors.forestGreen),
+          title: Text('Model Management System'),
+          subtitle: Text('Admins can now add, edit, and delete models with images and dates. Users select models from dropdown instead of typing names.'),
+        ),
+        ListTile(
+          leading: Icon(Icons.design_services, color: AppColors.forestGreen),
+          title: Text('Portrait Layout Redesign'),
+          subtitle: Text('Deprecated portrait titles, redesigned cards to show artist prominently, then model with formatted dates. Enhanced portrait preview with full-size image viewing and profile navigation.'),
+        ),
+        ListTile(
+          leading: Icon(Icons.search, color: AppColors.forestGreen),
+          title: Text('Enhanced Community Features'),
+          subtitle: Text('Improved search functionality to filter by model name or artist name. Better tab organization with Recent Portraits as default view.'),
+        ),
       ],
     );
   }

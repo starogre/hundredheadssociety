@@ -33,7 +33,7 @@ class _CommunityScreenState extends State<CommunityScreen>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 2, vsync: this);
+    _tabController = TabController(length: 2, vsync: this, initialIndex: 0); // Start on Recent tab
   }
 
   @override
@@ -68,8 +68,8 @@ class _CommunityScreenState extends State<CommunityScreen>
             unselectedLabelColor: AppColors.forestGreen.withValues(alpha: 0.7),
             indicatorColor: AppColors.rustyOrange,
             tabs: const [
-              Tab(text: 'Artists'),
               Tab(text: 'Recent Portraits'),
+              Tab(text: 'Members'),
             ],
           ),
 
@@ -77,10 +77,10 @@ class _CommunityScreenState extends State<CommunityScreen>
           Expanded(
             child: TabBarView(
               controller: _tabController,
-              children: [
-                _buildArtistsTab(),
-                _buildRecentPortraitsTab(),
-              ],
+                          children: [
+              _buildRecentPortraitsTab(),
+              _buildArtistsTab(),
+            ],
             ),
           ),
         ],
@@ -97,7 +97,7 @@ class _CommunityScreenState extends State<CommunityScreen>
           child: TextField(
             controller: _searchController,
             decoration: InputDecoration(
-              hintText: 'Search artists...',
+              hintText: 'Search members...',
               prefixIcon: const Icon(Icons.search),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(25),
@@ -289,7 +289,7 @@ class _CommunityScreenState extends State<CommunityScreen>
           padding: const EdgeInsets.all(16),
           child: TextField(
             decoration: InputDecoration(
-              hintText: 'Filter by model name...',
+              hintText: 'Filter by model name or artist...',
               prefixIcon: const Icon(Icons.filter_alt),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(25),
@@ -327,9 +327,13 @@ class _CommunityScreenState extends State<CommunityScreen>
                 );
               }
 
+              final allPortraits = snapshot.data!;
+              // For now, filter by model name only. Artist filtering will be handled in the UI
               final portraits = _modelNameFilter.isEmpty
-                  ? snapshot.data!
-                  : snapshot.data!.where((p) => (p.modelName ?? '').toLowerCase().contains(_modelNameFilter.toLowerCase())).toList();
+                  ? allPortraits
+                  : allPortraits.where((p) => 
+                      (p.modelName ?? '').toLowerCase().contains(_modelNameFilter.toLowerCase())
+                    ).toList();
 
               if (portraits.isEmpty) {
                 return Center(
@@ -372,6 +376,15 @@ class _CommunityScreenState extends State<CommunityScreen>
                     future: _userService.getUserById(portrait.userId),
                     builder: (context, userSnapshot) {
                       final user = userSnapshot.data;
+                      
+                      // Filter by both model name and artist name
+                      if (_modelNameFilter.isNotEmpty && user != null) {
+                        final artistMatch = user.name.toLowerCase().contains(_modelNameFilter.toLowerCase());
+                        final modelMatch = (portrait.modelName ?? '').toLowerCase().contains(_modelNameFilter.toLowerCase());
+                        if (!artistMatch && !modelMatch) {
+                          return const SizedBox.shrink(); // Hide this item
+                        }
+                      }
                       return GestureDetector(
                         onTap: () {
                           final currentUser = Provider.of<AuthProvider>(context, listen: false).currentUser;

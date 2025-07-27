@@ -6,6 +6,7 @@ import '../models/user_model.dart';
 import '../models/model_model.dart';
 import '../theme/app_theme.dart';
 import '../screens/edit_portrait_screen.dart';
+import '../screens/profile_screen.dart';
 import '../services/portrait_service.dart';
 import '../providers/model_provider.dart';
 
@@ -40,15 +41,19 @@ class _PortraitDetailsDialogState extends State<PortraitDetailsDialog> {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Container(
-            width: double.infinity,
-            height: 300,
-            decoration: BoxDecoration(
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(8)),
-              image: DecorationImage(
-                image: CachedNetworkImageProvider(widget.portrait.imageUrl),
-                fit: BoxFit.cover,
+          GestureDetector(
+            onTap: () => _showFullImage(context),
+            child: Container(
+              width: double.infinity,
+              height: 300,
+              decoration: BoxDecoration(
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(8)),
+                image: DecorationImage(
+                  image: CachedNetworkImageProvider(widget.portrait.imageUrl),
+                  fit: BoxFit.cover,
+                ),
               ),
+
             ),
           ),
           Padding(
@@ -57,40 +62,42 @@ class _PortraitDetailsDialogState extends State<PortraitDetailsDialog> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 // Artist section - most prominent at top
-                Row(
-                  children: [
-                    CircleAvatar(
-                      radius: 20,
-                      backgroundColor: AppColors.forestGreen,
-                      backgroundImage: widget.user?.profileImageUrl != null 
-                          ? NetworkImage(widget.user!.profileImageUrl!)
-                          : null,
-                      child: widget.user?.profileImageUrl == null
-                          ? Text(
-                              widget.user?.name.isNotEmpty == true ? widget.user!.name[0].toUpperCase() : 'A',
+                GestureDetector(
+                  onTap: () => _navigateToProfile(context),
+                  child: Row(
+                    children: [
+                      CircleAvatar(
+                        radius: 20,
+                        backgroundColor: AppColors.forestGreen,
+                        backgroundImage: widget.user?.profileImageUrl != null 
+                            ? NetworkImage(widget.user!.profileImageUrl!)
+                            : null,
+                        child: widget.user?.profileImageUrl == null
+                            ? Text(
+                                widget.user?.name.isNotEmpty == true ? widget.user!.name[0].toUpperCase() : 'A',
+                                style: const TextStyle(
+                                  fontSize: 16,
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              )
+                            : null,
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              widget.user?.name ?? 'Anonymous',
                               style: const TextStyle(
-                                fontSize: 16,
-                                color: Colors.white,
+                                fontSize: 20,
                                 fontWeight: FontWeight.bold,
+                                color: AppColors.forestGreen,
                               ),
-                            )
-                          : null,
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            widget.user?.name ?? 'Anonymous',
-                            style: const TextStyle(
-                              fontSize: 20,
-                              fontWeight: FontWeight.bold,
-                              color: AppColors.forestGreen,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
                             ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
                           if (widget.user != null) ...[
                             const SizedBox(height: 2),
                             // Role Badge
@@ -137,6 +144,7 @@ class _PortraitDetailsDialogState extends State<PortraitDetailsDialog> {
                       ),
                     ],
                   ],
+                ),
                 ),
                 const SizedBox(height: 16),
                 // Model section - below artist
@@ -400,5 +408,82 @@ class _PortraitDetailsDialogState extends State<PortraitDetailsDialog> {
       'July', 'August', 'September', 'October', 'November', 'December'
     ];
     return '${months[date.month - 1]} ${date.day}, ${date.year}';
+  }
+
+  void _showFullImage(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        backgroundColor: Colors.transparent,
+        child: Stack(
+          children: [
+            // Full size image
+            Center(
+              child: InteractiveViewer(
+                child: CachedNetworkImage(
+                  imageUrl: widget.portrait.imageUrl,
+                  fit: BoxFit.contain,
+                  placeholder: (context, url) => Container(
+                    color: Colors.black,
+                    child: const Center(
+                      child: CircularProgressIndicator(
+                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                      ),
+                    ),
+                  ),
+                  errorWidget: (context, url, error) => Container(
+                    color: Colors.black,
+                    child: const Center(
+                      child: Icon(
+                        Icons.error,
+                        color: Colors.white,
+                        size: 48,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            // Close button
+            Positioned(
+              bottom: 40,
+              left: 0,
+              right: 0,
+              child: Center(
+                child: GestureDetector(
+                  onTap: () => Navigator.of(context).pop(),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withOpacity(0.7),
+                      borderRadius: BorderRadius.circular(25),
+                    ),
+                    child: const Text(
+                      'Close',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _navigateToProfile(BuildContext context) {
+    if (widget.user != null) {
+      Navigator.of(context).pop(); // Close the portrait details dialog
+      Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (context) => ProfileScreen(userId: widget.user!.id),
+        ),
+      );
+    }
   }
 } 
