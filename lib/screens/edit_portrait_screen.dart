@@ -5,6 +5,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import '../models/portrait_model.dart';
 import '../services/portrait_service.dart';
 import '../theme/app_theme.dart';
+import '../widgets/model_dropdown.dart';
 
 class EditPortraitScreen extends StatefulWidget {
   final PortraitModel portrait;
@@ -24,7 +25,6 @@ class _EditPortraitScreenState extends State<EditPortraitScreen> {
   final _formKey = GlobalKey<FormState>();
   final _titleController = TextEditingController();
   final _descriptionController = TextEditingController();
-  final _modelNameController = TextEditingController();
   File? _newImageFile;
   final ImagePicker _picker = ImagePicker();
   bool _isLoading = false;
@@ -32,13 +32,17 @@ class _EditPortraitScreenState extends State<EditPortraitScreen> {
   int _selectedWeek = 1;
   List<int> _availableWeeks = [];
   bool _isSaving = false; // Prevent multiple saves
+  
+  // Model selection
+  String? _selectedModelId;
+  String? _selectedModelName;
 
   @override
   void initState() {
     super.initState();
     _titleController.text = widget.portrait.title;
     _descriptionController.text = widget.portrait.description ?? '';
-    _modelNameController.text = widget.portrait.modelName ?? '';
+    _selectedModelName = widget.portrait.modelName;
     _selectedWeek = widget.portrait.weekNumber;
     _loadAvailableWeeks();
   }
@@ -47,7 +51,6 @@ class _EditPortraitScreenState extends State<EditPortraitScreen> {
   void dispose() {
     _titleController.dispose();
     _descriptionController.dispose();
-    _modelNameController.dispose();
     super.dispose();
   }
 
@@ -130,7 +133,7 @@ class _EditPortraitScreenState extends State<EditPortraitScreen> {
         title: _titleController.text.trim(),
         description: _descriptionController.text.trim().isEmpty ? null : _descriptionController.text.trim(),
         imageUrl: newImageUrl,
-        modelName: _modelNameController.text.trim().isEmpty ? null : _modelNameController.text.trim(),
+        modelName: _selectedModelName,
         weekNumber: _selectedWeek, // Add week number to update
       );
 
@@ -392,13 +395,15 @@ class _EditPortraitScreenState extends State<EditPortraitScreen> {
                 ],
               ),
               const SizedBox(height: 8),
-              TextFormField(
-                controller: _modelNameController,
-                decoration: const InputDecoration(
-                  border: OutlineInputBorder(),
-                  hintText: 'Enter model name (optional)',
-                  contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-                ),
+              ModelDropdown(
+                selectedModelId: _selectedModelId,
+                selectedModelName: _selectedModelName,
+                onModelSelected: (modelId, modelName) {
+                  setState(() {
+                    _selectedModelId = modelId;
+                    _selectedModelName = modelName;
+                  });
+                },
               ),
               const SizedBox(height: 24),
               

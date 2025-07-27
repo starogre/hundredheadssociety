@@ -105,8 +105,8 @@ class AuthProvider extends ChangeNotifier {
           final lastVerification = _userData!.lastVerificationTimestamp;
           final now = DateTime.now();
           
-          // If no verification timestamp or verification is older than 1 minute, require re-verification
-          if (lastVerification == null || now.difference(lastVerification).inMinutes > 1) {
+          // If no verification timestamp or verification is older than 24 hours, require re-verification
+          if (lastVerification == null || now.difference(lastVerification).inHours > 24) {
             print('[AuthProvider] Admin user needs re-verification - sending new email');
             
             // Send a new verification email for admin users
@@ -171,11 +171,11 @@ class AuthProvider extends ChangeNotifier {
       final lastVerification = _userData!.lastVerificationTimestamp;
       final now = DateTime.now();
       
-      // Require re-verification if no timestamp or verification is older than 1 minute
-      final needsVerification = lastVerification == null || now.difference(lastVerification).inMinutes > 1;
+      // Require re-verification if no timestamp or verification is older than 24 hours
+      final needsVerification = lastVerification == null || now.difference(lastVerification).inHours > 24;
       print('[AuthProvider] Admin user needs verification: $needsVerification');
       print('  - Last verification: $lastVerification');
-      print('  - Time difference: ${lastVerification != null ? now.difference(lastVerification).inMinutes : 'null'} minutes');
+      print('  - Time difference: ${lastVerification != null ? now.difference(lastVerification).inHours : 'null'} hours');
       return needsVerification;
     }
     

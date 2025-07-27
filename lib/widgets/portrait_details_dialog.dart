@@ -131,6 +131,27 @@ class _PortraitDetailsDialogState extends State<PortraitDetailsDialog> {
                     ),
                   ],
                 ),
+                // Model name section
+                if (widget.portrait.modelName != null && widget.portrait.modelName!.isNotEmpty) ...[
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.person,
+                        size: 16,
+                        color: AppColors.forestGreen.withOpacity(0.7),
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Model: ${widget.portrait.modelName}',
+                        style: TextStyle(
+                          color: AppColors.forestGreen.withOpacity(0.7),
+                          fontSize: 14,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
                 // Delete confirmation section
                 if (_showDeleteConfirmation) ...[
                   const SizedBox(height: 16),

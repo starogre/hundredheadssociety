@@ -6,6 +6,7 @@ import 'providers/auth_provider.dart';
 import 'providers/notification_provider.dart';
 import 'providers/portrait_provider.dart';
 import 'providers/weekly_session_provider.dart';
+import 'providers/model_provider.dart';
 import 'screens/login_screen.dart';
 import 'screens/dashboard_screen.dart';
 import 'screens/splash_screen.dart';
@@ -36,6 +37,7 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => NotificationProvider()),
         ChangeNotifierProvider(create: (_) => PortraitProvider()),
         ChangeNotifierProvider(create: (_) => WeeklySessionProvider()),
+        ChangeNotifierProvider(create: (_) => ModelProvider()),
       ],
       child: MaterialApp(
         title: '100 Heads Society',

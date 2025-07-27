@@ -8,6 +8,7 @@ import '../theme/app_theme.dart';
 import '../providers/auth_provider.dart';
 import '../widgets/multi_image_picker_gallery.dart';
 import '../widgets/bulk_image_grid_picker.dart';
+import '../widgets/model_dropdown.dart';
 import '../services/portrait_service.dart';
 
 class AddPortraitScreen extends StatefulWidget {
@@ -28,7 +29,6 @@ class _AddPortraitScreenState extends State<AddPortraitScreen> {
   final _formKey = GlobalKey<FormState>();
   final _titleController = TextEditingController();
   final _descriptionController = TextEditingController();
-  final _modelNameController = TextEditingController();
   File? _selectedImage;
   bool _isLoading = false;
   int _selectedWeek = 1;
@@ -37,8 +37,15 @@ class _AddPortraitScreenState extends State<AddPortraitScreen> {
   List<File> _bulkImages = [];
   List<TextEditingController> _bulkTitleControllers = [];
   List<TextEditingController> _bulkDescriptionControllers = [];
-  List<TextEditingController> _bulkModelNameControllers = [];
   List<int> _bulkWeekNumbers = [];
+  
+  // Model selection
+  String? _selectedModelId;
+  String? _selectedModelName;
+  
+  // Bulk upload model selection
+  List<String?> _bulkModelIds = [];
+  List<String?> _bulkModelNames = [];
   
   // Progress tracking for bulk upload
   int _bulkUploadProgress = 0;
@@ -121,7 +128,8 @@ class _AddPortraitScreenState extends State<AddPortraitScreen> {
           _bulkImages = validFiles;
           _bulkTitleControllers = List.generate(_bulkImages.length, (_) => TextEditingController());
           _bulkDescriptionControllers = List.generate(_bulkImages.length, (_) => TextEditingController());
-          _bulkModelNameControllers = List.generate(_bulkImages.length, (_) => TextEditingController());
+          _bulkModelIds = List.generate(_bulkImages.length, (_) => null);
+          _bulkModelNames = List.generate(_bulkImages.length, (_) => null);
           _bulkWeekNumbers = nextWeeks;
         });
         
@@ -151,7 +159,7 @@ class _AddPortraitScreenState extends State<AddPortraitScreen> {
             ? null 
             : _descriptionController.text.trim(),
         weekNumber: _selectedWeek,
-        modelName: _modelNameController.text.trim().isEmpty ? null : _modelNameController.text.trim(),
+        modelName: _selectedModelName,
         context: context,
       );
 
@@ -208,7 +216,7 @@ class _AddPortraitScreenState extends State<AddPortraitScreen> {
           title: title,
           description: _bulkDescriptionControllers[i].text.trim().isEmpty ? null : _bulkDescriptionControllers[i].text.trim(),
           weekNumber: _bulkWeekNumbers[i],
-          modelName: _bulkModelNameControllers[i].text.trim().isEmpty ? null : _bulkModelNameControllers[i].text.trim(),
+          modelName: _bulkModelNames[i],
           context: context,
         );
         setState(() {
@@ -226,7 +234,8 @@ class _AddPortraitScreenState extends State<AddPortraitScreen> {
       _bulkImages.clear();
       _bulkTitleControllers.clear();
       _bulkDescriptionControllers.clear();
-      _bulkModelNameControllers.clear();
+      _bulkModelIds.clear();
+      _bulkModelNames.clear();
       _bulkWeekNumbers.clear();
       _isBulkMode = false;
       _bulkUploadProgress = 0;
@@ -307,9 +316,15 @@ class _AddPortraitScreenState extends State<AddPortraitScreen> {
                               decoration: const InputDecoration(labelText: 'Description (optional)'),
                             ),
                             const SizedBox(height: 8),
-                            TextFormField(
-                              controller: _bulkModelNameControllers[i],
-                              decoration: const InputDecoration(labelText: 'Model Name (optional)'),
+                            ModelDropdown(
+                              selectedModelId: _bulkModelIds[i],
+                              selectedModelName: _bulkModelNames[i],
+                              onModelSelected: (modelId, modelName) {
+                                setState(() {
+                                  _bulkModelIds[i] = modelId;
+                                  _bulkModelNames[i] = modelName;
+                                });
+                              },
                             ),
                             const SizedBox(height: 8),
                             Text('Week: ${_bulkWeekNumbers[i]}'),
@@ -383,7 +398,8 @@ class _AddPortraitScreenState extends State<AddPortraitScreen> {
                                 _bulkImages.clear();
                                 _bulkTitleControllers.clear();
                                 _bulkDescriptionControllers.clear();
-                                _bulkModelNameControllers.clear();
+                                _bulkModelIds.clear();
+        _bulkModelNames.clear();
                                 _bulkWeekNumbers.clear();
                               }
                             });
@@ -532,14 +548,16 @@ class _AddPortraitScreenState extends State<AddPortraitScreen> {
                       maxLines: 3,
                     ),
                     const SizedBox(height: 16),
-                    // Model Name Field
-                    TextFormField(
-                      controller: _modelNameController,
-                      decoration: const InputDecoration(
-                        labelText: 'Model Name (optional)',
-                        border: OutlineInputBorder(),
-                        contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                      ),
+                    // Model Selection
+                    ModelDropdown(
+                      selectedModelId: _selectedModelId,
+                      selectedModelName: _selectedModelName,
+                      onModelSelected: (modelId, modelName) {
+                        setState(() {
+                          _selectedModelId = modelId;
+                          _selectedModelName = modelName;
+                        });
+                      },
                     ),
                     const SizedBox(height: 24),
                     // Save Button
@@ -575,7 +593,6 @@ class _AddPortraitScreenState extends State<AddPortraitScreen> {
   void dispose() {
     _titleController.dispose();
     _descriptionController.dispose();
-    _modelNameController.dispose();
     super.dispose();
   }
 } 

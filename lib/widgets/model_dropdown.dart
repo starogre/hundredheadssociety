@@ -1,20 +1,20 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../providers/model_provider.dart';
 import '../models/model_model.dart';
-import '../services/model_service.dart';
-import '../theme/app_theme.dart';
 
 class ModelDropdown extends StatefulWidget {
   final String? selectedModelId;
-  final Function(String? modelId, String? modelName) onModelSelected;
-  final bool showSearch;
-  final String? hintText;
+  final String? selectedModelName;
+  final Function(String? modelId, String? modelName)? onModelSelected;
+  final bool showOnlyActive;
 
   const ModelDropdown({
     super.key,
     this.selectedModelId,
-    required this.onModelSelected,
-    this.showSearch = true,
-    this.hintText,
+    this.selectedModelName,
+    this.onModelSelected,
+    this.showOnlyActive = true,
   });
 
   @override
@@ -22,190 +22,229 @@ class ModelDropdown extends StatefulWidget {
 }
 
 class _ModelDropdownState extends State<ModelDropdown> {
-  final ModelService _modelService = ModelService();
-  final TextEditingController _searchController = TextEditingController();
-  String? _selectedModelId;
-  String? _selectedModelName;
+  ModelModel? _selectedModel;
 
   @override
   void initState() {
     super.initState();
-    _selectedModelId = widget.selectedModelId;
-    _loadSelectedModelName();
-  }
-
-  @override
-  void didUpdateWidget(ModelDropdown oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (widget.selectedModelId != oldWidget.selectedModelId) {
-      _selectedModelId = widget.selectedModelId;
-      _loadSelectedModelName();
+    // If we have a selected model name but no ID, we'll need to find the model
+    if (widget.selectedModelName != null && widget.selectedModelId == null) {
+      _findModelByName(widget.selectedModelName!);
     }
   }
 
-  Future<void> _loadSelectedModelName() async {
-    if (_selectedModelId != null) {
-      final model = await _modelService.getModelById(_selectedModelId!);
-      if (model != null) {
-        setState(() {
-          _selectedModelName = model.name;
-        });
-      }
+  Future<void> _findModelByName(String modelName) async {
+    final modelProvider = Provider.of<ModelProvider>(context, listen: false);
+    final models = await modelProvider.getModels().first;
+         final model = models.firstWhere(
+       (m) => m.name.toLowerCase() == modelName.toLowerCase(),
+       orElse: () => ModelModel(
+         id: '',
+         name: modelName,
+         date: DateTime.now(),
+         isActive: true,
+         createdAt: DateTime.now(),
+         updatedAt: DateTime.now(),
+       ),
+     );
+    if (mounted) {
+      setState(() {
+        _selectedModel = model;
+      });
     }
-  }
-
-  @override
-  void dispose() {
-    _searchController.dispose();
-    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    return StreamBuilder<List<ModelModel>>(
-      stream: _modelService.getModelsWithFilter(
-        searchQuery: _searchController.text.isEmpty ? null : _searchController.text,
-        sortBy: 'date',
-        descending: true,
-        isActive: true, // Only show active models
-      ),
-      builder: (context, snapshot) {
-        if (snapshot.hasError) {
-          return Text('Error: ${snapshot.error}');
-        }
+    return Consumer<ModelProvider>(
+      builder: (context, modelProvider, child) {
+        return StreamBuilder<List<ModelModel>>(
+          stream: widget.showOnlyActive 
+              ? modelProvider.getActiveModels()
+              : modelProvider.getModels(),
+          builder: (context, snapshot) {
+                         if (snapshot.connectionState == ConnectionState.waiting) {
+               return DropdownButtonFormField<String>(
+                 value: null,
+                 items: const [],
+                 decoration: const InputDecoration(
+                   labelText: 'Model',
+                   border: OutlineInputBorder(),
+                 ),
+                 hint: const Text('Loading models...'),
+                 onChanged: (value) {},
+               );
+             }
 
-        if (!snapshot.hasData) {
-          return const CircularProgressIndicator();
-        }
+                         if (snapshot.hasError) {
+               return DropdownButtonFormField<String>(
+                 value: null,
+                 items: const [],
+                 decoration: const InputDecoration(
+                   labelText: 'Model',
+                   border: OutlineInputBorder(),
+                 ),
+                 hint: Text('Error: ${snapshot.error}'),
+                 onChanged: (value) {},
+               );
+             }
 
-        final models = snapshot.data!;
-        final validModels = models.where((model) => model.isValidSession).toList();
-
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            if (widget.showSearch) ...[
-              TextField(
-                controller: _searchController,
-                decoration: InputDecoration(
-                  hintText: 'Search models...',
-                  prefixIcon: const Icon(Icons.search),
-                  border: const OutlineInputBorder(),
-                  filled: true,
-                  fillColor: Colors.white,
-                ),
-                onChanged: (value) {
-                  setState(() {});
-                },
-              ),
-              const SizedBox(height: 8),
-            ],
+            final models = snapshot.data ?? [];
             
-            Container(
-              decoration: BoxDecoration(
-                border: Border.all(color: Colors.grey.shade300),
-                borderRadius: BorderRadius.circular(4),
+                         // If we have a selected model name but no model object, try to find it
+             if (_selectedModel == null && widget.selectedModelName != null) {
+               final foundModel = models.firstWhere(
+                 (m) => m.name.toLowerCase() == widget.selectedModelName!.toLowerCase(),
+                 orElse: () => ModelModel(
+                   id: '',
+                   name: widget.selectedModelName!,
+                   date: DateTime.now(),
+                   isActive: true,
+                   createdAt: DateTime.now(),
+                   updatedAt: DateTime.now(),
+                 ),
+               );
+               _selectedModel = foundModel;
+             }
+
+            // Create dropdown items
+            final items = <DropdownMenuItem<String>>[
+              const DropdownMenuItem<String>(
+                value: null,
+                child: Text('No model selected'),
               ),
-              child: DropdownButtonFormField<String>(
-                value: _selectedModelId,
-                decoration: InputDecoration(
-                  hintText: widget.hintText ?? 'Select a model',
-                  border: InputBorder.none,
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                ),
-                items: [
-                  const DropdownMenuItem<String>(
-                    value: null,
-                    child: Text('-- Select a model --'),
-                  ),
-                  ...validModels.map((model) => DropdownMenuItem<String>(
-                    value: model.id,
-                    child: Row(
-                      children: [
-                        // Model image or placeholder
-                        CircleAvatar(
-                          radius: 16,
-                          backgroundColor: AppColors.forestGreen,
-                          child: model.imageUrl != null
-                              ? ClipOval(
-                                  child: Image.network(
-                                    model.imageUrl!,
-                                    width: 32,
-                                    height: 32,
-                                    fit: BoxFit.cover,
-                                    errorBuilder: (context, error, stackTrace) {
-                                      return const Icon(Icons.person, color: Colors.white, size: 16);
-                                    },
-                                  ),
-                                )
-                              : const Icon(Icons.person, color: Colors.white, size: 16),
-                        ),
-                        const SizedBox(width: 12),
-                        
-                        // Model info
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Text(
-                                model.name,
-                                style: const TextStyle(fontWeight: FontWeight.bold),
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                              Text(
-                                model.formattedDate,
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: Colors.grey[600],
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  )).toList(),
-                ],
-                onChanged: (String? modelId) {
-                  setState(() {
-                    _selectedModelId = modelId;
-                    if (modelId != null) {
-                      final model = validModels.firstWhere((m) => m.id == modelId);
-                      _selectedModelName = model.name;
-                    } else {
-                      _selectedModelName = null;
-                    }
-                  });
-                  widget.onModelSelected(modelId, _selectedModelName);
-                },
-              ),
-            ),
-            
-            if (_selectedModelName != null) ...[
-              const SizedBox(height: 8),
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: AppColors.lightCream,
-                  borderRadius: BorderRadius.circular(4),
-                ),
+              ...models.map((model) => DropdownMenuItem<String>(
+                value: model.id,
                 child: Row(
                   children: [
-                    const Icon(Icons.check_circle, color: AppColors.forestGreen, size: 16),
-                    const SizedBox(width: 8),
-                    Text(
-                      'Selected: $_selectedModelName',
-                      style: const TextStyle(
-                        fontWeight: FontWeight.w500,
-                        color: AppColors.forestGreen,
+                    // Model image or placeholder
+                    Container(
+                      width: 32,
+                      height: 32,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: Colors.grey.shade300),
+                      ),
+                      child: model.imageUrl != null
+                          ? ClipRRect(
+                              borderRadius: BorderRadius.circular(16),
+                              child: Image.network(
+                                model.imageUrl!,
+                                width: 32,
+                                height: 32,
+                                fit: BoxFit.cover,
+                                errorBuilder: (context, error, stackTrace) {
+                                  return const Icon(
+                                    Icons.person,
+                                    size: 16,
+                                    color: Colors.grey,
+                                  );
+                                },
+                              ),
+                            )
+                          : const Icon(
+                              Icons.person,
+                              size: 16,
+                              color: Colors.grey,
+                            ),
+                    ),
+                    const SizedBox(width: 12),
+                    // Model name and date
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            model.name,
+                            style: const TextStyle(fontWeight: FontWeight.w500),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          Text(
+                            model.date.toString().split(' ')[0],
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.grey.shade600,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
+                    // Active indicator
+                    if (model.isActive)
+                      Container(
+                        width: 8,
+                        height: 8,
+                        decoration: BoxDecoration(
+                          color: Colors.green,
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                      ),
                   ],
                 ),
+              )),
+            ];
+
+            return DropdownButtonFormField<String>(
+              value: _selectedModel?.id,
+              items: items,
+              decoration: const InputDecoration(
+                labelText: 'Model',
+                border: OutlineInputBorder(),
+                prefixIcon: Icon(Icons.person),
               ),
-            ],
-          ],
+              hint: const Text('Select a model'),
+              selectedItemBuilder: (BuildContext context) {
+                return items.map<Widget>((DropdownMenuItem<String> item) {
+                  if (item.value == null) {
+                    return const Text('No model selected');
+                  }
+                  final model = models.firstWhere(
+                    (m) => m.id == item.value,
+                    orElse: () => ModelModel(
+                      id: '',
+                      name: 'Unknown',
+                      date: DateTime.now(),
+                      isActive: true,
+                      createdAt: DateTime.now(),
+                      updatedAt: DateTime.now(),
+                    ),
+                  );
+                  return Text(
+                    model.name,
+                    style: const TextStyle(fontSize: 16),
+                    overflow: TextOverflow.ellipsis,
+                  );
+                }).toList();
+              },
+              onChanged: (String? modelId) {
+                                 final selectedModel = models.firstWhere(
+                   (m) => m.id == modelId,
+                   orElse: () => ModelModel(
+                     id: '',
+                     name: '',
+                     date: DateTime.now(),
+                     isActive: true,
+                     createdAt: DateTime.now(),
+                     updatedAt: DateTime.now(),
+                   ),
+                 );
+                
+                setState(() {
+                  _selectedModel = modelId != null ? selectedModel : null;
+                });
+                
+                widget.onModelSelected?.call(
+                  modelId,
+                  selectedModel.name.isNotEmpty ? selectedModel.name : null,
+                );
+              },
+              validator: (value) {
+                // Optional validation - you can make this required if needed
+                return null;
+              },
+            );
+          },
         );
       },
     );
