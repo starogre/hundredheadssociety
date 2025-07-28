@@ -6,6 +6,7 @@ import 'app_updates_screen.dart';
 import 'about_screen.dart';
 import 'activity_log_screen.dart';
 import 'model_management_screen.dart';
+import 'model_data_injection_screen.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
@@ -58,6 +59,18 @@ class SettingsScreen extends StatelessWidget {
                     );
                   },
                 ),
+              // Show Model Data Injection for admins only (hidden for now)
+              // if (isAdmin)
+              //   ListTile(
+              //     leading: const Icon(Icons.data_usage),
+              //     title: const Text('Inject Model Data'),
+              //     subtitle: const Text('Add all historical models to database'),
+              //     onTap: () {
+              //       Navigator.of(context).push(
+              //         MaterialPageRoute(builder: (context) => const ModelDataInjectionScreen()),
+              //       );
+              //     },
+              //   ),
               ListTile(
                 leading: const Icon(Icons.system_update),
                 title: const Text('App Updates'),
