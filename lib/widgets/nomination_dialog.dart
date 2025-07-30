@@ -38,14 +38,31 @@ class NominationDialog extends StatelessWidget {
             
             final votes = currentSubmission.votes[categoryId] ?? [];
             final hasVoted = votes.contains(currentUserId);
+            final hasVotedForCategory = weeklySessionProvider.hasUserVotedForCategory(currentUserId, categoryId);
 
             return Card(
-              color: hasVoted ? AppColors.forestGreen.withOpacity(0.2) : null,
+              color: hasVoted 
+                  ? AppColors.forestGreen.withOpacity(0.2) 
+                  : hasVotedForCategory && !hasVoted 
+                      ? Colors.grey.withOpacity(0.2) 
+                      : null,
               margin: const EdgeInsets.symmetric(vertical: 4),
               child: ListTile(
                 leading: Text(details['emoji'], style: const TextStyle(fontSize: 24)),
-                title: Text(details['title']),
-                subtitle: Text(details['subtitle']),
+                title: Text(
+                  details['title'],
+                  style: TextStyle(
+                    color: hasVotedForCategory && !hasVoted ? Colors.grey : null,
+                  ),
+                ),
+                subtitle: Text(
+                  hasVotedForCategory && !hasVoted 
+                      ? 'You already voted for this award on another painting' 
+                      : details['subtitle'],
+                  style: TextStyle(
+                    color: hasVotedForCategory && !hasVoted ? Colors.grey : null,
+                  ),
+                ),
                 trailing: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
@@ -61,7 +78,7 @@ class NominationDialog extends StatelessWidget {
                       categoryId,
                       currentUserId,
                     );
-                  } else {
+                  } else if (!hasVotedForCategory) {
                     await weeklySessionProvider.voteForSubmission(
                       submission.id,
                       categoryId,

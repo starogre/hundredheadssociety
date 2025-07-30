@@ -320,6 +320,18 @@ class WeeklySessionProvider extends ChangeNotifier {
     return _currentSession?.submissions.any((s) => s.userId == userId) ?? false;
   }
 
+  // Check if user has already voted for a specific award category
+  bool hasUserVotedForCategory(String userId, String awardCategory) {
+    for (var submissionData in _submissionsWithUsers) {
+      final submission = submissionData['submission'] as WeeklySubmissionModel;
+      final votes = submission.votes[awardCategory] ?? [];
+      if (votes.contains(userId)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
   // Get user's submission for current session
   WeeklySubmissionModel? getUserSubmission(String userId) {
     try {
