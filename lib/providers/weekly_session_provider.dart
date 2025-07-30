@@ -215,6 +215,27 @@ class WeeklySessionProvider extends ChangeNotifier {
         awardCategory,
         userId,
       );
+      
+      // Update locally for immediate UI feedback
+      final submissionIndex = _submissionsWithUsers.indexWhere(
+        (data) => (data['submission'] as WeeklySubmissionModel).id == submissionId,
+      );
+      
+      if (submissionIndex != -1) {
+        final submission = _submissionsWithUsers[submissionIndex]['submission'] as WeeklySubmissionModel;
+        final updatedVotes = Map<String, List<String>>.from(submission.votes);
+        updatedVotes.putIfAbsent(awardCategory, () => []);
+        if (!updatedVotes[awardCategory]!.contains(userId)) {
+          updatedVotes[awardCategory]!.add(userId);
+        }
+        
+        final updatedSubmission = submission.copyWith(votes: updatedVotes);
+        _submissionsWithUsers[submissionIndex] = {
+          ..._submissionsWithUsers[submissionIndex],
+          'submission': updatedSubmission,
+        };
+        notifyListeners();
+      }
     } catch (e) {
       _error = e.toString();
       notifyListeners();
@@ -235,6 +256,25 @@ class WeeklySessionProvider extends ChangeNotifier {
         awardCategory,
         userId,
       );
+      
+      // Update locally for immediate UI feedback
+      final submissionIndex = _submissionsWithUsers.indexWhere(
+        (data) => (data['submission'] as WeeklySubmissionModel).id == submissionId,
+      );
+      
+      if (submissionIndex != -1) {
+        final submission = _submissionsWithUsers[submissionIndex]['submission'] as WeeklySubmissionModel;
+        final updatedVotes = Map<String, List<String>>.from(submission.votes);
+        updatedVotes.putIfAbsent(awardCategory, () => []);
+        updatedVotes[awardCategory]!.remove(userId);
+        
+        final updatedSubmission = submission.copyWith(votes: updatedVotes);
+        _submissionsWithUsers[submissionIndex] = {
+          ..._submissionsWithUsers[submissionIndex],
+          'submission': updatedSubmission,
+        };
+        notifyListeners();
+      }
     } catch (e) {
       _error = e.toString();
       notifyListeners();

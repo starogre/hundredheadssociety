@@ -12,9 +12,10 @@ class NominationDialog extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final weeklySessionProvider = Provider.of<WeeklySessionProvider>(context, listen: false);
-    final authProvider = Provider.of<AuthProvider>(context, listen: false);
-    final currentUserId = authProvider.currentUser!.uid;
+    return Consumer<WeeklySessionProvider>(
+      builder: (context, weeklySessionProvider, child) {
+        final authProvider = Provider.of<AuthProvider>(context, listen: false);
+        final currentUserId = authProvider.currentUser!.uid;
 
     return AlertDialog(
       title: const Text('Nominate Submission'),
@@ -26,7 +27,16 @@ class NominationDialog extends StatelessWidget {
             final details = entry.value;
             final categoryId = category.toString().split('.').last;
 
-            final votes = submission.votes[categoryId] ?? [];
+            // Get the current submission data from the provider
+            final currentSubmissionData = weeklySessionProvider.submissionsWithUsers
+                .where((data) => (data['submission'] as WeeklySubmissionModel).id == submission.id)
+                .firstOrNull;
+            
+            final currentSubmission = currentSubmissionData != null 
+                ? currentSubmissionData['submission'] as WeeklySubmissionModel 
+                : submission;
+            
+            final votes = currentSubmission.votes[categoryId] ?? [];
             final hasVoted = votes.contains(currentUserId);
 
             return Card(
@@ -71,6 +81,8 @@ class NominationDialog extends StatelessWidget {
           child: const Text('Done'),
         ),
       ],
+    );
+      },
     );
   }
 } 
