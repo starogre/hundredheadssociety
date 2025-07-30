@@ -21,14 +21,14 @@ class WeeklySessionService {
     });
   }
 
-  // Create a new weekly session for the next Monday
+  // Create a new weekly session for the upcoming Monday
   Future<void> createWeeklySession() async {
     final now = DateTime.now();
-    final nextMonday = _getNextMonday(now);
+    final upcomingMonday = _getUpcomingMonday(now);
     
     final session = WeeklySessionModel(
       id: '',
-      sessionDate: nextMonday,
+      sessionDate: upcomingMonday,
       rsvpUserIds: [],
       submissions: [],
       createdAt: now,
@@ -193,6 +193,18 @@ class WeeklySessionService {
     return from.add(Duration(days: daysUntilMonday));
   }
 
+  // Helper method to get the upcoming Monday (for session creation after Monday night)
+  DateTime _getUpcomingMonday(DateTime from) {
+    // If it's Tuesday or later, get next Monday
+    // If it's Monday, get the Monday after next
+    if (from.weekday == DateTime.monday) {
+      return from.add(const Duration(days: 7));
+    } else {
+      final daysUntilMonday = (DateTime.monday - from.weekday) % 7;
+      return from.add(Duration(days: daysUntilMonday));
+    }
+  }
+
   // Get the next Monday date for display
   DateTime getNextMonday() {
     return _getNextMonday(DateTime.now());
@@ -226,6 +238,28 @@ class WeeklySessionService {
         snapshot.docs.first.data(),
         snapshot.docs.first.id,
       );
+    });
+  }
+
+  // Cancel a weekly session
+  Future<void> cancelWeeklySession(String sessionId, String notes) async {
+    await _firestore.collection('weekly_sessions').doc(sessionId).update({
+      'isCancelled': true,
+      'notes': notes,
+    });
+  }
+
+  // Un-cancel a weekly session
+  Future<void> uncancelWeeklySession(String sessionId) async {
+    await _firestore.collection('weekly_sessions').doc(sessionId).update({
+      'isCancelled': false,
+    });
+  }
+
+  // Add or update notes for a weekly session
+  Future<void> updateSessionNotes(String sessionId, String notes) async {
+    await _firestore.collection('weekly_sessions').doc(sessionId).update({
+      'notes': notes,
     });
   }
 } 

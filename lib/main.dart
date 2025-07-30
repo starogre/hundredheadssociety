@@ -18,11 +18,9 @@ import 'screens/profile_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  print('Initializing Firebase...');
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
-  print('Firebase initialized');
   runApp(const MyApp());
 }
 
@@ -98,22 +96,8 @@ class MyApp extends StatelessWidget {
                 if (authProvider.isAuthenticated) {
                   final userData = authProvider.userData;
                   if (userData != null) {
-                    print('=== MAIN ROUTING DEBUG ===');
-                    print('User authenticated: ${authProvider.currentUser?.uid}');
-                    print('User data: ${userData.toMap()}');
-                    print('Needs email verification: ${authProvider.needsEmailVerification}');
-                    print('Is admin: ${userData.isAdmin}');
-                    print('Status: ${userData.status}');
-                    print('Email verified: ${userData.emailVerified}');
-                    print('Last verification timestamp: ${userData.lastVerificationTimestamp}');
-                    print('All user data fields:');
-                    userData.toMap().forEach((key, value) {
-                      print('  - $key: $value');
-                    });
-                    
                     // Check if user needs email verification
                     if (authProvider.needsEmailVerification) {
-                      print('Routing to EmailVerificationScreen');
                       return const EmailVerificationScreen();
                     }
                     

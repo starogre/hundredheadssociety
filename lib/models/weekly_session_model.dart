@@ -7,6 +7,8 @@ class WeeklySessionModel {
   final List<WeeklySubmissionModel> submissions;
   final DateTime createdAt;
   final bool isActive;
+  final String? notes;
+  final bool isCancelled;
 
   WeeklySessionModel({
     required this.id,
@@ -15,6 +17,8 @@ class WeeklySessionModel {
     required this.submissions,
     required this.createdAt,
     required this.isActive,
+    this.notes,
+    this.isCancelled = false,
   });
 
   factory WeeklySessionModel.fromMap(Map<String, dynamic> map, String id) {
@@ -27,6 +31,8 @@ class WeeklySessionModel {
           .toList(),
       createdAt: (map['createdAt'] as Timestamp).toDate(),
       isActive: map['isActive'] ?? false,
+      notes: map['notes'],
+      isCancelled: map['isCancelled'] ?? false,
     );
   }
 
@@ -37,6 +43,8 @@ class WeeklySessionModel {
       'submissions': submissions.map((submission) => submission.toMap()).toList(),
       'createdAt': createdAt,
       'isActive': isActive,
+      'notes': notes,
+      'isCancelled': isCancelled,
     };
   }
 
@@ -47,6 +55,8 @@ class WeeklySessionModel {
     List<WeeklySubmissionModel>? submissions,
     DateTime? createdAt,
     bool? isActive,
+    String? notes,
+    bool? isCancelled,
   }) {
     return WeeklySessionModel(
       id: id ?? this.id,
@@ -55,6 +65,8 @@ class WeeklySessionModel {
       submissions: submissions ?? this.submissions,
       createdAt: createdAt ?? this.createdAt,
       isActive: isActive ?? this.isActive,
+      notes: notes ?? this.notes,
+      isCancelled: isCancelled ?? this.isCancelled,
     );
   }
 }

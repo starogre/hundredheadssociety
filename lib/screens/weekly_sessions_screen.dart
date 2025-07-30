@@ -2,9 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/weekly_session_provider.dart';
 import '../providers/auth_provider.dart';
-import '../providers/portrait_provider.dart';
 import '../models/weekly_session_model.dart';
-import '../models/portrait_model.dart';
 import '../models/user_model.dart';
 import '../theme/app_theme.dart';
 import '../widgets/submit_portrait_dialog.dart';
@@ -126,13 +124,17 @@ class _WeeklySessionsScreenState extends State<WeeklySessionsScreen>
               style: const TextStyle(fontSize: 16),
             ),
             const SizedBox(height: 24),
-            ElevatedButton(
-              onPressed: () => weeklySessionProvider.createWeeklySession(),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.rustyOrange,
-                foregroundColor: AppColors.white,
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: () => weeklySessionProvider.createWeeklySession(),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.rustyOrange,
+                  foregroundColor: AppColors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                ),
+                child: const Text('Create New Session'),
               ),
-              child: const Text('Create New Session'),
             ),
           ],
         ),
@@ -145,9 +147,11 @@ class _WeeklySessionsScreenState extends State<WeeklySessionsScreen>
     WeeklySessionProvider weeklySessionProvider,
     WeeklySessionModel session,
   ) {
-    final authProvider = Provider.of<AuthProvider>(context, listen: false);
-    final currentUserId = authProvider.currentUser?.uid;
-    final hasRsvpd = currentUserId != null && weeklySessionProvider.hasUserRsvpd(currentUserId);
+    return Consumer<AuthProvider>(
+      builder: (context, authProvider, child) {
+        final currentUserId = authProvider.currentUser?.uid;
+        final hasRsvpd = currentUserId != null && weeklySessionProvider.hasUserRsvpd(currentUserId);
+        final isAdminOrModerator = authProvider.userData?.isAdmin == true || authProvider.userData?.isModerator == true;
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
@@ -156,7 +160,7 @@ class _WeeklySessionsScreenState extends State<WeeklySessionsScreen>
         children: [
           // Session Info Card
           Card(
-            color: AppColors.lightCream,
+            color: session.isCancelled ? Colors.red.shade50 : AppColors.lightCream,
             child: Padding(
               padding: const EdgeInsets.all(16),
               child: Column(
@@ -165,17 +169,95 @@ class _WeeklySessionsScreenState extends State<WeeklySessionsScreen>
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Icon(Icons.event, color: AppColors.forestGreen, size: 24),
+                      Icon(
+                        session.isCancelled ? Icons.cancel : Icons.event,
+                        color: session.isCancelled ? Colors.red : AppColors.forestGreen,
+                        size: 24,
+                      ),
                       const SizedBox(width: 8),
                       Expanded(
-                        child: Text(
-                          'Monday Night Studio Session',
-                          style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                            color: AppColors.forestGreen,
-                            fontWeight: FontWeight.bold,
-                          ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              session.isCancelled ? 'Session Cancelled' : 'Monday Night Studio Session',
+                              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                                color: session.isCancelled ? Colors.red : AppColors.forestGreen,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            if (session.isCancelled)
+                              Container(
+                                margin: const EdgeInsets.only(top: 4),
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: Colors.red.shade100,
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(color: Colors.red.shade300),
+                                ),
+                                child: Text(
+                                  'CANCELLED',
+                                  style: TextStyle(
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.w600,
+                                    color: Colors.red.shade700,
+                                  ),
+                                ),
+                              ),
+                          ],
                         ),
                       ),
+                      // Admin/Moderator controls
+                      if (isAdminOrModerator) ...[
+                        PopupMenuButton<String>(
+                          icon: const Icon(Icons.more_vert),
+                          onSelected: (value) {
+                            if (value == 'cancel') {
+                              _showCancelSessionDialog(context, weeklySessionProvider);
+                            } else if (value == 'uncancel') {
+                              _showUncancelSessionDialog(context, weeklySessionProvider);
+                            } else if (value == 'notes') {
+                              _showNotesDialog(context, weeklySessionProvider, session.notes ?? '');
+                            }
+                          },
+                          itemBuilder: (context) => [
+                            if (!session.isCancelled) ...[
+                              const PopupMenuItem(
+                                value: 'cancel',
+                                child: Row(
+                                  children: [
+                                    Icon(Icons.cancel, color: Colors.red),
+                                    SizedBox(width: 8),
+                                    Text('Cancel Session'),
+                                  ],
+                                ),
+                              ),
+                            ] else ...[
+                              PopupMenuItem(
+                                value: 'uncancel',
+                                child: const Row(
+                                  children: [
+                                    Icon(Icons.refresh, color: Colors.green),
+                                    SizedBox(width: 8),
+                                    Text('Re-activate Session'),
+                                  ],
+                                ),
+                              ),
+                            ],
+                            if (session.isCancelled)
+                              const PopupMenuItem(
+                                value: 'notes',
+                                child: Row(
+                                  children: [
+                                    Icon(Icons.note, color: AppColors.forestGreen),
+                                    SizedBox(width: 8),
+                                    Text('Edit Cancellation Notes'),
+                                  ],
+                                ),
+                              ),
+                          ],
+                        ),
+                      ],
                     ],
                   ),
                   const SizedBox(height: 8),
@@ -193,28 +275,70 @@ class _WeeklySessionsScreenState extends State<WeeklySessionsScreen>
                     'Attendees: ${session.rsvpUserIds.length}',
                     style: const TextStyle(fontSize: 16),
                   ),
+                  if (session.isCancelled && session.notes != null && session.notes!.isNotEmpty) ...[
+                    const SizedBox(height: 8),
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Colors.red.shade50,
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: Colors.red.shade200),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Icon(Icons.note, size: 16, color: Colors.red.shade700),
+                              const SizedBox(width: 4),
+                              Text(
+                                'Cancellation Notes:',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.red.shade700,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            session.notes!,
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: Colors.red.shade700,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ],
               ),
             ),
           ),
           const SizedBox(height: 16),
 
-          // RSVP Button
-          if (currentUserId != null)
+          // RSVP Button - only show if session is not cancelled
+          if (currentUserId != null && !session.isCancelled)
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
                 onPressed: () async {
                   if (hasRsvpd) {
                     await weeklySessionProvider.cancelRsvpForCurrentSession(currentUserId);
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('RSVP cancelled')),
-                    );
+                    if (mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('RSVP cancelled')),
+                      );
+                    }
                   } else {
                     await weeklySessionProvider.rsvpForCurrentSession(currentUserId);
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('RSVP confirmed!')),
-                    );
+                    if (mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('RSVP confirmed!')),
+                      );
+                    }
                   }
                 },
                 style: ElevatedButton.styleFrom(
@@ -230,59 +354,63 @@ class _WeeklySessionsScreenState extends State<WeeklySessionsScreen>
             ),
           const SizedBox(height: 24),
 
-          // Attendees List
-          Text(
-            'Attendees (${weeklySessionProvider.rsvpUsers.length})',
-            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-              color: AppColors.forestGreen,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const SizedBox(height: 8),
-          if (weeklySessionProvider.rsvpUsers.isEmpty)
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Text(
-                  'No attendees yet. Be the first to RSVP!',
-                  style: TextStyle(color: AppColors.forestGreen),
-                  textAlign: TextAlign.center,
-                ),
+                    // Attendees List - only show if session is not cancelled
+          if (!session.isCancelled) ...[
+            Text(
+              'Attendees (${weeklySessionProvider.rsvpUsers.length})',
+              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                color: AppColors.forestGreen,
+                fontWeight: FontWeight.bold,
               ),
-            )
-          else
-            ListView.builder(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              itemCount: weeklySessionProvider.rsvpUsers.length,
-              itemBuilder: (context, index) {
-                final user = weeklySessionProvider.rsvpUsers[index];
-                return Card(
-                  margin: const EdgeInsets.only(bottom: 8),
-                  child: ListTile(
-                    leading: CircleAvatar(
-                      backgroundImage: user.profileImageUrl != null && user.profileImageUrl!.isNotEmpty
-                          ? NetworkImage(user.profileImageUrl!)
-                          : null,
-                      backgroundColor: AppColors.rustyOrange,
-                      child: user.profileImageUrl == null || user.profileImageUrl!.isEmpty
-                          ? Text(
-                              user.name.isNotEmpty ? user.name[0].toUpperCase() : '?',
-                              style: const TextStyle(
-                                color: AppColors.white,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            )
-                          : null,
-                    ),
-                    title: Text(user.name),
-                    onTap: () => _navigateToUserProfile(user.id),
-                  ),
-                );
-              },
             ),
+            const SizedBox(height: 8),
+            if (weeklySessionProvider.rsvpUsers.isEmpty)
+              Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Text(
+                    'No attendees yet. Be the first to RSVP!',
+                    style: TextStyle(color: AppColors.forestGreen),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+              )
+            else
+              ListView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: weeklySessionProvider.rsvpUsers.length,
+                itemBuilder: (context, index) {
+                  final user = weeklySessionProvider.rsvpUsers[index];
+                  return Card(
+                    margin: const EdgeInsets.only(bottom: 8),
+                    child: ListTile(
+                      leading: CircleAvatar(
+                        backgroundImage: user.profileImageUrl != null && user.profileImageUrl!.isNotEmpty
+                            ? NetworkImage(user.profileImageUrl!)
+                            : null,
+                        backgroundColor: AppColors.rustyOrange,
+                        child: user.profileImageUrl == null || user.profileImageUrl!.isEmpty
+                            ? Text(
+                                user.name.isNotEmpty ? user.name[0].toUpperCase() : '?',
+                                style: const TextStyle(
+                                  color: AppColors.white,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              )
+                            : null,
+                      ),
+                      title: Text(user.name),
+                      onTap: () => _navigateToUserProfile(user.id),
+                    ),
+                  );
+                },
+              ),
+          ],
         ],
       ),
+    );
+      },
     );
   }
 
@@ -300,8 +428,8 @@ class _WeeklySessionsScreenState extends State<WeeklySessionsScreen>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Submit Button
-          if (currentUserId != null && !hasSubmitted)
+          // Submit Button - only show if session is not cancelled
+          if (currentUserId != null && !hasSubmitted && !session.isCancelled)
             SizedBox(
               width: double.infinity,
               child: ElevatedButton.icon(
@@ -315,15 +443,17 @@ class _WeeklySessionsScreenState extends State<WeeklySessionsScreen>
                 ),
               ),
             ),
-          if (currentUserId != null && hasSubmitted)
+          if (currentUserId != null && hasSubmitted && !session.isCancelled)
             SizedBox(
               width: double.infinity,
               child: ElevatedButton.icon(
                 onPressed: () async {
                   await weeklySessionProvider.removeSubmissionForCurrentSession(currentUserId);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Submission removed')),
-                  );
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Submission removed')),
+                    );
+                  }
                 },
                 icon: const Icon(Icons.remove_circle),
                 label: const Text('Remove Submission'),
@@ -336,35 +466,36 @@ class _WeeklySessionsScreenState extends State<WeeklySessionsScreen>
             ),
           const SizedBox(height: 24),
 
-          // Submissions List
-          Text(
-            'This Week\'s Submissions (${weeklySessionProvider.submissionsWithUsers.length})',
-            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-              color: AppColors.forestGreen,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const SizedBox(height: 8),
-          if (weeklySessionProvider.submissionsWithUsers.isEmpty)
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Text(
-                  'No submissions yet. Be the first to submit your painting!',
-                  style: TextStyle(color: AppColors.forestGreen),
-                  textAlign: TextAlign.center,
-                ),
+          // Submissions List - only show if session is not cancelled
+          if (!session.isCancelled) ...[
+            Text(
+              'This Week\'s Submissions (${weeklySessionProvider.submissionsWithUsers.length})',
+              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                color: AppColors.forestGreen,
+                fontWeight: FontWeight.bold,
               ),
-            )
-          else
-            ListView.builder(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              itemCount: weeklySessionProvider.submissionsWithUsers.length,
-              itemBuilder: (context, index) {
-                final submissionData = weeklySessionProvider.submissionsWithUsers[index];
-                final submission = submissionData['submission'] as WeeklySubmissionModel;
-                final user = submissionData['user'] as UserModel;
+            ),
+            const SizedBox(height: 8),
+            if (weeklySessionProvider.submissionsWithUsers.isEmpty)
+              Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Text(
+                    'No submissions yet. Be the first to submit your painting!',
+                    style: TextStyle(color: AppColors.forestGreen),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+              )
+            else
+              ListView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: weeklySessionProvider.submissionsWithUsers.length,
+                itemBuilder: (context, index) {
+                  final submissionData = weeklySessionProvider.submissionsWithUsers[index];
+                  final submission = submissionData['submission'] as WeeklySubmissionModel;
+                  final user = submissionData['user'] as UserModel;
 
                 return Card(
                   margin: const EdgeInsets.only(bottom: 16),
@@ -435,6 +566,7 @@ class _WeeklySessionsScreenState extends State<WeeklySessionsScreen>
                 );
               },
             ),
+          ],
         ],
       ),
     );
@@ -534,6 +666,160 @@ class _WeeklySessionsScreenState extends State<WeeklySessionsScreen>
     Navigator.of(context).push(
       MaterialPageRoute(
         builder: (context) => ProfileScreen(userId: userId),
+      ),
+    );
+  }
+
+  void _showCancelSessionDialog(BuildContext context, WeeklySessionProvider weeklySessionProvider) {
+    final notesController = TextEditingController();
+    
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Cancel Session'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text(
+              'Are you sure you want to cancel this session? This action cannot be undone.',
+              style: TextStyle(fontSize: 16),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: notesController,
+              decoration: const InputDecoration(
+                labelText: 'Cancellation Notes (required)',
+                hintText: 'e.g., "Cancelled due to weather" or "No model available"',
+                border: OutlineInputBorder(),
+              ),
+              maxLines: 3,
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              if (notesController.text.trim().isEmpty) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Please provide cancellation notes'),
+                    backgroundColor: Colors.red,
+                  ),
+                );
+                return;
+              }
+              
+              await weeklySessionProvider.cancelWeeklySession(notesController.text.trim());
+              if (context.mounted) {
+                Navigator.of(context).pop();
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Session cancelled successfully'),
+                    backgroundColor: Colors.green,
+                  ),
+                );
+              }
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            child: const Text('Cancel Session'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showUncancelSessionDialog(BuildContext context, WeeklySessionProvider weeklySessionProvider) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Re-activate Session'),
+        content: const Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              'Are you sure you want to re-activate this session? Users will be able to RSVP again.',
+              style: TextStyle(fontSize: 16),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              await weeklySessionProvider.uncancelWeeklySession();
+              if (context.mounted) {
+                Navigator.of(context).pop();
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Session re-activated successfully'),
+                    backgroundColor: Colors.green,
+                  ),
+                );
+              }
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
+            child: const Text('Re-activate'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showNotesDialog(BuildContext context, WeeklySessionProvider weeklySessionProvider, String currentNotes) {
+    final notesController = TextEditingController(text: currentNotes);
+    
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Session Notes'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text(
+              'Edit cancellation notes for this session. These will be visible to all users.',
+              style: TextStyle(fontSize: 16),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: notesController,
+              decoration: const InputDecoration(
+                labelText: 'Cancellation Notes',
+                hintText: 'e.g., "Cancelled due to weather" or "No model available"',
+                border: OutlineInputBorder(),
+              ),
+              maxLines: 4,
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              await weeklySessionProvider.updateSessionNotes(notesController.text.trim());
+              if (context.mounted) {
+                Navigator.of(context).pop();
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Cancellation notes updated'),
+                    backgroundColor: Colors.green,
+                  ),
+                );
+              }
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.forestGreen),
+            child: const Text('Save Cancellation Notes'),
+          ),
+        ],
       ),
     );
   }

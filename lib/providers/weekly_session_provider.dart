@@ -65,14 +65,18 @@ class WeeklySessionProvider extends ChangeNotifier {
 
     _weeklySessionService.getNextWeeklySession().listen(
       (session) async {
+        final oldSession = _currentSession;
         _currentSession = session;
-        if (session != null) {
+        
+        // Only reload users if session changed
+        if (session != null && (oldSession?.id != session.id || oldSession == null)) {
           await _loadRsvpUsers(session.rsvpUserIds);
           await _loadSubmissionsWithUsers(session.submissions);
-        } else {
+        } else if (session == null) {
           _rsvpUsers = [];
           _submissionsWithUsers = [];
         }
+        
         _isLoading = false;
         notifyListeners();
       },
@@ -94,7 +98,7 @@ class WeeklySessionProvider extends ChangeNotifier {
           _rsvpUsers.add(user);
         }
       } catch (e) {
-        print('Error loading user $userId: $e');
+        // Error loading user - silent fail
       }
     }
   }
@@ -112,7 +116,7 @@ class WeeklySessionProvider extends ChangeNotifier {
           });
         }
       } catch (e) {
-        print('Error loading user for submission: $e');
+        // Error loading user for submission - silent fail
       }
     }
   }
@@ -123,7 +127,18 @@ class WeeklySessionProvider extends ChangeNotifier {
 
     try {
       await _weeklySessionService.rsvpForSession(_currentSession!.id, userId);
-      // The stream will automatically update the UI
+      // Update locally for immediate UI feedback
+      if (!_currentSession!.rsvpUserIds.contains(userId)) {
+        _currentSession = _currentSession!.copyWith(
+          rsvpUserIds: [..._currentSession!.rsvpUserIds, userId],
+        );
+        // Load the user data immediately
+        final user = await _userService.getUserById(userId);
+        if (user != null && !_rsvpUsers.any((u) => u.id == userId)) {
+          _rsvpUsers.add(user);
+          notifyListeners();
+        }
+      }
     } catch (e) {
       _error = e.toString();
       notifyListeners();
@@ -136,7 +151,15 @@ class WeeklySessionProvider extends ChangeNotifier {
 
     try {
       await _weeklySessionService.cancelRsvp(_currentSession!.id, userId);
-      // The stream will automatically update the UI
+      // Update locally for immediate UI feedback
+      if (_currentSession!.rsvpUserIds.contains(userId)) {
+        _currentSession = _currentSession!.copyWith(
+          rsvpUserIds: _currentSession!.rsvpUserIds.where((id) => id != userId).toList(),
+        );
+        // Remove from local list immediately
+        _rsvpUsers.removeWhere((user) => user.id == userId);
+        notifyListeners();
+      }
     } catch (e) {
       _error = e.toString();
       notifyListeners();
@@ -270,6 +293,45 @@ class WeeklySessionProvider extends ChangeNotifier {
   Future<void> createWeeklySession() async {
     try {
       await _weeklySessionService.createWeeklySession();
+      // The stream will automatically update the UI
+    } catch (e) {
+      _error = e.toString();
+      notifyListeners();
+    }
+  }
+
+  // Cancel a weekly session (admin/moderator function)
+  Future<void> cancelWeeklySession(String notes) async {
+    if (_currentSession == null) return;
+    
+    try {
+      await _weeklySessionService.cancelWeeklySession(_currentSession!.id, notes);
+      // The stream will automatically update the UI
+    } catch (e) {
+      _error = e.toString();
+      notifyListeners();
+    }
+  }
+
+  // Un-cancel a weekly session (admin/moderator function)
+  Future<void> uncancelWeeklySession() async {
+    if (_currentSession == null) return;
+    
+    try {
+      await _weeklySessionService.uncancelWeeklySession(_currentSession!.id);
+      // The stream will automatically update the UI
+    } catch (e) {
+      _error = e.toString();
+      notifyListeners();
+    }
+  }
+
+  // Update session notes (admin/moderator function)
+  Future<void> updateSessionNotes(String notes) async {
+    if (_currentSession == null) return;
+    
+    try {
+      await _weeklySessionService.updateSessionNotes(_currentSession!.id, notes);
       // The stream will automatically update the UI
     } catch (e) {
       _error = e.toString();
