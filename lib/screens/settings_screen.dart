@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../providers/auth_provider.dart';
+import '../services/push_notification_service.dart';
 import 'user_management_screen.dart';
 import 'app_updates_screen.dart';
 import 'about_screen.dart';
@@ -57,6 +59,81 @@ class SettingsScreen extends StatelessWidget {
                     Navigator.of(context).push(
                       MaterialPageRoute(builder: (context) => const ModelManagementScreen()),
                     );
+                  },
+                ),
+              // Save FCM Token for admins only
+              if (isAdmin)
+                ListTile(
+                  leading: const Icon(Icons.save),
+                  title: const Text('Save FCM Token'),
+                  subtitle: const Text('Manually save FCM token to Firestore'),
+                  onTap: () async {
+                    try {
+                      await PushNotificationService().saveFCMTokenForCurrentUser();
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('FCM token saved successfully!'),
+                            backgroundColor: Colors.green,
+                          ),
+                        );
+                      }
+                    } catch (e) {
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('Error saving FCM token: $e'),
+                            backgroundColor: Colors.red,
+                          ),
+                        );
+                      }
+                    }
+                  },
+                ),
+              // Test Push Notifications for admins only
+              if (isAdmin)
+                ListTile(
+                  leading: const Icon(Icons.notifications),
+                  title: const Text('Test Push Notification'),
+                  subtitle: const Text('Send a test notification to yourself'),
+                  onTap: () async {
+                    try {
+                      final userData = authProvider.userData;
+                      if (userData != null) {
+                        // Create a test notification in Firestore - this will trigger the Cloud Function
+                        final firestore = FirebaseFirestore.instance;
+                        await firestore.collection('users').doc(userData.id).collection('notifications').add({
+                          'userId': userData.id,
+                          'type': 'test',
+                          'title': 'Test Push Notification',
+                          'message': 'This is a test notification from the app!',
+                          'createdAt': FieldValue.serverTimestamp(),
+                          'read': false,
+                          'data': {
+                            'testData': 'This is test data',
+                            'timestamp': DateTime.now().toIso8601String(),
+                          }
+                        });
+                        
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Test notification sent! Check your phone for push notification.'),
+                              backgroundColor: Colors.green,
+                            ),
+                          );
+                        }
+                      }
+                    } catch (e) {
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('Error sending test notification: $e'),
+                            backgroundColor: Colors.red,
+                          ),
+                        );
+                      }
+                    }
                   },
                 ),
               // Show Model Data Injection for admins only (hidden for now)

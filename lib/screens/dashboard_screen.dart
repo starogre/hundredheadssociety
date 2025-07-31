@@ -11,6 +11,8 @@ import '../widgets/portrait_details_dialog.dart';
 import '../widgets/notification_badge.dart';
 import '../services/user_service.dart';
 import '../services/portrait_service.dart';
+import '../services/push_notification_service.dart';
+import '../widgets/notification_permission_dialog.dart';
 import 'profile_screen.dart';
 import 'community_screen.dart';
 import '../theme/app_theme.dart';
@@ -48,8 +50,32 @@ class _DashboardScreenState extends State<DashboardScreen> {
       final notificationProvider = Provider.of<NotificationProvider>(context, listen: false);
       if (authProvider.currentUser != null) {
         notificationProvider.initializeNotifications(authProvider.currentUser!.uid);
+        
+        // Request notification permissions
+        _requestNotificationPermissions();
       }
     });
+  }
+
+  Future<void> _requestNotificationPermissions() async {
+    try {
+      // Show custom permission dialog first
+      if (mounted) {
+        final shouldRequest = await showDialog<bool>(
+          context: context,
+          barrierDismissible: false,
+          builder: (context) => const NotificationPermissionDialog(),
+        );
+        
+        if (shouldRequest == true) {
+          // User clicked "Allow Notifications"
+          final pushNotificationService = PushNotificationService();
+          await pushNotificationService.initialize();
+        }
+      }
+    } catch (e) {
+      print('Error requesting notification permissions: $e');
+    }
   }
 
   Future<void> _fixWeekGaps() async {

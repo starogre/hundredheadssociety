@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../services/auth_service.dart';
+import '../services/push_notification_service.dart';
 import '../models/user_model.dart';
 
 class AuthProvider extends ChangeNotifier {
@@ -205,6 +206,15 @@ class AuthProvider extends ChangeNotifier {
         name: name,
         userRole: userRole,
       );
+      
+      // Request notification permissions after successful sign up
+      try {
+        await PushNotificationService().initialize();
+      } catch (e) {
+        // Don't fail sign up if notification permission request fails
+        print('Error requesting notification permissions: $e');
+      }
+      
       _setLoading(false);
       return true;
     } catch (e) {
@@ -226,6 +236,17 @@ class AuthProvider extends ChangeNotifier {
         email: email,
         password: password,
       );
+      
+      // Request notification permissions after successful login
+      try {
+        await PushNotificationService().initialize();
+        // Save FCM token after initialization
+        await PushNotificationService().saveFCMTokenForCurrentUser();
+      } catch (e) {
+        // Don't fail sign in if notification permission request fails
+        print('Error requesting notification permissions: $e');
+      }
+      
       _setLoading(false);
       return true;
     } catch (e) {

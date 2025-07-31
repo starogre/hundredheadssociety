@@ -7,6 +7,7 @@ import 'providers/notification_provider.dart';
 import 'providers/portrait_provider.dart';
 import 'providers/weekly_session_provider.dart';
 import 'providers/model_provider.dart';
+import 'services/push_notification_service.dart';
 import 'screens/login_screen.dart';
 import 'screens/dashboard_screen.dart';
 import 'screens/splash_screen.dart';
@@ -21,6 +22,10 @@ void main() async {
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
+  
+  // Initialize push notification service
+  await PushNotificationService().initialize();
+  
   runApp(const MyApp());
 }
 

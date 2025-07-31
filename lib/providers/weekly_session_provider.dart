@@ -3,6 +3,7 @@ import '../models/weekly_session_model.dart';
 import '../models/portrait_model.dart';
 import '../services/weekly_session_service.dart';
 import '../services/user_service.dart';
+import '../services/push_notification_service.dart';
 import '../models/user_model.dart';
 
 // Defines the award categories
@@ -39,6 +40,7 @@ const Map<AwardCategory, Map<String, dynamic>> awardDetails = {
 class WeeklySessionProvider extends ChangeNotifier {
   final WeeklySessionService _weeklySessionService = WeeklySessionService();
   final UserService _userService = UserService();
+  final PushNotificationService _pushNotificationService = PushNotificationService();
 
   WeeklySessionModel? _currentSession;
   WeeklySessionModel? _mostRecentCompletedSession; // For winners
@@ -150,6 +152,20 @@ class WeeklySessionProvider extends ChangeNotifier {
         if (user != null && !_rsvpUsers.any((u) => u.id == userId)) {
           _rsvpUsers.add(user);
           notifyListeners();
+        }
+        
+        // Send RSVP confirmation push notification
+        try {
+          await _pushNotificationService.sendRSVPConfirmation(
+            userId,
+            'Weekly Session',
+            _currentSession!.sessionDate,
+          );
+        } catch (e) {
+          // Don't fail the RSVP if push notification fails
+          if (kDebugMode) {
+            print('Error sending RSVP confirmation notification: $e');
+          }
         }
       }
     } catch (e) {

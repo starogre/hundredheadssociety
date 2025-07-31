@@ -10,7 +10,7 @@
 import {setGlobalOptions} from "firebase-functions";
 import {onRequest} from "firebase-functions/v2/https";
 import {onSchedule} from "firebase-functions/v2/scheduler";
-import {onDocumentUpdated} from "firebase-functions/v2/firestore";
+import {onDocumentUpdated, onDocumentCreated} from "firebase-functions/v2/firestore";
 import * as logger from "firebase-functions/logger";
 import * as admin from "firebase-admin";
 
@@ -465,6 +465,174 @@ export const testWeeklySessionFunctions = onRequest(async (req, res) => {
     });
   } catch (error) {
     logger.error("Error in test function:", error);
+    res.status(500).json({
+      success: false,
+      error: error instanceof Error ? error.message : "Unknown error",
+    });
+  }
+});
+
+/**
+ * 6. PUSH NOTIFICATION TRIGGER
+ * When a notification is created in Firestore, send push notification via FCM
+ */
+export const sendPushNotification = onDocumentCreated("users/{userId}/notifications/{notificationId}", async (event) => {
+  try {
+    const notificationData = event.data?.data();
+    if (!notificationData) {
+      logger.error("No notification data found");
+      return;
+    }
+
+    const userId = event.params.userId;
+    const notificationId = event.params.notificationId;
+
+    logger.info(`Processing push notification for user ${userId}, notification ${notificationId}`);
+
+    // Get user's FCM token
+    const userDoc = await db.collection("users").doc(userId).get();
+    if (!userDoc.exists) {
+      logger.error(`User ${userId} not found`);
+      return;
+    }
+
+    const userData = userDoc.data();
+    const fcmToken = userData?.fcmToken;
+
+    if (!fcmToken) {
+      logger.warn(`No FCM token found for user ${userId}`);
+      return;
+    }
+
+    // Prepare notification message
+    const message = {
+      token: fcmToken,
+      notification: {
+        title: notificationData.title || "100 Heads Society",
+        body: notificationData.message || "You have a new notification",
+      },
+      data: {
+        notificationId: notificationId,
+        type: notificationData.type || "general",
+        userId: userId,
+        ...notificationData.data,
+      },
+      android: {
+        priority: "high" as const,
+        notification: {
+          channelId: "hundred_heads_channel",
+          priority: "high" as const,
+          defaultSound: true,
+        },
+      },
+      apns: {
+        payload: {
+          aps: {
+            sound: "default",
+            badge: 1,
+          },
+        },
+      },
+    };
+
+    // Send push notification
+    const response = await admin.messaging().send(message);
+    logger.info(`Push notification sent successfully to user ${userId}: ${response}`);
+
+    // Update notification with sent status
+    await event.data?.ref.update({
+      pushSent: true,
+      pushSentAt: new Date(),
+      fcmMessageId: response,
+    });
+
+  } catch (error) {
+    logger.error("Error sending push notification:", error);
+    
+    // Update notification with error status
+    try {
+      await event.data?.ref.update({
+        pushError: error instanceof Error ? error.message : "Unknown error",
+        pushErrorAt: new Date(),
+      });
+    } catch (updateError) {
+      logger.error("Error updating notification with error status:", updateError);
+    }
+  }
+});
+
+/**
+ * 7. TEST PUSH NOTIFICATION FUNCTION
+ * Manual trigger for testing push notifications
+ */
+export const testPushNotification = onRequest(async (req, res) => {
+  try {
+    const { userId, title, body } = req.body;
+
+    if (!userId || !title || !body) {
+      res.status(400).json({
+        success: false,
+        error: "Missing required parameters: userId, title, body",
+      });
+      return;
+    }
+
+    logger.info(`Testing push notification for user ${userId}`);
+
+    // Get user's FCM token
+    const userDoc = await db.collection("users").doc(userId).get();
+    if (!userDoc.exists) {
+      res.status(404).json({
+        success: false,
+        error: "User not found",
+      });
+      return;
+    }
+
+    const userData = userDoc.data();
+    const fcmToken = userData?.fcmToken;
+
+    if (!fcmToken) {
+      res.status(400).json({
+        success: false,
+        error: "No FCM token found for user",
+      });
+      return;
+    }
+
+    // Send test push notification
+    const message = {
+      token: fcmToken,
+      notification: {
+        title: title,
+        body: body,
+      },
+      data: {
+        type: "test",
+        userId: userId,
+        timestamp: new Date().toISOString(),
+      },
+      android: {
+        priority: "high" as const,
+        notification: {
+          channelId: "hundred_heads_channel",
+          priority: "high" as const,
+          defaultSound: true,
+        },
+      },
+    };
+
+    const response = await admin.messaging().send(message);
+    logger.info(`Test push notification sent successfully: ${response}`);
+
+    res.json({
+      success: true,
+      message: "Test push notification sent successfully",
+      fcmMessageId: response,
+    });
+
+  } catch (error) {
+    logger.error("Error in test push notification function:", error);
     res.status(500).json({
       success: false,
       error: error instanceof Error ? error.message : "Unknown error",

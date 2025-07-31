@@ -2,6 +2,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/user_model.dart';
 import 'activity_log_service.dart';
+import 'push_notification_service.dart';
 
 class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
@@ -249,10 +250,22 @@ class AuthService {
     required String password,
   }) async {
     try {
-      return await _auth.signInWithEmailAndPassword(
+      final result = await _auth.signInWithEmailAndPassword(
         email: email,
         password: password,
       );
+      
+      // Save FCM token for the user
+      if (result.user != null) {
+        try {
+          await PushNotificationService().saveFCMTokenForUser(result.user!.uid);
+        } catch (e) {
+          // Don't fail sign in if FCM token saving fails
+          print('Error saving FCM token: $e');
+        }
+      }
+      
+      return result;
     } catch (e) {
       rethrow;
     }
