@@ -389,15 +389,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     mainAxisSpacing: 16,
                     childAspectRatio: 1,
                   ),
-                  itemCount: 100,
+                  itemCount: (authProvider.userData?.portraitsCompleted ?? 0) >= 100 ? 200 : 100,
                   itemBuilder: (context, index) {
                     int weekNumber = index + 1;
                     PortraitModel? portrait = portraitMap[weekNumber];
                     
                     // Calculate the next available week (first week without a portrait)
                     int nextAvailableWeek = 1;
+                    int maxSlots = (authProvider.userData?.portraitsCompleted ?? 0) >= 100 ? 200 : 100;
                     try {
-                      for (int i = 1; i <= 100; i++) {
+                      for (int i = 1; i <= maxSlots; i++) {
                         if (!portraitMap.containsKey(i)) {
                           nextAvailableWeek = i;
                           break;

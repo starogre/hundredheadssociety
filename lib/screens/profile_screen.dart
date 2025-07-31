@@ -338,12 +338,24 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(
-                                _userData!.name,
-                                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                                  color: AppColors.forestGreen,
-                                  fontWeight: FontWeight.bold,
-                                ),
+                              Row(
+                                children: [
+                                  Text(
+                                    _userData!.name,
+                                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                                      color: AppColors.forestGreen,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                  // Dragon emoji for 100+ portraits
+                                  if (_userData!.portraitsCompleted >= 100) ...[
+                                    const SizedBox(width: 8),
+                                    const Text(
+                                      '🐉',
+                                      style: TextStyle(fontSize: 24),
+                                    ),
+                                  ],
+                                ],
                               ),
                               Consumer<AuthProvider>(
                                 builder: (context, authProvider, child) {

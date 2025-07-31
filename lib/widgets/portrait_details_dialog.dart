@@ -8,6 +8,7 @@ import '../theme/app_theme.dart';
 import '../screens/edit_portrait_screen.dart';
 import '../screens/profile_screen.dart';
 import '../services/portrait_service.dart';
+import '../services/award_service.dart';
 import '../providers/model_provider.dart';
 
 class PortraitDetailsDialog extends StatefulWidget {
@@ -29,6 +30,7 @@ class PortraitDetailsDialog extends StatefulWidget {
 }
 
 class _PortraitDetailsDialogState extends State<PortraitDetailsDialog> {
+  final AwardService _awardService = AwardService();
   bool _showDeleteConfirmation = false;
   bool _isDeleting = false;
 
@@ -254,6 +256,86 @@ class _PortraitDetailsDialogState extends State<PortraitDetailsDialog> {
                   ),
                   const SizedBox(height: 16),
                 ],
+                // Awards section
+                FutureBuilder<List<Map<String, dynamic>>>(
+                  future: _awardService.getPortraitAwards(widget.portrait.id),
+                  builder: (context, snapshot) {
+                    if (snapshot.hasData && snapshot.data!.isNotEmpty) {
+                      final awardDetails = _awardService.getAwardDetails();
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Icon(
+                                Icons.emoji_events,
+                                color: AppColors.rustyOrange,
+                                size: 20,
+                              ),
+                              const SizedBox(width: 8),
+                              Text(
+                                'Awards Won',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                  color: AppColors.rustyOrange,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 8),
+                          ...snapshot.data!.map((award) {
+                            final category = award['category'] as String;
+                            final details = awardDetails[category];
+                            return Container(
+                              margin: const EdgeInsets.only(bottom: 4),
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: AppColors.rustyOrange.withValues(alpha: 0.1),
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(
+                                  color: AppColors.rustyOrange.withValues(alpha: 0.3),
+                                ),
+                              ),
+                              child: Row(
+                                children: [
+                                  Text(
+                                    details?['emoji'] ?? '🏆',
+                                    style: const TextStyle(fontSize: 16),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          details?['title'] ?? category,
+                                          style: const TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                            color: AppColors.rustyOrange,
+                                          ),
+                                        ),
+                                        Text(
+                                          '${award['votes']} votes',
+                                          style: TextStyle(
+                                            fontSize: 12,
+                                            color: AppColors.rustyOrange.withValues(alpha: 0.7),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            );
+                          }).toList(),
+                          const SizedBox(height: 16),
+                        ],
+                      );
+                    }
+                    return const SizedBox.shrink();
+                  },
+                ),
                 // Description section - at the bottom
                 if (widget.portrait.description != null && widget.portrait.description!.isNotEmpty) ...[
                   Text(

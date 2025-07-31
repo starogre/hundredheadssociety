@@ -205,13 +205,25 @@ class _CommunityScreenState extends State<CommunityScreen>
                                       Expanded(
                                         child: Row(
                                           children: [
-                                            Text(
-                                              user.name,
-                                              style: const TextStyle(
-                                                fontWeight: FontWeight.bold,
-                                                fontSize: 16,
-                                              ),
-                                              overflow: TextOverflow.ellipsis,
+                                            Row(
+                                              children: [
+                                                Text(
+                                                  user.name,
+                                                  style: const TextStyle(
+                                                    fontWeight: FontWeight.bold,
+                                                    fontSize: 16,
+                                                  ),
+                                                  overflow: TextOverflow.ellipsis,
+                                                ),
+                                                // Dragon emoji for 100+ portraits
+                                                if (user.portraitsCompleted >= 100) ...[
+                                                  const SizedBox(width: 4),
+                                                  const Text(
+                                                    '🐉',
+                                                    style: TextStyle(fontSize: 16),
+                                                  ),
+                                                ],
+                                              ],
                                             ),
                                             const SizedBox(width: 8),
                                             // Role Badge
