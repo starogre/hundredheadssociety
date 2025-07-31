@@ -548,11 +548,24 @@ class _WeeklySessionsScreenState extends State<WeeklySessionsScreen>
                               style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.forestGreen),
                             ),
                             ElevatedButton.icon(
-                              onPressed: () => _showNominationDialog(context, submission),
-                              icon: const Icon(Icons.how_to_vote, size: 16),
-                              label: const Text('Vote'),
+                              onPressed: weeklySessionProvider.isVotingClosed() 
+                                  ? null 
+                                  : () => _showNominationDialog(context, submission),
+                              icon: Icon(
+                                Icons.how_to_vote, 
+                                size: 16,
+                                color: weeklySessionProvider.isVotingClosed() ? Colors.grey : null,
+                              ),
+                              label: Text(
+                                weeklySessionProvider.isVotingClosed() ? 'Voting Closed' : 'Vote',
+                                style: TextStyle(
+                                  color: weeklySessionProvider.isVotingClosed() ? Colors.grey : null,
+                                ),
+                              ),
                               style: ElevatedButton.styleFrom(
-                                backgroundColor: AppColors.rustyOrange,
+                                backgroundColor: weeklySessionProvider.isVotingClosed() 
+                                    ? Colors.grey.shade300 
+                                    : AppColors.rustyOrange,
                                 foregroundColor: AppColors.white,
                                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                                 textStyle: const TextStyle(fontSize: 12),
@@ -574,10 +587,70 @@ class _WeeklySessionsScreenState extends State<WeeklySessionsScreen>
 
   Widget _buildWinnersTab(BuildContext context, WeeklySessionProvider weeklySessionProvider) {
     final winners = weeklySessionProvider.winners;
+    final isVotingClosed = weeklySessionProvider.isVotingClosed();
+    final shouldShowWinners = weeklySessionProvider.shouldShowWinners();
     
+    // Only show winners during the designated time period
+    if (!shouldShowWinners) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.schedule, size: 64, color: AppColors.rustyOrange),
+            const SizedBox(height: 16),
+            Text(
+              isVotingClosed ? 'Results will show on Wednesday at Noon!' : 'Winners will be available soon!',
+              style: const TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: AppColors.forestGreen,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              isVotingClosed 
+                ? 'Keep voting for your favorite paintings!'
+                : 'Vote for your favorite paintings to see winners here!',
+              style: TextStyle(
+                fontSize: 14,
+                color: Colors.grey[600],
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      );
+    }
+    
+    // Show winners during the designated time period
     if (winners.isEmpty) {
-      return const Center(
-        child: Text('No winners yet. Cast your votes!'),
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.emoji_events, size: 64, color: AppColors.rustyOrange),
+            const SizedBox(height: 16),
+            const Text(
+              'No winners yet!',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: AppColors.forestGreen,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'No votes were cast for any submissions.',
+              style: TextStyle(
+                fontSize: 14,
+                color: Colors.grey[600],
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
       );
     }
     

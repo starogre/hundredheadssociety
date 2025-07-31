@@ -41,6 +41,7 @@ class WeeklySessionProvider extends ChangeNotifier {
   final UserService _userService = UserService();
 
   WeeklySessionModel? _currentSession;
+  WeeklySessionModel? _mostRecentCompletedSession; // For winners
   List<UserModel> _rsvpUsers = [];
   List<Map<String, dynamic>> _submissionsWithUsers = [];
   bool _isLoading = false;
@@ -63,6 +64,7 @@ class WeeklySessionProvider extends ChangeNotifier {
     _error = null;
     notifyListeners();
 
+    // Load the upcoming session for RSVP and submissions
     _weeklySessionService.getNextWeeklySession().listen(
       (session) async {
         final oldSession = _currentSession;
@@ -84,6 +86,17 @@ class WeeklySessionProvider extends ChangeNotifier {
         _error = error.toString();
         _isLoading = false;
         notifyListeners();
+      },
+    );
+
+    // Load the most recent completed session for winners
+    _weeklySessionService.getMostRecentCompletedSession().listen(
+      (session) {
+        _mostRecentCompletedSession = session;
+        notifyListeners();
+      },
+      onError: (error) {
+        print('DEBUG: Error loading most recent completed session: $error');
       },
     );
   }
@@ -283,7 +296,17 @@ class WeeklySessionProvider extends ChangeNotifier {
 
   // Get winners for each category
   Map<String, Map<String, dynamic>> get winners {
-    if (_currentSession == null || _submissionsWithUsers.isEmpty) return {};
+    if (_mostRecentCompletedSession == null) {
+      print('DEBUG: No most recent completed session for winners');
+      return {};
+    }
+
+    // We need to load submissions for the most recent completed session
+    // For now, let's use the current session's submissions if they exist
+    if (_submissionsWithUsers.isEmpty) {
+      print('DEBUG: No submissions for winners');
+      return {};
+    }
 
     final Map<String, Map<String, dynamic>> categoryWinners = {};
 
@@ -305,8 +328,13 @@ class WeeklySessionProvider extends ChangeNotifier {
 
       if (topSubmission != null && maxVotes > 0) {
         categoryWinners[category] = topSubmission;
+        print('DEBUG: Winner for $category - ${topSubmission['user'].name} with $maxVotes votes');
+      } else {
+        print('DEBUG: No winner for $category - max votes: $maxVotes');
       }
     }
+    
+    print('DEBUG: Total winners found: ${categoryWinners.length}');
     return categoryWinners;
   }
 
@@ -330,6 +358,49 @@ class WeeklySessionProvider extends ChangeNotifier {
       }
     }
     return false;
+  }
+
+  // Check if voting is closed (after Wednesday noon)
+  bool isVotingClosed() {
+    if (_currentSession == null) return false;
+    
+    final now = DateTime.now();
+    final sessionDate = _currentSession!.sessionDate;
+    
+    // Calculate Wednesday noon (2 days after Monday session)
+    final wednesday = sessionDate.add(const Duration(days: 2));
+    final wednesdayNoon = DateTime(wednesday.year, wednesday.month, wednesday.day, 12, 0);
+    
+    final isClosed = now.isAfter(wednesdayNoon);
+    print('DEBUG: Voting closed check - Now: $now, Session: $sessionDate, Wednesday noon: $wednesdayNoon, Is closed: $isClosed');
+    
+    return isClosed;
+  }
+
+  // Check if winners should be shown (from Wednesday noon until Monday 9am)
+  bool shouldShowWinners() {
+    if (_mostRecentCompletedSession == null) {
+      print('DEBUG: No most recent completed session for winners check');
+      return false;
+    }
+    
+    final now = DateTime.now();
+    final sessionDate = _mostRecentCompletedSession!.sessionDate;
+    
+    print('DEBUG: Most recent completed session date: $sessionDate');
+    
+    // Calculate Wednesday noon (2 days after Monday session)
+    final wednesday = sessionDate.add(const Duration(days: 2));
+    final wednesdayNoon = DateTime(wednesday.year, wednesday.month, wednesday.day, 12, 0);
+    
+    // Calculate next Monday 9am (7 days after session)
+    final nextMonday = sessionDate.add(const Duration(days: 7));
+    final nextMonday9am = DateTime(nextMonday.year, nextMonday.month, nextMonday.day, 9, 0);
+    
+    final shouldShow = now.isAfter(wednesdayNoon) && now.isBefore(nextMonday9am);
+    print('DEBUG: Show winners check - Now: $now, Session: $sessionDate, Wednesday noon: $wednesdayNoon, Next Monday 9am: $nextMonday9am, Should show: $shouldShow');
+    
+    return shouldShow;
   }
 
   // Get user's submission for current session

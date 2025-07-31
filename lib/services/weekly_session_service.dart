@@ -241,6 +241,24 @@ class WeeklySessionService {
     });
   }
 
+  // Get the most recent completed weekly session (for winners)
+  Stream<WeeklySessionModel?> getMostRecentCompletedSession() {
+    final now = DateTime.now();
+    return _firestore
+        .collection('weekly_sessions')
+        .where('sessionDate', isLessThan: now)
+        .orderBy('sessionDate', descending: true)
+        .limit(1)
+        .snapshots()
+        .map((snapshot) {
+      if (snapshot.docs.isEmpty) return null;
+      return WeeklySessionModel.fromMap(
+        snapshot.docs.first.data(),
+        snapshot.docs.first.id,
+      );
+    });
+  }
+
   // Cancel a weekly session
   Future<void> cancelWeeklySession(String sessionId, String notes) async {
     await _firestore.collection('weekly_sessions').doc(sessionId).update({
