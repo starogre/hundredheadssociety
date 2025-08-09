@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/notification_provider.dart';
+import '../services/notification_service.dart';
 import '../theme/app_theme.dart';
 
 class NotificationBadge extends StatelessWidget {
@@ -22,47 +23,49 @@ class NotificationBadge extends StatelessWidget {
     return Consumer<NotificationProvider>(
       builder: (context, notificationProvider, child) {
         final unreadCount = notificationProvider.unreadCount;
+        debugPrint('NotificationBadge: Building with unread count $unreadCount (provider has ${notificationProvider.notifications.length} total notifications)');
         
-        if (unreadCount == 0) {
-          return IconButton(
-            icon: const Icon(Icons.notifications_outlined),
-            onPressed: onTap,
-            color: Colors.white,
-          );
-        }
-
-        return Stack(
-          children: [
-            IconButton(
-              icon: const Icon(Icons.notifications),
-              onPressed: onTap,
-              color: Colors.white,
-            ),
-            Positioned(
-              right: 8,
-              top: 8,
-              child: Container(
-                padding: const EdgeInsets.all(2),
-                decoration: BoxDecoration(
-                  color: backgroundColor ?? Colors.red,
-                  borderRadius: BorderRadius.circular(10),
+        // Force rebuild by using a unique key based on the unread count
+        return KeyedSubtree(
+          key: ValueKey('notification_badge_$unreadCount'),
+          child: Stack(
+            children: [
+              IconButton(
+                icon: Icon(
+                  unreadCount == 0 
+                      ? Icons.notifications_outlined 
+                      : Icons.notifications,
                 ),
-                constraints: BoxConstraints(
-                  minWidth: size,
-                  minHeight: size,
-                ),
-                child: Text(
-                  unreadCount > 99 ? '99+' : unreadCount.toString(),
-                  style: TextStyle(
-                    color: textColor ?? Colors.white,
-                    fontSize: 10,
-                    fontWeight: FontWeight.bold,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
+                onPressed: onTap,
+                color: Colors.white,
               ),
-            ),
-          ],
+              if (unreadCount > 0)
+                Positioned(
+                  right: 4,
+                  top: 4,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                    decoration: BoxDecoration(
+                      color: backgroundColor ?? Colors.red,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    constraints: const BoxConstraints(
+                      minWidth: 12,
+                      minHeight: 12,
+                    ),
+                    child: Text(
+                      unreadCount > 99 ? '99+' : unreadCount.toString(),
+                      style: TextStyle(
+                        color: textColor ?? Colors.white,
+                        fontSize: 8,
+                        fontWeight: FontWeight.bold,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+                ),
+            ],
+          ),
         );
       },
     );
@@ -100,7 +103,7 @@ class CustomNotificationBadge extends StatelessWidget {
           shape: BoxShape.circle,
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.2),
+              color: Colors.black.withValues(alpha: 0.2),
               blurRadius: 4,
               offset: const Offset(0, 2),
             ),

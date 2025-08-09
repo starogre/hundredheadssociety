@@ -4,10 +4,8 @@ import '../providers/auth_provider.dart';
 import '../services/user_service.dart';
 import '../services/portrait_service.dart';
 import '../models/user_model.dart';
-import '../models/portrait_model.dart';
 import '../models/upgrade_request_model.dart';
 import '../theme/app_theme.dart';
-import 'dart:io';
 
 class UserManagementScreen extends StatefulWidget {
   final int initialTab;

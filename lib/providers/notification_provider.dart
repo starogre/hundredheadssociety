@@ -31,6 +31,8 @@ class NotificationProvider with ChangeNotifier {
         (notifications) {
           _notifications = notifications;
           _unreadCount = notifications.where((n) => !n.read).length;
+          debugPrint('NotificationProvider: Received ${notifications.length} notifications, ${_unreadCount} unread');
+          debugPrint('NotificationProvider: Calling notifyListeners()');
           notifyListeners();
         },
         onError: (error) {
@@ -42,10 +44,12 @@ class NotificationProvider with ChangeNotifier {
       _notificationService.getUnreadCount(userId).listen(
         (count) {
           _unreadCount = count;
+          debugPrint('NotificationProvider: Unread count updated to $count');
+          debugPrint('NotificationProvider: Calling notifyListeners() from unread count stream');
           notifyListeners();
         },
         onError: (error) {
-          print('Error listening to unread count: $error');
+          debugPrint('Error listening to unread count: $error');
         }
       );
       

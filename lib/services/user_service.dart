@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/foundation.dart';
 import '../models/user_model.dart';
 import '../models/upgrade_request_model.dart';
 import 'activity_log_service.dart';
@@ -78,7 +79,7 @@ class UserService {
         .snapshots()
         .map((snapshot) {
       return snapshot.docs
-          .map((doc) => UserModel.fromMap(doc.data() as Map<String, dynamic>, doc.id))
+          .map((doc) => UserModel.fromMap(doc.data(), doc.id))
           .toList();
     });
   }
@@ -185,10 +186,10 @@ class UserService {
     required String userName,
   }) async {
     try {
-      print('=== UPGRADE REQUEST DEBUG ===');
-      print('Attempting to create upgrade request for user: $userId');
-      print('User email: $userEmail');
-      print('User name: $userName');
+      debugPrint('=== UPGRADE REQUEST DEBUG ===');
+      debugPrint('Attempting to create upgrade request for user: $userId');
+      debugPrint('User email: $userEmail');
+      debugPrint('User name: $userName');
       
       // Check if user already has a pending request
       final existingRequests = await _firestore
@@ -197,10 +198,10 @@ class UserService {
           .where('status', isEqualTo: 'pending')
           .get();
 
-      print('Found ${existingRequests.docs.length} existing pending requests');
+              debugPrint('Found ${existingRequests.docs.length} existing pending requests');
 
       if (existingRequests.docs.isNotEmpty) {
-        print('User already has a pending request, throwing exception');
+                  debugPrint('User already has a pending request, throwing exception');
         throw Exception('You already have a pending upgrade request');
       }
 
@@ -213,19 +214,19 @@ class UserService {
         status: 'pending',
       );
 
-      print('Creating upgrade request document...');
+              debugPrint('Creating upgrade request document...');
       final docRef = await _firestore.collection('upgrade_requests').add(request.toMap());
-      print('Upgrade request created successfully with ID: ${docRef.id}');
+              debugPrint('Upgrade request created successfully with ID: ${docRef.id}');
 
       // Send notification to admins
-      print('Sending notification to admins...');
+              debugPrint('Sending notification to admins...');
       await _sendUpgradeRequestNotificationToAdmins(userId, userName);
-      print('Notification sent successfully');
-      print('=== UPGRADE REQUEST COMPLETE ===');
+              debugPrint('Notification sent successfully');
+        debugPrint('=== UPGRADE REQUEST COMPLETE ===');
     } catch (e) {
-      print('=== UPGRADE REQUEST ERROR ===');
-      print('Error creating upgrade request: $e');
-      print('Error type: ${e.runtimeType}');
+              debugPrint('=== UPGRADE REQUEST ERROR ===');
+        debugPrint('Error creating upgrade request: $e');
+        debugPrint('Error type: ${e.runtimeType}');
       rethrow;
     }
   }
@@ -272,7 +273,7 @@ class UserService {
       await batch.commit();
     } catch (e) {
       // Log error but don't fail the upgrade request creation
-      print('Error sending admin notifications: $e');
+              debugPrint('Error sending admin notifications: $e');
     }
   }
 

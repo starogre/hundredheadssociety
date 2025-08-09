@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../providers/auth_provider.dart';
 import '../providers/portrait_provider.dart';
 import '../providers/notification_provider.dart';
@@ -59,6 +60,17 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   Future<void> _requestNotificationPermissions() async {
     try {
+      // Check if we've already asked for permission
+      final prefs = await SharedPreferences.getInstance();
+      final hasAskedForPermission = prefs.getBool('has_asked_notification_permission') ?? false;
+      
+      if (hasAskedForPermission) {
+        // We've already asked, just initialize the service
+        final pushNotificationService = PushNotificationService();
+        await pushNotificationService.initialize();
+        return;
+      }
+      
       // Show custom permission dialog first
       if (mounted) {
         final shouldRequest = await showDialog<bool>(
@@ -67,6 +79,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
           builder: (context) => const NotificationPermissionDialog(),
         );
         
+        // Mark that we've asked for permission
+        await prefs.setBool('has_asked_notification_permission', true);
+        
         if (shouldRequest == true) {
           // User clicked "Allow Notifications"
           final pushNotificationService = PushNotificationService();
@@ -74,7 +89,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         }
       }
     } catch (e) {
-      print('Error requesting notification permissions: $e');
+      debugPrint('Error requesting notification permissions: $e');
     }
   }
 
@@ -85,7 +100,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         await _portraitService.fixWeekGaps(authProvider.currentUser!.uid);
       }
     } catch (e) {
-      print('Error fixing week gaps: $e');
+      debugPrint('Error fixing week gaps: $e');
     }
   }
 
@@ -113,172 +128,152 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider(
-      create: (_) => NotificationProvider(),
-      child: Consumer<AuthProvider>(
-        builder: (context, authProvider, child) {
-          if (!authProvider.isAuthenticated) {
-            return const Scaffold(
-              body: Center(
-                child: CircularProgressIndicator(),
+    return Consumer<AuthProvider>(
+      builder: (context, authProvider, child) {
+        if (!authProvider.isAuthenticated) {
+          return const Scaffold(
+            body: Center(
+              child: CircularProgressIndicator(),
+            ),
+          );
+        }
+
+        // Get user data and determine available tabs based on role
+        final userData = authProvider.userData;
+        final isArtAppreciator = userData?.isArtAppreciator ?? true;
+        
+        // Determine available tabs based on user role
+        List<Widget> availableTabs = [];
+        List<BottomNavigationBarItem> navigationItems = [];
+        
+        if (isArtAppreciator) {
+          // Art appreciators only see Community and Profile
+          availableTabs = [
+            const CommunityScreen(),
+            ProfileScreen(userId: authProvider.currentUser!.uid),
+          ];
+          navigationItems = [
+            const BottomNavigationBarItem(
+              icon: Icon(Icons.people),
+              label: 'Community',
+            ),
+            const BottomNavigationBarItem(
+              icon: Icon(Icons.person),
+              label: 'Profile',
+            ),
+          ];
+        } else {
+          // Artists see all tabs
+          availableTabs = [
+            _buildDashboardTab(authProvider),
+            const CommunityScreen(),
+            ProfileScreen(userId: authProvider.currentUser!.uid),
+            const WeeklySessionsScreen(),
+          ];
+          navigationItems = [
+            const BottomNavigationBarItem(
+              icon: Icon(Icons.dashboard),
+              label: 'My Heads',
+            ),
+            const BottomNavigationBarItem(
+              icon: Icon(Icons.people),
+              label: 'Community',
+            ),
+            const BottomNavigationBarItem(
+              icon: Icon(Icons.person),
+              label: 'Profile',
+            ),
+            const BottomNavigationBarItem(
+              icon: Icon(Icons.event),
+              label: 'Weekly Sessions',
+            ),
+          ];
+        }
+
+        // Determine AppBar title and actions based on selected tab
+        String appBarTitle = '';
+        List<Widget> appBarActions = [];
+        
+        // Add notification badge to all tabs
+        appBarActions.add(
+          NotificationBadge(
+            onTap: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(builder: (context) => const NotificationsScreen()),
+              );
+            },
+          ),
+        );
+        
+        if (isArtAppreciator) {
+          if (_selectedIndex == 0) {
+            appBarTitle = 'Community';
+          } else if (_selectedIndex == 1) {
+            appBarTitle = userData?.name ?? 'Profile';
+            appBarActions.add(
+              IconButton(
+                icon: const Icon(Icons.settings),
+                onPressed: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(builder: (context) => const SettingsScreen()),
+                  );
+                },
               ),
             );
           }
-
-          // Get user data and determine available tabs based on role
-          final userData = authProvider.userData;
-          final isArtAppreciator = userData?.isArtAppreciator ?? true;
-          
-          // Determine available tabs based on user role
-          List<Widget> availableTabs = [];
-          List<BottomNavigationBarItem> navigationItems = [];
-          
-          if (isArtAppreciator) {
-            // Art appreciators only see Community and Profile
-            availableTabs = [
-              const CommunityScreen(),
-              ProfileScreen(userId: authProvider.currentUser!.uid),
-            ];
-            navigationItems = [
-              const BottomNavigationBarItem(
-                icon: Icon(Icons.people),
-                label: 'Community',
+        } else {
+          if (_selectedIndex == 0) {
+            appBarTitle = '100 Heads Society';
+          } else if (_selectedIndex == 1) {
+            appBarTitle = 'Community';
+          } else if (_selectedIndex == 2) {
+            appBarTitle = userData?.name ?? 'Profile';
+            appBarActions.add(
+              IconButton(
+                icon: const Icon(Icons.settings),
+                onPressed: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(builder: (context) => const SettingsScreen()),
+                  );
+                },
               ),
-              const BottomNavigationBarItem(
-                icon: Icon(Icons.person),
-                label: 'Profile',
-              ),
-            ];
-          } else {
-            // Artists see all tabs
-            availableTabs = [
-              _buildDashboardTab(authProvider),
-              const CommunityScreen(),
-              ProfileScreen(userId: authProvider.currentUser!.uid),
-              const WeeklySessionsScreen(),
-            ];
-            navigationItems = [
-              const BottomNavigationBarItem(
-                icon: Icon(Icons.dashboard),
-                label: 'My Heads',
-              ),
-              const BottomNavigationBarItem(
-                icon: Icon(Icons.people),
-                label: 'Community',
-              ),
-              const BottomNavigationBarItem(
-                icon: Icon(Icons.person),
-                label: 'Profile',
-              ),
-              const BottomNavigationBarItem(
-                icon: Icon(Icons.event),
-                label: 'Weekly Sessions',
-              ),
-            ];
+            );
+          } else if (_selectedIndex == 3) {
+            appBarTitle = 'Weekly Sessions';
           }
+        }
 
-          // Determine AppBar title and actions based on selected tab
-          String appBarTitle = '';
-          List<Widget> appBarActions = [];
-          
-          // Add notification badge to all tabs
-          appBarActions.add(
-            NotificationBadge(
-              onTap: () {
-                Navigator.of(context).push(
-                  MaterialPageRoute(builder: (context) => const NotificationsScreen()),
-                );
-              },
-            ),
-          );
-          
-          if (isArtAppreciator) {
-            if (_selectedIndex == 0) {
-              appBarTitle = 'Community';
-            } else if (_selectedIndex == 1) {
-              appBarTitle = userData?.name ?? 'Profile';
-              appBarActions.add(
-                IconButton(
-                  icon: const Icon(Icons.settings),
-                  onPressed: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute(builder: (context) => const SettingsScreen()),
-                    );
-                  },
-                ),
-              );
-            }
-          } else {
-            if (_selectedIndex == 0) {
-              appBarTitle = '100 Heads Society';
-            } else if (_selectedIndex == 1) {
-              appBarTitle = 'Community';
-            } else if (_selectedIndex == 2) {
-              appBarTitle = userData?.name ?? 'Profile';
-              appBarActions.add(
-                IconButton(
-                  icon: const Icon(Icons.settings),
-                  onPressed: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute(builder: (context) => const SettingsScreen()),
-                    );
-                  },
-                ),
-              );
-              appBarActions.add(
-                IconButton(
-                  icon: const Icon(Icons.notification_add),
-                  onPressed: () {
-                    final notificationProvider = Provider.of<NotificationProvider>(context, listen: false);
-                    if (authProvider.currentUser != null) {
-                      notificationProvider.createTestNotification(authProvider.currentUser!.uid);
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Test notification created!'),
-                          backgroundColor: AppColors.forestGreen,
-                        ),
-                      );
-                    }
-                  },
-                ),
-              );
-            } else if (_selectedIndex == 3) {
-              appBarTitle = 'Weekly Sessions';
-            }
-          }
-
-          return Scaffold(
-            appBar: AppBar(
-              title: Text(appBarTitle),
-              actions: appBarActions,
-            ),
-            body: IndexedStack(
-              index: _selectedIndex,
-              children: availableTabs,
-            ),
-            bottomNavigationBar: BottomNavigationBar(
-              currentIndex: _selectedIndex,
-              onTap: (index) {
-                setState(() {
-                  _selectedIndex = index;
-                });
-              },
-              selectedItemColor: AppColors.rustyOrange,
-              unselectedItemColor: AppColors.forestGreen,
-              items: navigationItems,
-            ),
-            floatingActionButton: isArtAppreciator 
-                ? null // No FAB for art appreciators
-                : _selectedIndex == 0
-                    ? FloatingActionButton(
-                        onPressed: () => _showAddPortraitDialog(context, authProvider, (authProvider.userData?.portraitsCompleted ?? 0) + 1),
-                        backgroundColor: AppColors.rustyOrange,
-                        child: const Icon(Icons.add_a_photo),
-                      )
-                    : null,
-          );
-        },
-      ),
+        return Scaffold(
+          appBar: AppBar(
+            title: Text(appBarTitle),
+            actions: appBarActions,
+          ),
+          body: IndexedStack(
+            index: _selectedIndex,
+            children: availableTabs,
+          ),
+          bottomNavigationBar: BottomNavigationBar(
+            currentIndex: _selectedIndex,
+            onTap: (index) {
+              setState(() {
+                _selectedIndex = index;
+              });
+            },
+            selectedItemColor: AppColors.rustyOrange,
+            unselectedItemColor: AppColors.forestGreen,
+            items: navigationItems,
+          ),
+          floatingActionButton: isArtAppreciator 
+              ? null // No FAB for art appreciators
+              : _selectedIndex == 0
+                  ? FloatingActionButton(
+                      onPressed: () => _showAddPortraitDialog(context, authProvider, (authProvider.userData?.portraitsCompleted ?? 0) + 1),
+                      backgroundColor: AppColors.rustyOrange,
+                      child: const Icon(Icons.add_a_photo),
+                    )
+                  : null,
+        );
+      },
     );
   }
 
@@ -390,7 +385,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     for (var portrait in portraits) portrait.weekNumber: portrait
                   };
                 } catch (e) {
-                  print('Error creating portrait map: $e');
+                  debugPrint('Error creating portrait map: $e');
                   // Return error state if there's an issue with the data
                   return Center(
                     child: Column(
@@ -431,7 +426,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         }
                       }
                     } catch (e) {
-                      print('Error calculating next available week: $e');
+                      debugPrint('Error calculating next available week: $e');
                       nextAvailableWeek = 1;
                     }
                     

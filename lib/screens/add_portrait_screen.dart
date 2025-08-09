@@ -396,9 +396,9 @@ class _AddPortraitScreenState extends State<AddPortraitScreen> {
                       width: double.infinity,
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: AppColors.rustyOrange.withOpacity(0.1),
+                        color: AppColors.rustyOrange.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: AppColors.rustyOrange.withOpacity(0.3)),
+                        border: Border.all(color: AppColors.rustyOrange.withValues(alpha: 0.3)),
                       ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -459,7 +459,7 @@ class _AddPortraitScreenState extends State<AddPortraitScreen> {
                         width: double.infinity,
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: AppColors.forestGreen.withOpacity(0.3)),
+                          border: Border.all(color: AppColors.forestGreen.withValues(alpha: 0.3)),
                         ),
                         child: ClipRRect(
                           borderRadius: BorderRadius.circular(8),

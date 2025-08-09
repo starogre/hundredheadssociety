@@ -42,9 +42,9 @@ class NominationDialog extends StatelessWidget {
 
             return Card(
               color: hasVoted 
-                  ? AppColors.forestGreen.withOpacity(0.2) 
+                  ? AppColors.forestGreen.withValues(alpha: 0.2) 
                   : hasVotedForCategory && !hasVoted 
-                      ? Colors.grey.withOpacity(0.2) 
+                      ? Colors.grey.withValues(alpha: 0.2) 
                       : null,
               margin: const EdgeInsets.symmetric(vertical: 4),
               child: ListTile(

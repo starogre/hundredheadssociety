@@ -38,7 +38,7 @@ class PortraitSlot extends StatelessWidget {
           boxShadow: isCompleted
               ? [
                   BoxShadow(
-                    color: AppColors.forestGreen.withOpacity(0.3),
+                    color: AppColors.forestGreen.withValues(alpha: 0.3),
                     blurRadius: 4,
                     offset: const Offset(0, 2),
                   ),
@@ -46,7 +46,7 @@ class PortraitSlot extends StatelessWidget {
               : isUnlocked && !isCompleted
                   ? [
                       BoxShadow(
-                        color: AppColors.rustyOrange.withOpacity(0.3),
+                        color: AppColors.rustyOrange.withValues(alpha: 0.3),
                         blurRadius: 4,
                         offset: const Offset(0, 2),
                       ),

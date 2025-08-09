@@ -8,7 +8,8 @@ import 'app_updates_screen.dart';
 import 'about_screen.dart';
 import 'activity_log_screen.dart';
 import 'model_management_screen.dart';
-import 'model_data_injection_screen.dart';
+import 'test_notifications_screen.dart';
+import 'push_notifications_settings_screen.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
@@ -90,52 +91,29 @@ class SettingsScreen extends StatelessWidget {
                     }
                   },
                 ),
-              // Test Push Notifications for admins only
+              // Test Notifications for admins only
               if (isAdmin)
                 ListTile(
-                  leading: const Icon(Icons.notifications),
-                  title: const Text('Test Push Notification'),
-                  subtitle: const Text('Send a test notification to yourself'),
-                  onTap: () async {
-                    try {
-                      final userData = authProvider.userData;
-                      if (userData != null) {
-                        // Create a test notification in Firestore - this will trigger the Cloud Function
-                        final firestore = FirebaseFirestore.instance;
-                        await firestore.collection('users').doc(userData.id).collection('notifications').add({
-                          'userId': userData.id,
-                          'type': 'test',
-                          'title': 'Test Push Notification',
-                          'message': 'This is a test notification from the app!',
-                          'createdAt': FieldValue.serverTimestamp(),
-                          'read': false,
-                          'data': {
-                            'testData': 'This is test data',
-                            'timestamp': DateTime.now().toIso8601String(),
-                          }
-                        });
-                        
-                        if (context.mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('Test notification sent! Check your phone for push notification.'),
-                              backgroundColor: Colors.green,
-                            ),
-                          );
-                        }
-                      }
-                    } catch (e) {
-                      if (context.mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text('Error sending test notification: $e'),
-                            backgroundColor: Colors.red,
-                          ),
-                        );
-                      }
-                    }
+                  leading: const Icon(Icons.science),
+                  title: const Text('Test Notifications'),
+                  subtitle: const Text('Test various push notification types'),
+                  onTap: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(builder: (context) => const TestNotificationsScreen()),
+                    );
                   },
                 ),
+              // Push Notifications Settings
+              ListTile(
+                leading: const Icon(Icons.notifications),
+                title: const Text('Push Notifications'),
+                subtitle: const Text('Control which push notifications you receive'),
+                onTap: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(builder: (context) => const PushNotificationsSettingsScreen()),
+                  );
+                },
+              ),
               // Show Model Data Injection for admins only (hidden for now)
               // if (isAdmin)
               //   ListTile(
@@ -201,4 +179,4 @@ class SettingsScreen extends StatelessWidget {
       ),
     );
   }
-} 
+}

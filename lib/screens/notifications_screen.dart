@@ -223,6 +223,10 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         iconData = Icons.person_add;
         iconColor = Colors.green;
         break;
+      case 'session_cancelled':
+        iconData = Icons.cancel;
+        iconColor = Colors.red;
+        break;
       default:
         iconData = Icons.notifications;
         iconColor = Colors.grey;
@@ -231,7 +235,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     return Container(
       padding: const EdgeInsets.all(8),
       decoration: BoxDecoration(
-        color: iconColor.withOpacity(0.1),
+        color: iconColor.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(8),
       ),
       child: Icon(iconData, color: iconColor, size: 20),
@@ -312,6 +316,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       case 'session_reminder':
       case 'rsvp_confirmation':
       case 'session_completed':
+      case 'session_cancelled':
         // Navigate to weekly sessions screen
         Navigator.of(context).pushNamed('/weekly-sessions');
         break;

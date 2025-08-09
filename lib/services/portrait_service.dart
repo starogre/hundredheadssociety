@@ -2,6 +2,7 @@ import 'dart:io';
 import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
+import 'package:flutter/foundation.dart';
 import 'package:uuid/uuid.dart';
 import '../models/portrait_model.dart';
 import '../models/user_model.dart';
@@ -14,12 +15,12 @@ class PortraitService {
   // Upload portrait image to Firebase Storage
   Future<String> uploadPortraitImage(File imageFile, String userId) async {
     try {
-      print('Starting image upload to Firebase Storage');
+      debugPrint('Starting image upload to Firebase Storage');
       String fileName = 'portraits/$userId/${_uuid.v4()}.jpg';
-      print('Generated filename: $fileName');
+              debugPrint('Generated filename: $fileName');
       Reference ref = _storage.ref().child(fileName);
       
-      print('Starting upload task');
+              debugPrint('Starting upload task');
       UploadTask uploadTask = ref.putFile(
         imageFile,
         SettableMetadata(
@@ -28,29 +29,29 @@ class PortraitService {
         ),
       );
 
-      print('Waiting for upload to complete');
+              debugPrint('Waiting for upload to complete');
       TaskSnapshot snapshot = await uploadTask.timeout(
         const Duration(minutes: 2),
         onTimeout: () {
-          print('Upload timed out after 2 minutes');
+          debugPrint('Upload timed out after 2 minutes');
           throw TimeoutException('Upload timed out after 2 minutes');
         },
       );
       
       if (snapshot.state == TaskState.error) {
-        print('Upload failed with error state');
+        debugPrint('Upload failed with error state');
         throw Exception('Upload failed: ${snapshot.state}');
       }
 
-      print('Upload complete, getting download URL');
+              debugPrint('Upload complete, getting download URL');
       String downloadUrl = await snapshot.ref.getDownloadURL();
-      print('Got download URL: $downloadUrl');
+              debugPrint('Got download URL: $downloadUrl');
       return downloadUrl;
     } on FirebaseException catch (e) {
-      print('Firebase error in uploadPortraitImage: ${e.code} - ${e.message}');
+              debugPrint('Firebase error in uploadPortraitImage: ${e.code} - ${e.message}');
       rethrow;
     } catch (e) {
-      print('Error in uploadPortraitImage: $e');
+              debugPrint('Error in uploadPortraitImage: $e');
       rethrow;
     }
   }
@@ -65,21 +66,21 @@ class PortraitService {
     String? modelName,
   }) async {
     try {
-      print('Getting user document for week number');
+      debugPrint('Getting user document for week number');
       // Get user's current portrait count to determine week number
       DocumentSnapshot userDoc = await _firestore.collection('users').doc(userId).get();
-      print('Got user document');
+              debugPrint('Got user document');
       UserModel user = UserModel.fromMap(userDoc.data() as Map<String, dynamic>, userDoc.id);
       
       int targetWeekNumber;
       if (weekNumber != null) {
         // Use provided week number
         targetWeekNumber = weekNumber;
-        print('Using provided week number: $targetWeekNumber');
+                  debugPrint('Using provided week number: $targetWeekNumber');
       } else {
         // Calculate next week number
         targetWeekNumber = user.portraitsCompleted + 1;
-        print('Calculated week number: $targetWeekNumber');
+                  debugPrint('Calculated week number: $targetWeekNumber');
       }
       
       // If using a custom week number, we need to shift existing portraits
@@ -88,7 +89,7 @@ class PortraitService {
       }
       
       // Create portrait document
-      print('Creating portrait document');
+              debugPrint('Creating portrait document');
       DocumentReference portraitRef = await _firestore.collection('portraits').add({
         'userId': userId,
         'imageUrl': imageUrl,
@@ -98,17 +99,17 @@ class PortraitService {
         'weekNumber': targetWeekNumber,
         'modelName': modelName,
       });
-      print('Created portrait document with ID: ${portraitRef.id}');
+              debugPrint('Created portrait document with ID: ${portraitRef.id}');
 
       // Update user's portrait count and add portrait ID to user's list
-      print('Updating user document');
+              debugPrint('Updating user document');
       await _firestore.collection('users').doc(userId).update({
         'portraitsCompleted': FieldValue.increment(1),
         'portraitIds': FieldValue.arrayUnion([portraitRef.id]),
       });
-      print('User document updated successfully');
+              debugPrint('User document updated successfully');
     } catch (e) {
-      print('Error in addPortrait: $e');
+              debugPrint('Error in addPortrait: $e');
       rethrow;
     }
   }
@@ -183,7 +184,7 @@ class PortraitService {
         await ref.delete();
       } catch (e) {
         // Image might already be deleted or URL might be invalid
-        print('Error deleting image from storage: $e');
+        debugPrint('Error deleting image from storage: $e');
       }
 
       // Update user's portrait count and remove portrait ID from user's list
@@ -219,7 +220,7 @@ class PortraitService {
         });
       }
     } catch (e) {
-      print('Error shifting weeks after deletion: $e');
+              debugPrint('Error shifting weeks after deletion: $e');
       rethrow;
     }
   }
@@ -227,7 +228,7 @@ class PortraitService {
   // Shift weeks for insertion to make room for new portrait
   Future<void> _shiftWeeksForInsertion(String userId, int insertWeekNumber) async {
     try {
-      print('Shifting weeks for insertion at week $insertWeekNumber');
+              debugPrint('Shifting weeks for insertion at week $insertWeekNumber');
       // Get all portraits with week numbers greater than or equal to the insert week
       QuerySnapshot existingPortraits = await _firestore
           .collection('portraits')
@@ -236,21 +237,21 @@ class PortraitService {
           .orderBy('weekNumber', descending: false) // Process from lowest to highest
           .get();
 
-      print('Found ${existingPortraits.docs.length} portraits to shift');
+              debugPrint('Found ${existingPortraits.docs.length} portraits to shift');
 
       // Update each portrait to shift its week number forward by one
       for (QueryDocumentSnapshot doc in existingPortraits.docs) {
         Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
         int currentWeek = data['weekNumber'] as int;
         int newWeek = currentWeek + 1;
-        print('Shifting portrait ${doc.id} from week $currentWeek to week $newWeek');
+                    debugPrint('Shifting portrait ${doc.id} from week $currentWeek to week $newWeek');
         await _firestore.collection('portraits').doc(doc.id).update({
           'weekNumber': newWeek,
         });
-      }
-      print('Week shifting completed');
-    } catch (e) {
-      print('Error shifting weeks for insertion: $e');
+              }
+        debugPrint('Week shifting completed');
+      } catch (e) {
+        debugPrint('Error shifting weeks for insertion: $e');
       rethrow;
     }
   }
@@ -258,7 +259,7 @@ class PortraitService {
   // Fix week gaps by reordering portraits to fill missing weeks
   Future<void> fixWeekGaps(String userId) async {
     try {
-      print('Fixing week gaps for user: $userId');
+              debugPrint('Fixing week gaps for user: $userId');
       
       // Get all user's portraits ordered by week number
       QuerySnapshot portraitsSnapshot = await _firestore
@@ -268,10 +269,10 @@ class PortraitService {
           .get();
 
       List<QueryDocumentSnapshot> portraits = portraitsSnapshot.docs;
-      print('Found ${portraits.length} portraits');
+              debugPrint('Found ${portraits.length} portraits');
 
       if (portraits.isEmpty) {
-        print('No portraits found, nothing to fix');
+                  debugPrint('No portraits found, nothing to fix');
         return;
       }
 
@@ -285,7 +286,7 @@ class PortraitService {
         int currentWeek = data['weekNumber'] as int;
 
         if (currentWeek != expectedWeek) {
-          print('Gap detected: expected week $expectedWeek, found week $currentWeek');
+                      debugPrint('Gap detected: expected week $expectedWeek, found week $currentWeek');
           updates.add({
             'docId': doc.id,
             'newWeek': expectedWeek,
@@ -299,12 +300,12 @@ class PortraitService {
         await _firestore.collection('portraits').doc(update['docId']).update({
           'weekNumber': update['newWeek'],
         });
-        print('Updated portrait ${update['docId']} to week ${update['newWeek']}');
+                    debugPrint('Updated portrait ${update['docId']} to week ${update['newWeek']}');
       }
 
-      print('Week gap fixing completed');
+              debugPrint('Week gap fixing completed');
     } catch (e) {
-      print('Error fixing week gaps: $e');
+              debugPrint('Error fixing week gaps: $e');
       rethrow;
     }
   }
@@ -330,7 +331,7 @@ class PortraitService {
     int? weekNumber,
   }) async {
     try {
-      print('Updating portrait: $portraitId');
+              debugPrint('Updating portrait: $portraitId');
       
       // Use a transaction to ensure data consistency
       await _firestore.runTransaction((transaction) async {
@@ -364,9 +365,9 @@ class PortraitService {
         );
       });
       
-      print('Portrait updated successfully');
+              debugPrint('Portrait updated successfully');
     } catch (e) {
-      print('Error in updatePortrait: $e');
+              debugPrint('Error in updatePortrait: $e');
       rethrow;
     }
   }
@@ -374,10 +375,10 @@ class PortraitService {
   // Shift weeks when a portrait's week number is changed
   Future<void> shiftWeeksForWeekChange(String userId, int oldWeek, int newWeek, String portraitId) async {
     try {
-      print('Shifting weeks for week change: $oldWeek -> $newWeek for portrait $portraitId');
+              debugPrint('Shifting weeks for week change: $oldWeek -> $newWeek for portrait $portraitId');
       
       if (oldWeek == newWeek) {
-        print('No week change, nothing to shift');
+                  debugPrint('No week change, nothing to shift');
         return;
       }
 
@@ -421,19 +422,19 @@ class PortraitService {
         }
       }
 
-      print('Found ${updates.length} portraits to update');
+              debugPrint('Found ${updates.length} portraits to update');
 
       // Apply all updates
       for (Map<String, dynamic> update in updates) {
-        print('Updating portrait ${update['docId']} to week ${update['newWeek']}');
+                  debugPrint('Updating portrait ${update['docId']} to week ${update['newWeek']}');
         await _firestore.collection('portraits').doc(update['docId']).update({
           'weekNumber': update['newWeek'],
         });
       }
 
-      print('Week shifting completed');
+              debugPrint('Week shifting completed');
     } catch (e) {
-      print('Error shifting weeks for week change: $e');
+              debugPrint('Error shifting weeks for week change: $e');
       rethrow;
     }
   }
@@ -441,7 +442,7 @@ class PortraitService {
   // Renumber all portraits sequentially starting from week 1
   Future<void> renumberPortraitsSequentially(String userId) async {
     try {
-      print('Renumbering portraits sequentially for user: $userId');
+              debugPrint('Renumbering portraits sequentially for user: $userId');
       
       // Get all user's portraits ordered by current week number
       QuerySnapshot portraitsSnapshot = await _firestore
@@ -451,10 +452,10 @@ class PortraitService {
           .get();
 
       List<QueryDocumentSnapshot> portraits = portraitsSnapshot.docs;
-      print('Found ${portraits.length} portraits to renumber');
+              debugPrint('Found ${portraits.length} portraits to renumber');
 
       if (portraits.isEmpty) {
-        print('No portraits found, nothing to renumber');
+                  debugPrint('No portraits found, nothing to renumber');
         return;
       }
 
@@ -466,16 +467,16 @@ class PortraitService {
         int newWeek = i + 1;
 
         if (currentWeek != newWeek) {
-          print('Renumbering portrait ${doc.id} from week $currentWeek to week $newWeek');
+          debugPrint('Renumbering portrait ${doc.id} from week $currentWeek to week $newWeek');
           await _firestore.collection('portraits').doc(doc.id).update({
             'weekNumber': newWeek,
           });
         }
       }
 
-      print('Sequential renumbering completed');
+              debugPrint('Sequential renumbering completed');
     } catch (e) {
-      print('Error renumbering portraits sequentially: $e');
+              debugPrint('Error renumbering portraits sequentially: $e');
       rethrow;
     }
   }

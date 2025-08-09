@@ -21,6 +21,8 @@ class UserModel {
   final DateTime? lastActiveAt;
   final bool emailVerified; // Track email verification status
   final DateTime? lastVerificationTimestamp; // Track when user last verified email
+  // Notification preferences
+  final Map<String, bool> notificationPreferences; // Key: notification type, Value: enabled/disabled
 
   UserModel({
     required this.id,
@@ -42,6 +44,7 @@ class UserModel {
     this.lastActiveAt,
     this.emailVerified = false, // Initialize emailVerified
     this.lastVerificationTimestamp, // Initialize lastVerificationTimestamp
+    this.notificationPreferences = const {}, // Initialize notification preferences
   });
 
   factory UserModel.fromMap(Map<String, dynamic> map, String id) {
@@ -69,6 +72,7 @@ class UserModel {
       lastVerificationTimestamp: map['lastVerificationTimestamp'] != null
           ? (map['lastVerificationTimestamp'] as Timestamp).toDate()
           : null, // Parse lastVerificationTimestamp
+      notificationPreferences: Map<String, bool>.from(map['notificationPreferences'] ?? {}),
     );
   }
 
@@ -92,6 +96,7 @@ class UserModel {
       'lastActiveAt': lastActiveAt,
       'emailVerified': emailVerified, // Include emailVerified in toMap
       'lastVerificationTimestamp': lastVerificationTimestamp, // Include lastVerificationTimestamp in toMap
+      'notificationPreferences': notificationPreferences,
     };
   }
 

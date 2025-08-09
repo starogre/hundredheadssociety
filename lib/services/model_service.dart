@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/foundation.dart';
 import '../models/model_model.dart';
 
 class ModelService {
@@ -80,7 +81,7 @@ class ModelService {
       }
       return null;
     } catch (e) {
-      print('Error getting model by ID: $e');
+      debugPrint('Error getting model by ID: $e');
       return null;
     }
   }
@@ -106,10 +107,10 @@ class ModelService {
       };
 
       final docRef = await _firestore.collection('models').add(modelData);
-      print('Model added successfully: ${docRef.id}');
+      debugPrint('Model added successfully: ${docRef.id}');
       return docRef.id;
     } catch (e) {
-      print('Error adding model: $e');
+      debugPrint('Error adding model: $e');
       rethrow;
     }
   }
@@ -125,9 +126,9 @@ class ModelService {
       }
 
       await _firestore.collection('models').doc(modelId).update(data);
-      print('Model updated successfully: $modelId');
+      debugPrint('Model updated successfully: $modelId');
     } catch (e) {
-      print('Error updating model: $e');
+              debugPrint('Error updating model: $e');
       rethrow;
     }
   }
@@ -136,9 +137,9 @@ class ModelService {
   Future<void> deleteModel(String modelId) async {
     try {
       await _firestore.collection('models').doc(modelId).delete();
-      print('Model deleted successfully: $modelId');
+      debugPrint('Model deleted successfully: $modelId');
     } catch (e) {
-      print('Error deleting model: $e');
+              debugPrint('Error deleting model: $e');
       rethrow;
     }
   }
@@ -154,7 +155,7 @@ class ModelService {
         .orderBy('date', descending: true)
         .snapshots()
         .map((snapshot) => snapshot.docs
-            .map((doc) => ModelModel.fromMap(doc.data() as Map<String, dynamic>, doc.id))
+            .map((doc) => ModelModel.fromMap(doc.data(), doc.id))
             .toList());
   }
 

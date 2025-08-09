@@ -14,7 +14,7 @@ import 'screens/splash_screen.dart';
 import 'screens/waiting_approval_screen.dart';
 import 'screens/email_verification_screen.dart';
 import 'theme/app_theme.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+
 import 'screens/profile_screen.dart';
 
 void main() async {

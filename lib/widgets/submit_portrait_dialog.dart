@@ -4,7 +4,7 @@ import '../providers/portrait_provider.dart';
 import '../providers/auth_provider.dart';
 import '../providers/weekly_session_provider.dart';
 import '../models/portrait_model.dart';
-import '../theme/app_theme.dart';
+
 
 class SubmitPortraitDialog extends StatefulWidget {
   const SubmitPortraitDialog({super.key});

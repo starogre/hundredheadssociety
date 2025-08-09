@@ -217,9 +217,9 @@ class _EditPortraitScreenState extends State<EditPortraitScreen> {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                 decoration: BoxDecoration(
-                  color: AppColors.rustyOrange.withOpacity(0.1),
+                  color: AppColors.rustyOrange.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: AppColors.rustyOrange.withOpacity(0.3)),
+                  border: Border.all(color: AppColors.rustyOrange.withValues(alpha: 0.3)),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,

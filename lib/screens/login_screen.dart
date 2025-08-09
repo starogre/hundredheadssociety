@@ -75,7 +75,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       'Portrait Painting Tracker',
                       textAlign: TextAlign.center,
                       style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                        color: AppColors.forestGreen.withOpacity(0.7),
+                        color: AppColors.forestGreen.withValues(alpha: 0.7),
                       ),
                     ),
                     const SizedBox(height: 48),

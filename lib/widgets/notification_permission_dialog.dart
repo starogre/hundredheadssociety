@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:app_settings/app_settings.dart';
 import '../theme/app_theme.dart';
 
 class NotificationPermissionDialog extends StatelessWidget {
@@ -21,15 +22,20 @@ class NotificationPermissionDialog extends StatelessWidget {
           const Text('Stay Connected!'),
         ],
       ),
-      content: const Column(
+      content: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
+          const Text(
             'We\'d like to send you notifications to keep you updated on:',
             style: TextStyle(fontSize: 16),
           ),
-          SizedBox(height: 12),
+          const SizedBox(height: 8),
+          Text(
+            'Tap "Open Settings" to enable notifications in your device settings.',
+            style: TextStyle(fontSize: 14, color: Colors.grey.shade600),
+          ),
+          const SizedBox(height: 12),
           _NotificationBenefit(
             icon: Icons.check_circle,
             title: 'RSVP Confirmations',
@@ -60,16 +66,25 @@ class NotificationPermissionDialog extends StatelessWidget {
           },
           child: const Text('Not Now'),
         ),
-        ElevatedButton(
-          onPressed: () {
-            Navigator.of(context).pop(true);
-            onAllow?.call();
-          },
-          style: ElevatedButton.styleFrom(
-            backgroundColor: AppColors.forestGreen,
-            foregroundColor: AppColors.white,
+        SizedBox(
+          width: double.infinity,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16.0),
+            child: ElevatedButton(
+              onPressed: () async {
+                Navigator.of(context).pop(true);
+                onAllow?.call();
+                // Open app settings to enable notifications
+                await AppSettings.openAppSettings();
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.forestGreen,
+                foregroundColor: AppColors.white,
+                padding: const EdgeInsets.symmetric(vertical: 12.0),
+              ),
+              child: const Text('Open Settings'),
+            ),
           ),
-          child: const Text('Allow Notifications'),
         ),
       ],
     );

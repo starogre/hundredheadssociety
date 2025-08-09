@@ -537,7 +537,7 @@ class _PortraitDetailsDialogState extends State<PortraitDetailsDialog> {
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
                     decoration: BoxDecoration(
-                      color: Colors.black.withOpacity(0.7),
+                      color: Colors.black.withValues(alpha: 0.7),
                       borderRadius: BorderRadius.circular(25),
                     ),
                     child: const Text(

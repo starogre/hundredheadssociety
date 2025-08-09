@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/model_provider.dart';
-import '../models/model_model.dart';
+
 import '../theme/app_theme.dart';
 
 class ModelDataInjectionScreen extends StatefulWidget {

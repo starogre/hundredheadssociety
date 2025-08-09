@@ -13,7 +13,7 @@ import 'dart:io';
 import '../widgets/profile_image_picker_dialog.dart';
 import '../theme/app_theme.dart';
 import '../widgets/portrait_details_dialog.dart';
-import '../screens/settings_screen.dart';
+
 import 'package:url_launcher/url_launcher.dart';
 
 class ProfileScreen extends StatefulWidget {
@@ -40,27 +40,24 @@ class _ProfileScreenState extends State<ProfileScreen> {
   @override
   void initState() {
     super.initState();
-    print('DEBUG: ProfileScreen initState called for userId: ${widget.userId}');
     _loadUserData();
   }
 
   Future<void> _loadUserData() async {
     try {
-      print('DEBUG: Loading user data for userId: ${widget.userId}');
       final userData = await _userService.getUserById(widget.userId);
-      print('DEBUG: User data loaded: ${userData?.name}, role: ${userData?.userRole}, isArtAppreciator: ${userData?.isArtAppreciator}');
       if (mounted) {
         setState(() {
           _userData = userData;
         });
       }
     } catch (e) {
-      print('Error loading user data: $e');
+      debugPrint('Error loading user data: $e');
     }
   }
 
   Future<void> _requestArtistUpgrade() async {
-    print('=== PROFILE SCREEN: Upgrade button clicked ===');
+          debugPrint('=== PROFILE SCREEN: Upgrade button clicked ===');
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -72,42 +69,42 @@ class _ProfileScreenState extends State<ProfileScreen> {
         actions: [
           TextButton(
             onPressed: () {
-              print('User cancelled upgrade request');
+              debugPrint('User cancelled upgrade request');
               Navigator.of(context).pop();
             },
             child: const Text('Cancel'),
           ),
           ElevatedButton(
             onPressed: () async {
-              print('User confirmed upgrade request');
+              debugPrint('User confirmed upgrade request');
               Navigator.of(context).pop();
               
               try {
-                print('Getting current user from AuthProvider...');
+                debugPrint('Getting current user from AuthProvider...');
                 final authProvider = Provider.of<AuthProvider>(context, listen: false);
                 final currentUser = authProvider.currentUser;
                 
                 if (currentUser == null) {
-                  print('ERROR: No current user found');
+                  debugPrint('ERROR: No current user found');
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(content: Text('Error: No user logged in')),
                   );
                   return;
                 }
                 
-                print('Current user ID: ${currentUser.uid}');
-                print('Current user email: ${currentUser.email}');
+                debugPrint('Current user ID: ${currentUser.uid}');
+                debugPrint('Current user email: ${currentUser.email}');
                 print('Current user display name: [38;5;9m${currentUser.displayName}[0m');
-                print('Current user Firestore name: ${_userData?.name}');
+                debugPrint('Current user Firestore name: ${_userData?.name}');
                 
-                print('Calling createUpgradeRequest...');
+                debugPrint('Calling createUpgradeRequest...');
                 await _userService.createUpgradeRequest(
                   userId: currentUser.uid,
                   userEmail: currentUser.email ?? '',
                   userName: _userData?.name ?? 'Unknown User',
                 );
                 
-                print('Upgrade request completed successfully');
+                debugPrint('Upgrade request completed successfully');
                 setState(() {
                   _justSubmittedUpgradeRequest = true;
                 });
@@ -119,7 +116,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   ),
                 );
               } catch (e) {
-                print('ERROR in _requestArtistUpgrade: $e');
+                debugPrint('ERROR in _requestArtistUpgrade: $e');
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
                     content: Text('Error: ${e.toString()}'),
@@ -320,7 +317,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                 width: 80,
                                 height: 80,
                                 decoration: BoxDecoration(
-                                  color: Colors.black.withOpacity(0.5),
+                                  color: Colors.black.withValues(alpha: 0.5),
                                   shape: BoxShape.circle,
                                 ),
                                 child: const Center(
@@ -494,14 +491,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
                 // Art Appreciator Upgrade Request (only show to art appreciators viewing their own profile)
                 Consumer<AuthProvider>(
-                  builder: (context, authProvider, child) {
-                    print('DEBUG: Consumer<AuthProvider> builder called');
-                    final currentUser = authProvider.currentUser;
-                    print('DEBUG: currentUser: ${currentUser?.uid}');
-                    print('DEBUG: _userData: ${_userData?.name}, role: ${_userData?.userRole}, isArtAppreciator: ${_userData?.isArtAppreciator}');
+                          builder: (context, authProvider, child) {
+          final currentUser = authProvider.currentUser;
+                    
                     
                     if (currentUser == null) {
-                      print('DEBUG: No current user found');
                       return const SliverToBoxAdapter(child: SizedBox.shrink());
                     }
                     
@@ -509,24 +503,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     final isOwnProfile = currentUser.uid == widget.userId;
                     final isArtAppreciator = _userData?.isArtAppreciator ?? false;
                     
-                    print('DEBUG: Upgrade section - isOwnProfile: $isOwnProfile, isArtAppreciator: $isArtAppreciator');
-                    print('DEBUG: currentUser.uid: ${currentUser.uid}, widget.userId: ${widget.userId}');
-                    print('DEBUG: _userData?.userRole: ${_userData?.userRole}');
-                    print('DEBUG: _userData?.isArtAppreciator: ${_userData?.isArtAppreciator}');
-                    
                     if (!isOwnProfile || !isArtAppreciator) {
-                      print('DEBUG: Not showing upgrade section - conditions not met');
-                      print('DEBUG: !isOwnProfile: ${!isOwnProfile}, !isArtAppreciator: ${!isArtAppreciator}');
                       return const SliverToBoxAdapter(child: SizedBox.shrink());
                     }
-
-                    print('DEBUG: Showing upgrade section');
                     return FutureBuilder<bool>(
                       future: _userService.hasPendingUpgradeRequest(currentUser.uid),
                       builder: (context, snapshot) {
                         final hasPending = snapshot.data ?? false;
                         final shouldDisable = hasPending || _justSubmittedUpgradeRequest;
-                        print('DEBUG: hasPending: $hasPending, _justSubmittedUpgradeRequest: $_justSubmittedUpgradeRequest, shouldDisable: $shouldDisable');
                         
                         return SliverToBoxAdapter(
                           child: Container(
@@ -590,8 +574,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                 else
                                   ElevatedButton(
                                     onPressed: () {
-                                      print('DEBUG: Upgrade button clicked!');
-                                      print('DEBUG: About to call _requestArtistUpgrade');
                                       _requestArtistUpgrade();
                                     },
                                     style: ElevatedButton.styleFrom(
@@ -774,7 +756,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                       Icon(
                                         Icons.photo_library,
                                         size: 64,
-                                        color: AppColors.forestGreen.withOpacity(0.5),
+                                        color: AppColors.forestGreen.withValues(alpha: 0.5),
                                       ),
                                       const SizedBox(height: 16),
                                       Text(
@@ -871,7 +853,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               title,
               style: TextStyle(
                 fontSize: 14,
-                color: AppColors.forestGreen.withOpacity(0.7),
+                color: AppColors.forestGreen.withValues(alpha: 0.7),
               ),
             ),
           ],

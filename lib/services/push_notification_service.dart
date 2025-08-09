@@ -38,13 +38,13 @@ class PushNotificationService {
       );
 
       if (kDebugMode) {
-        print('User granted permission: ${settings.authorizationStatus}');
+        debugPrint('User granted permission: ${settings.authorizationStatus}');
       }
 
       // Get FCM token
       _fcmToken = await _firebaseMessaging.getToken();
       if (kDebugMode) {
-        print('FCM Token: $_fcmToken');
+        debugPrint('FCM Token: $_fcmToken');
       }
 
       // Listen for token refresh
@@ -52,7 +52,7 @@ class PushNotificationService {
         _fcmToken = token;
         saveFCMTokenForCurrentUser();
         if (kDebugMode) {
-          print('FCM Token refreshed: $token');
+          debugPrint('FCM Token refreshed: $token');
         }
       });
 
@@ -60,6 +60,13 @@ class PushNotificationService {
       if (_fcmToken != null) {
         await saveFCMTokenForCurrentUser();
       }
+
+      // Also save token after a short delay to ensure it's available
+      Future.delayed(const Duration(seconds: 2), () async {
+        if (_fcmToken != null) {
+          await saveFCMTokenForCurrentUser();
+        }
+      });
 
       // Initialize local notifications
       await _initializeLocalNotifications();
@@ -82,7 +89,7 @@ class PushNotificationService {
       _isInitialized = true;
     } catch (e) {
       if (kDebugMode) {
-        print('Error initializing push notifications: $e');
+        debugPrint('Error initializing push notifications: $e');
       }
     }
   }
@@ -113,11 +120,11 @@ class PushNotificationService {
   // Handle foreground messages
   void _handleForegroundMessage(RemoteMessage message) {
     if (kDebugMode) {
-      print('Got a message whilst in the foreground!');
-      print('Message data: ${message.data}');
+      debugPrint('Got a message whilst in the foreground!');
+      debugPrint('Message data: ${message.data}');
 
       if (message.notification != null) {
-        print('Message also contained a notification: ${message.notification}');
+        debugPrint('Message also contained a notification: ${message.notification}');
       }
     }
 
@@ -128,7 +135,7 @@ class PushNotificationService {
   // Handle notification taps
   void _handleNotificationTap(RemoteMessage message) {
     if (kDebugMode) {
-      print('Notification tapped: ${message.data}');
+      debugPrint('Notification tapped: ${message.data}');
     }
 
     // Handle navigation based on notification data
@@ -138,7 +145,7 @@ class PushNotificationService {
   // Handle local notification taps
   void _onNotificationTapped(NotificationResponse response) {
     if (kDebugMode) {
-      print('Local notification tapped: ${response.payload}');
+      debugPrint('Local notification tapped: ${response.payload}');
     }
 
     // Handle navigation based on notification payload
@@ -186,15 +193,11 @@ class PushNotificationService {
     // This will be implemented based on your app's navigation structure
     // For now, we'll just log the data
     if (kDebugMode) {
-      print('Navigation data: $data');
+      debugPrint('Navigation data: $data');
     }
   }
 
-  // Update FCM token in Firestore
-  Future<void> _updateFCMTokenInFirestore() async {
-    // This will be called when the user is logged in
-    // We'll implement this in the auth service
-  }
+
 
   // Save FCM token for current user
   Future<void> saveFCMTokenForCurrentUser() async {
@@ -207,12 +210,12 @@ class PushNotificationService {
             'lastTokenUpdate': FieldValue.serverTimestamp(),
           });
           if (kDebugMode) {
-            print('FCM token saved for user: ${auth.currentUser!.uid}');
+            debugPrint('FCM token saved for user: ${auth.currentUser!.uid}');
           }
         }
       } catch (e) {
         if (kDebugMode) {
-          print('Error saving FCM token for current user: $e');
+          debugPrint('Error saving FCM token for current user: $e');
         }
       }
     }
@@ -221,7 +224,7 @@ class PushNotificationService {
   // Send RSVP confirmation notification
   Future<void> sendRSVPConfirmation(String userId, String sessionTitle, DateTime sessionDate) async {
     try {
-      // Create notification in Firestore - this will automatically trigger the Cloud Function
+      // Always create in-app notification in Firestore
       await _firestore.collection('users').doc(userId).collection('notifications').add({
         'userId': userId,
         'type': 'rsvp_confirmation',
@@ -236,41 +239,301 @@ class PushNotificationService {
         }
       });
 
-      // The Cloud Function will automatically send the push notification
-      // when the notification document is created in Firestore
+      // The Cloud Function will check user preferences and send push notification if enabled
 
     } catch (e) {
       if (kDebugMode) {
-        print('Error sending RSVP confirmation: $e');
+        debugPrint('Error sending RSVP confirmation: $e');
       }
     }
   }
 
-  // Send push notification via Cloud Functions
-  Future<void> _sendPushNotification(String userId, String title, String body, {Map<String, dynamic>? data}) async {
+  // Send session reminder notification
+  Future<void> sendSessionReminder(String userId, String sessionTitle, DateTime sessionDate) async {
     try {
-      if (kDebugMode) {
-        print('Sending push notification to user $userId: $title - $body');
-      }
-
-      // Call the Cloud Function to send push notification
-      final httpsCallable = FirebaseFunctions.instance.httpsCallable('testPushNotification');
-      
-      final result = await httpsCallable.call({
+      // Always create in-app notification in Firestore
+      await _firestore.collection('users').doc(userId).collection('notifications').add({
         'userId': userId,
-        'title': title,
-        'body': body,
+        'type': 'session_reminder',
+        'title': 'Weekly Session Tomorrow!',
+        'message': 'Don\'t forget! The weekly session starts tomorrow at 6:00 PM. Please RSVP if you haven\'t already.',
+        'createdAt': FieldValue.serverTimestamp(),
+        'read': false,
+        'data': {
+          'sessionTitle': sessionTitle,
+          'sessionDate': Timestamp.fromDate(sessionDate),
+          'action': 'session_reminder'
+        }
       });
 
-      if (kDebugMode) {
-        print('Push notification sent successfully: ${result.data}');
-      }
+      // The Cloud Function will check user preferences and send push notification if enabled
+
     } catch (e) {
       if (kDebugMode) {
-        print('Error sending push notification: $e');
+        debugPrint('Error sending session reminder: $e');
       }
     }
   }
+
+
+
+  // Send award notification
+  Future<void> sendAwardNotification(String userId, String awardTitle, String awardDescription) async {
+    try {
+      // Always create in-app notification in Firestore
+      await _firestore.collection('users').doc(userId).collection('notifications').add({
+        'userId': userId,
+        'type': 'award_notification',
+        'title': '🎉 You Won an Award!',
+        'message': 'Congratulations! You won "$awardTitle" - $awardDescription',
+        'createdAt': FieldValue.serverTimestamp(),
+        'read': false,
+        'data': {
+          'awardTitle': awardTitle,
+          'awardDescription': awardDescription,
+          'action': 'award_won'
+        }
+      });
+
+      // The Cloud Function will check user preferences and send push notification if enabled
+
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('Error sending award notification: $e');
+      }
+    }
+  }
+
+  // Send admin approval notification
+  Future<void> sendAdminApprovalNotification(String userId, String userName, String userRole) async {
+    try {
+      // Always create in-app notification in Firestore
+      await _firestore.collection('users').doc(userId).collection('notifications').add({
+        'userId': userId,
+        'type': 'admin_approval',
+        'title': 'Account Approved!',
+        'message': 'Your account has been approved! You can now access all features.',
+        'createdAt': FieldValue.serverTimestamp(),
+        'read': false,
+        'data': {
+          'userName': userName,
+          'userRole': userRole,
+          'action': 'account_approved'
+        }
+      });
+
+      // The Cloud Function will check user preferences and send push notification if enabled
+
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('Error sending admin approval notification: $e');
+      }
+    }
+  }
+
+  // Send admin rejection notification
+  Future<void> sendAdminRejectionNotification(String userId, String userName, String reason) async {
+    try {
+      await _firestore.collection('users').doc(userId).collection('notifications').add({
+        'userId': userId,
+        'type': 'admin_rejection',
+        'title': 'Account Update',
+        'message': 'Your account application has been reviewed. Please check your email for details.',
+        'createdAt': FieldValue.serverTimestamp(),
+        'read': false,
+        'data': {
+          'userName': userName,
+          'reason': reason,
+          'action': 'account_reviewed'
+        }
+      });
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('Error sending admin rejection notification: $e');
+      }
+    }
+  }
+
+  // Send milestone notification
+  Future<void> sendMilestoneNotification(String userId, String milestoneType, int count) async {
+    try {
+      String title = '';
+      String message = '';
+      
+      switch (milestoneType) {
+        case 'portraits':
+          title = '🎨 Portrait Milestone!';
+          message = 'Congratulations! You\'ve completed $count portraits!';
+          break;
+        case 'sessions':
+          title = '📅 Session Milestone!';
+          message = 'Amazing! You\'ve participated in $count weekly sessions!';
+          break;
+        case 'votes':
+          title = '🗳️ Voting Milestone!';
+          message = 'Great job! You\'ve cast $count votes for your fellow artists!';
+          break;
+      }
+
+      // Always create in-app notification in Firestore
+      await _firestore.collection('users').doc(userId).collection('notifications').add({
+        'userId': userId,
+        'type': 'milestone',
+        'title': title,
+        'message': message,
+        'createdAt': FieldValue.serverTimestamp(),
+        'read': false,
+        'data': {
+          'milestoneType': milestoneType,
+          'count': count,
+          'action': 'milestone_reached'
+        }
+      });
+
+      // The Cloud Function will check user preferences and send push notification if enabled
+
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('Error sending milestone notification: $e');
+      }
+    }
+  }
+
+  // Send upload deadline reminder (Tuesday noon)
+  Future<void> sendUploadDeadlineReminder(String userId, String sessionTitle) async {
+    try {
+      // Always create in-app notification in Firestore
+      await _firestore.collection('users').doc(userId).collection('notifications').add({
+        'userId': userId,
+        'type': 'upload_deadline',
+        'title': '📤 Upload Your Portrait!',
+        'message': 'Don\'t forget to upload your portrait for this week\'s session!',
+        'createdAt': FieldValue.serverTimestamp(),
+        'read': false,
+        'data': {
+          'sessionTitle': sessionTitle,
+          'action': 'upload_reminder'
+        }
+      });
+
+      // The Cloud Function will check user preferences and send push notification if enabled
+
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('Error sending upload deadline reminder: $e');
+      }
+    }
+  }
+
+  // Send voting reminder (Wednesday 1 hour before close)
+  Future<void> sendVotingReminder(String userId, String sessionTitle) async {
+    try {
+      // Always create in-app notification in Firestore
+      await _firestore.collection('users').doc(userId).collection('notifications').add({
+        'userId': userId,
+        'type': 'voting_reminder',
+        'title': '🗳️ Vote Now!',
+        'message': 'Voting closes in 1 hour! Don\'t forget to vote for your favorite portraits!',
+        'createdAt': FieldValue.serverTimestamp(),
+        'read': false,
+        'data': {
+          'sessionTitle': sessionTitle,
+          'action': 'voting_reminder'
+        }
+      });
+
+      // The Cloud Function will check user preferences and send push notification if enabled
+
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('Error sending voting reminder: $e');
+      }
+    }
+  }
+
+  // Send RSVP reminder (Saturday noon with navigation)
+  Future<void> sendRSVPReminder(String userId, String sessionTitle, DateTime sessionDate) async {
+    try {
+      // Always create in-app notification in Firestore
+      await _firestore.collection('users').doc(userId).collection('notifications').add({
+        'userId': userId,
+        'type': 'rsvp_reminder',
+        'title': '📅 RSVP for Monday\'s Session',
+        'message': 'Will you be joining us for this week\'s session? Please RSVP!',
+        'createdAt': FieldValue.serverTimestamp(),
+        'read': false,
+        'data': {
+          'sessionTitle': sessionTitle,
+          'sessionDate': Timestamp.fromDate(sessionDate),
+          'action': 'rsvp_reminder',
+          'navigateTo': 'weekly_sessions'
+        }
+      });
+
+      // The Cloud Function will check user preferences and send push notification if enabled
+
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('Error sending RSVP reminder: $e');
+      }
+    }
+  }
+
+  // Send account approval (push only, no in-app)
+  Future<void> sendAccountApprovalPushOnly(String userId, String userName) async {
+    try {
+      // This will be handled by Cloud Functions to send push notification only
+      await _firestore.collection('users').doc(userId).collection('notifications').add({
+        'userId': userId,
+        'type': 'account_approval_push',
+        'title': 'Account Approved!',
+        'message': 'Your account has been approved! You can now access all features.',
+        'createdAt': FieldValue.serverTimestamp(),
+        'read': false,
+        'data': {
+          'userName': userName,
+          'action': 'account_approved',
+          'pushOnly': true
+        }
+      });
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('Error sending account approval notification: $e');
+      }
+    }
+  }
+
+  // Send session cancellation notification
+  Future<void> sendSessionCancellationNotification(String userId, String sessionTitle, DateTime sessionDate) async {
+    try {
+      // Always create in-app notification in Firestore
+      await _firestore.collection('users').doc(userId).collection('notifications').add({
+        'userId': userId,
+        'type': 'session_cancelled',
+        'title': '❌ 100 Heads Portrait Night Cancelled',
+        'message': 'This week\'s portrait night on ${_formatDate(sessionDate)} has been cancelled. Check the weekly sessions screen for details and next week\'s schedule.',
+        'createdAt': FieldValue.serverTimestamp(),
+        'read': false,
+        'data': {
+          'sessionTitle': sessionTitle,
+          'sessionDate': Timestamp.fromDate(sessionDate),
+          'action': 'session_cancelled',
+          'navigateTo': 'weekly_sessions'
+        }
+      });
+
+      // The Cloud Function will check user preferences and send push notification if enabled
+
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('Error sending session cancellation notification: $e');
+      }
+    }
+  }
+
+
+
+
 
   // Format date for display
   String _formatDate(DateTime date) {
@@ -294,11 +557,13 @@ class PushNotificationService {
       return doc.data()?['fcmToken'];
     } catch (e) {
       if (kDebugMode) {
-        print('Error getting FCM token for user: $e');
+        debugPrint('Error getting FCM token for user: $e');
       }
       return null;
     }
   }
+
+
 
   // Save FCM token for a user
   Future<void> saveFCMTokenForUser(String userId) async {
@@ -309,9 +574,9 @@ class PushNotificationService {
           'lastTokenUpdate': FieldValue.serverTimestamp(),
         });
       } catch (e) {
-        if (kDebugMode) {
-          print('Error saving FCM token for user: $e');
-        }
+              if (kDebugMode) {
+        debugPrint('Error saving FCM token for user: $e');
+      }
       }
     }
   }
@@ -324,6 +589,6 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   // await Firebase.initializeApp();
 
   if (kDebugMode) {
-    print('Handling a background message: ${message.messageId}');
+    debugPrint('Handling a background message: ${message.messageId}');
   }
 } 

@@ -241,7 +241,7 @@ class _MultiImagePickerGalleryState extends State<MultiImagePickerGallery> {
               ),
               if (isSelected)
                 Container(
-                  color: Colors.black.withOpacity(0.4),
+                  color: Colors.black.withValues(alpha: 0.4),
                   child: const Icon(Icons.check_circle, color: Colors.white, size: 32),
                 ),
             ],

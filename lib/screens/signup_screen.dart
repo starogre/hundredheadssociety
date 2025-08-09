@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
 import '../theme/app_theme.dart';
-import 'dashboard_screen.dart';
+
 import 'privacy_policy_screen.dart';
 import 'terms_of_service_screen.dart';
 import 'code_of_conduct_screen.dart';
