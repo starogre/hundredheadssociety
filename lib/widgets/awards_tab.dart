@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/user_model.dart';
 import '../services/award_service.dart';
+import '../services/portrait_service.dart';
 import '../theme/app_theme.dart';
 
 class AwardsTab extends StatefulWidget {
@@ -60,14 +62,46 @@ class _AwardsTabState extends State<AwardsTab> {
 
   Future<void> _loadAwardsData() async {
     try {
-      // For now, we'll use a placeholder approach since we need to get all portraits first
-      // In a real implementation, we'd need to get all user portraits and then check awards for each
-      if (mounted) {
-        setState(() {
-          _trophyCount = 0; // Placeholder - would need to implement proper counting
-          // Community exp is based on voting activity (placeholder for now)
-          _communityExp = 0;
-        });
+      // Get user data to read stored award count
+      final userDoc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(widget.userId)
+          .get();
+      
+      if (userDoc.exists) {
+        final userData = userDoc.data() as Map<String, dynamic>;
+        final portraitAwardCount = userData['portraitAwardCount'] ?? 0;
+        
+        // Count community exp (voting activity) - get all weekly sessions
+        final sessionsSnapshot = await FirebaseFirestore.instance
+            .collection('weekly_sessions')
+            .get();
+        
+        int communityExp = 0;
+        for (var sessionDoc in sessionsSnapshot.docs) {
+          final sessionData = sessionDoc.data();
+          final submissions = List<Map<String, dynamic>>.from(sessionData['submissions'] ?? []);
+          
+          for (var submission in submissions) {
+            final votes = Map<String, List<String>>.from(submission['votes'] ?? {});
+            
+            // Count community exp (voting activity)
+            for (var categoryVotes in votes.values) {
+              if (categoryVotes.contains(widget.userId)) {
+                communityExp += 1; // +1 exp per vote
+              }
+            }
+          }
+        }
+        
+        if (mounted) {
+          setState(() {
+            _trophyCount = portraitAwardCount;
+            _communityExp = communityExp;
+          });
+        }
+        
+        debugPrint('Awards loaded - Trophies: $portraitAwardCount, Community Exp: $communityExp');
       }
     } catch (e) {
       debugPrint('Error loading awards data: $e');
@@ -76,12 +110,21 @@ class _AwardsTabState extends State<AwardsTab> {
 
   Future<void> _loadUserMerchItems() async {
     try {
-      // This would typically fetch from user's merch items in Firestore
-      // For now, we'll use a placeholder
-      if (mounted) {
-        setState(() {
-          _userMerchItems = [];
-        });
+      // Fetch user's merch items from Firestore
+      final userDoc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(widget.userId)
+          .get();
+      
+      if (userDoc.exists) {
+        final userData = userDoc.data() as Map<String, dynamic>;
+        final merchItems = List<String>.from(userData['merchItems'] ?? []);
+        
+        if (mounted) {
+          setState(() {
+            _userMerchItems = merchItems;
+          });
+        }
       }
     } catch (e) {
       debugPrint('Error loading merch items: $e');
@@ -90,7 +133,14 @@ class _AwardsTabState extends State<AwardsTab> {
 
   Future<void> _addMerchItem(String item) async {
     try {
-      // This would typically add to user's merch items in Firestore
+      // Add to user's merch items in Firestore
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(widget.userId)
+          .update({
+        'merchItems': FieldValue.arrayUnion([item]),
+      });
+      
       setState(() {
         _userMerchItems.add(item);
       });
@@ -101,7 +151,14 @@ class _AwardsTabState extends State<AwardsTab> {
 
   Future<void> _removeMerchItem(String item) async {
     try {
-      // This would typically remove from user's merch items in Firestore
+      // Remove from user's merch items in Firestore
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(widget.userId)
+          .update({
+        'merchItems': FieldValue.arrayRemove([item]),
+      });
+      
       setState(() {
         _userMerchItems.remove(item);
       });

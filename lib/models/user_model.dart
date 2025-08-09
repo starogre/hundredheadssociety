@@ -18,6 +18,7 @@ class UserModel {
   final bool isModerator; // assigned by admin only
   final List<String> awards; // List of award IDs
   final int totalVotesCast;
+  final int portraitAwardCount; // Total number of portrait awards won
   final DateTime? lastActiveAt;
   final bool emailVerified; // Track email verification status
   final DateTime? lastVerificationTimestamp; // Track when user last verified email
@@ -41,6 +42,7 @@ class UserModel {
     this.isModerator = false,
     this.awards = const <String>[],
     this.totalVotesCast = 0,
+    this.portraitAwardCount = 0,
     this.lastActiveAt,
     this.emailVerified = false, // Initialize emailVerified
     this.lastVerificationTimestamp, // Initialize lastVerificationTimestamp
@@ -65,6 +67,7 @@ class UserModel {
       isModerator: map['isModerator'] ?? false,
       awards: List<String>.from(map['awards'] ?? []),
       totalVotesCast: map['totalVotesCast'] ?? 0,
+      portraitAwardCount: map['portraitAwardCount'] ?? 0,
       lastActiveAt: map['lastActiveAt'] != null 
           ? (map['lastActiveAt'] as Timestamp).toDate() 
           : null,
@@ -93,6 +96,7 @@ class UserModel {
       'isModerator': isModerator,
       'awards': awards,
       'totalVotesCast': totalVotesCast,
+      'portraitAwardCount': portraitAwardCount,
       'lastActiveAt': lastActiveAt,
       'emailVerified': emailVerified, // Include emailVerified in toMap
       'lastVerificationTimestamp': lastVerificationTimestamp, // Include lastVerificationTimestamp in toMap

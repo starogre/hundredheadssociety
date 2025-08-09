@@ -8,8 +8,9 @@ import '../theme/app_theme.dart';
 import '../screens/edit_portrait_screen.dart';
 import '../screens/profile_screen.dart';
 import '../services/portrait_service.dart';
-import '../services/award_service.dart';
+
 import '../providers/model_provider.dart';
+import '../services/award_service.dart';
 
 class PortraitDetailsDialog extends StatefulWidget {
   final PortraitModel portrait;
@@ -30,9 +31,9 @@ class PortraitDetailsDialog extends StatefulWidget {
 }
 
 class _PortraitDetailsDialogState extends State<PortraitDetailsDialog> {
-  final AwardService _awardService = AwardService();
   bool _showDeleteConfirmation = false;
   bool _isDeleting = false;
+  final AwardService _awardService = AwardService();
 
   @override
   Widget build(BuildContext context) {
@@ -256,6 +257,20 @@ class _PortraitDetailsDialogState extends State<PortraitDetailsDialog> {
                   ),
                   const SizedBox(height: 16),
                 ],
+                // Description section - at the bottom
+                if (widget.portrait.description != null && widget.portrait.description!.isNotEmpty) ...[
+                  Text(
+                    widget.portrait.description!,
+                    style: TextStyle(
+                      fontSize: 16,
+                      color: AppColors.forestGreen.withValues(alpha: 0.8),
+                      height: 1.4,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                ],
+                // Model name section
+
                 // Awards section
                 FutureBuilder<List<Map<String, dynamic>>>(
                   future: _awardService.getPortraitAwards(widget.portrait.id),
@@ -336,19 +351,6 @@ class _PortraitDetailsDialogState extends State<PortraitDetailsDialog> {
                     return const SizedBox.shrink();
                   },
                 ),
-                // Description section - at the bottom
-                if (widget.portrait.description != null && widget.portrait.description!.isNotEmpty) ...[
-                  Text(
-                    widget.portrait.description!,
-                    style: TextStyle(
-                      fontSize: 16,
-                      color: AppColors.forestGreen.withValues(alpha: 0.8),
-                      height: 1.4,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                ],
-                // Model name section
 
                 // Delete confirmation section
                 if (_showDeleteConfirmation) ...[

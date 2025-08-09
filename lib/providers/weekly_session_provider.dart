@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/weekly_session_model.dart';
 import '../models/portrait_model.dart';
 import '../services/weekly_session_service.dart';
@@ -391,6 +392,46 @@ class WeeklySessionProvider extends ChangeNotifier {
     print('DEBUG: Voting closed check - Now: $now, Session: $sessionDate, Wednesday noon: $wednesdayNoon, Is closed: $isClosed');
     
     return isClosed;
+  }
+
+  // Update user's award count when they win an award
+  Future<void> _updateUserAwardCount(String userId, int awardCount) async {
+    try {
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(userId)
+          .update({
+        'portraitAwardCount': FieldValue.increment(awardCount),
+      });
+    } catch (e) {
+      print('Error updating user award count: $e');
+    }
+  }
+
+  // Process winners and update award counts
+  Future<void> processWinnersAndUpdateAwards() async {
+    if (_mostRecentCompletedSession == null) return;
+    
+    try {
+      // Get the winners for the most recent completed session
+      final winners = this.winners;
+      
+      // Track how many awards each user won
+      Map<String, int> userAwardCounts = {};
+      
+      for (var winner in winners.values) {
+        final userId = winner['user'].id;
+        userAwardCounts[userId] = (userAwardCounts[userId] ?? 0) + 1;
+      }
+      
+      // Update each user's award count
+      for (var entry in userAwardCounts.entries) {
+        await _updateUserAwardCount(entry.key, entry.value);
+        print('Updated award count for user ${entry.key}: +${entry.value}');
+      }
+    } catch (e) {
+      print('Error processing winners and updating awards: $e');
+    }
   }
 
   // Check if winners should be shown (from Wednesday noon until Monday 9am)
