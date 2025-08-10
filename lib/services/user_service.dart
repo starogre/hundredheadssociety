@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 import '../models/user_model.dart';
+import '../models/portrait_model.dart';
 import '../models/upgrade_request_model.dart';
 import 'activity_log_service.dart';
 
@@ -29,6 +30,42 @@ class UserService {
       }
       return null;
     } catch (e) {
+      rethrow;
+    }
+  }
+
+  // Get user portraits with pagination
+  Future<PortraitPaginationResult> getUserPortraitsPaginated(
+    String userId, {
+    int limit = 6,
+    DocumentSnapshot? lastDocument,
+  }) async {
+    try {
+      Query query = _firestore
+          .collection('portraits')
+          .where('userId', isEqualTo: userId)
+          .orderBy('weekNumber', descending: true);
+      
+      if (lastDocument != null) {
+        query = query.startAfterDocument(lastDocument);
+      }
+      
+      query = query.limit(limit);
+      
+      QuerySnapshot snapshot = await query.get();
+      
+      List<PortraitModel> portraits = snapshot.docs
+          .map((doc) => PortraitModel.fromMap(doc.data() as Map<String, dynamic>, doc.id))
+          .toList();
+      
+      DocumentSnapshot? lastDoc = snapshot.docs.isNotEmpty ? snapshot.docs.last : null;
+      
+      return PortraitPaginationResult(
+        portraits: portraits,
+        lastDocument: lastDoc,
+      );
+    } catch (e) {
+      debugPrint('Error in getUserPortraitsPaginated: $e');
       rethrow;
     }
   }
