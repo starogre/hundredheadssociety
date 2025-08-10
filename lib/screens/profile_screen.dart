@@ -15,6 +15,7 @@ import '../widgets/profile_image_picker_dialog.dart';
 import '../theme/app_theme.dart';
 import '../widgets/portrait_details_dialog.dart';
 import '../widgets/awards_tab.dart';
+import '../utils/milestone_utils.dart';
 
 import 'package:url_launcher/url_launcher.dart';
 
@@ -402,12 +403,15 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                                       fontWeight: FontWeight.bold,
                                     ),
                                   ),
-                                  // Dragon emoji for 100+ portraits
-                                  if (_userData!.portraitsCompleted >= 100) ...[
+                                  // Milestone badge
+                                  if (MilestoneUtils.getMilestoneEmoji(_userData!.portraitsCompleted) != null) ...[
                                     const SizedBox(width: 8),
-                                    const Text(
-                                      '🐉',
-                                      style: TextStyle(fontSize: 24),
+                                    Tooltip(
+                                      message: '${_userData!.portraitsCompleted} Portraits Milestone',
+                                      child: Text(
+                                        MilestoneUtils.getMilestoneEmoji(_userData!.portraitsCompleted)!,
+                                        style: const TextStyle(fontSize: 24),
+                                      ),
                                     ),
                                   ],
                                 ],
@@ -766,6 +770,119 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                         ),
                       );
                     }
+                  },
+                ),
+
+                // Milestones Section (only show for artists or when viewing own profile)
+                Consumer<AuthProvider>(
+                  builder: (context, authProvider, child) {
+                    final currentUser = authProvider.currentUser;
+                    final isOwnProfile = currentUser?.uid == widget.userId;
+                    final isArtist = _userData?.isArtist ?? false;
+                    
+                    // Show milestones for artists or when viewing own profile
+                    if (isArtist || isOwnProfile) {
+                      List<String> achievedMilestones = MilestoneUtils.getAllMilestoneEmojis(_userData!.portraitsCompleted);
+                      int? nextMilestone = MilestoneUtils.getNextMilestone(_userData!.portraitsCompleted);
+                      
+                      if (achievedMilestones.isNotEmpty) {
+                        return SliverToBoxAdapter(
+                          child: Container(
+                            margin: const EdgeInsets.all(16),
+                            padding: const EdgeInsets.all(20),
+                            decoration: BoxDecoration(
+                              color: Colors.blue.shade50,
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(color: Colors.blue.shade200),
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    Icon(
+                                      Icons.emoji_events,
+                                      color: Colors.blue.shade700,
+                                      size: 24,
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      'Portrait Milestones',
+                                      style: TextStyle(
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.blue.shade700,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 12),
+                                Wrap(
+                                  spacing: 8,
+                                  runSpacing: 8,
+                                  children: achievedMilestones.map((emoji) {
+                                    // Find the milestone count for this emoji
+                                    int milestoneCount = 0;
+                                    for (int milestone in MilestoneUtils.milestoneEmojis.keys) {
+                                      if (MilestoneUtils.milestoneEmojis[milestone] == emoji) {
+                                        milestoneCount = milestone;
+                                        break;
+                                      }
+                                    }
+                                    
+                                    return Tooltip(
+                                      message: MilestoneUtils.getMilestoneDescription(milestoneCount),
+                                      child: Container(
+                                        padding: const EdgeInsets.all(8),
+                                        decoration: BoxDecoration(
+                                          color: Colors.blue.shade100,
+                                          borderRadius: BorderRadius.circular(8),
+                                          border: Border.all(color: Colors.blue.shade300),
+                                        ),
+                                        child: Text(
+                                          emoji,
+                                          style: const TextStyle(fontSize: 20),
+                                        ),
+                                      ),
+                                    );
+                                  }).toList(),
+                                ),
+                                if (nextMilestone != null) ...[
+                                  const SizedBox(height: 12),
+                                  Container(
+                                    padding: const EdgeInsets.all(8),
+                                    decoration: BoxDecoration(
+                                      color: Colors.grey.shade100,
+                                      borderRadius: BorderRadius.circular(8),
+                                      border: Border.all(color: Colors.grey.shade300),
+                                    ),
+                                    child: Row(
+                                      children: [
+                                        Icon(
+                                          Icons.trending_up,
+                                          color: Colors.grey.shade600,
+                                          size: 16,
+                                        ),
+                                        const SizedBox(width: 8),
+                                        Text(
+                                          'Next: ${MilestoneUtils.getMilestoneDescription(nextMilestone)}',
+                                          style: TextStyle(
+                                            fontSize: 14,
+                                            color: Colors.grey.shade700,
+                                            fontWeight: FontWeight.w500,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ],
+                            ),
+                          ),
+                        );
+                      }
+                    }
+                    return const SliverToBoxAdapter(child: SizedBox.shrink());
                   },
                 ),
 

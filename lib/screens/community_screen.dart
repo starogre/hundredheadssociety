@@ -12,6 +12,7 @@ import '../providers/model_provider.dart';
 import 'profile_screen.dart';
 import '../theme/app_theme.dart';
 import '../widgets/portrait_details_dialog.dart';
+import '../utils/milestone_utils.dart';
 
 class CommunityScreen extends StatefulWidget {
   const CommunityScreen({super.key});
@@ -215,12 +216,15 @@ class _CommunityScreenState extends State<CommunityScreen>
                                                   ),
                                                   overflow: TextOverflow.ellipsis,
                                                 ),
-                                                // Dragon emoji for 100+ portraits
-                                                if (user.portraitsCompleted >= 100) ...[
+                                                // Milestone badge
+                                                if (MilestoneUtils.getMilestoneEmoji(user.portraitsCompleted) != null) ...[
                                                   const SizedBox(width: 4),
-                                                  const Text(
-                                                    '🐉',
-                                                    style: TextStyle(fontSize: 16),
+                                                  Tooltip(
+                                                    message: '${user.portraitsCompleted} Portraits Milestone',
+                                                    child: Text(
+                                                      MilestoneUtils.getMilestoneEmoji(user.portraitsCompleted)!,
+                                                      style: const TextStyle(fontSize: 16),
+                                                    ),
                                                   ),
                                                 ],
                                               ],
