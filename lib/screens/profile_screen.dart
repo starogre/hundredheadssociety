@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../providers/auth_provider.dart';
 import '../providers/portrait_provider.dart';
 import '../models/portrait_model.dart';
@@ -38,6 +39,13 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
   int _imageRefreshKey = 0;
   bool _justSubmittedUpgradeRequest = false;
   late TabController _tabController;
+  
+  // Lazy loading for portraits
+  List<PortraitModel> _portraits = [];
+  bool _isLoadingPortraits = false;
+  bool _hasMorePortraits = true;
+  DocumentSnapshot? _lastPortraitDocument;
+  static const int _portraitsPerBatch = 6;
 
   @override
   void initState() {
@@ -45,6 +53,10 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
     _tabController = TabController(length: 2, vsync: this);
     _tabController.addListener(() {
       setState(() {}); // Rebuild when tab changes
+      // Load portraits when switching to portraits tab
+      if (_tabController.index == 0 && _portraits.isEmpty) {
+        _loadPortraits();
+      }
     });
     _loadUserData();
   }
@@ -65,6 +77,40 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
       }
     } catch (e) {
       debugPrint('Error loading user data: $e');
+    }
+  }
+
+  Future<void> _loadPortraits() async {
+    if (_isLoadingPortraits || !_hasMorePortraits) return;
+    
+    if (mounted) {
+      setState(() {
+        _isLoadingPortraits = true;
+      });
+    }
+    
+    try {
+      final newPortraits = await _userService.getUserPortraitsPaginated(
+        widget.userId,
+        limit: _portraitsPerBatch,
+        lastDocument: _lastPortraitDocument,
+      );
+      
+      if (mounted) {
+        setState(() {
+          _portraits.addAll(newPortraits.portraits);
+          _lastPortraitDocument = newPortraits.lastDocument;
+          _hasMorePortraits = newPortraits.portraits.length == _portraitsPerBatch;
+          _isLoadingPortraits = false;
+        });
+      }
+    } catch (e) {
+      debugPrint('Error loading portraits: $e');
+      if (mounted) {
+        setState(() {
+          _isLoadingPortraits = false;
+        });
+      }
     }
   }
 
@@ -723,7 +769,7 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                   },
                 ),
 
-                // Tabs Section (only show for artists or when viewing own profile)
+                // Tab Bar (only show for artists or when viewing own profile)
                 Consumer<AuthProvider>(
                   builder: (context, authProvider, child) {
                     final currentUser = authProvider.currentUser;
@@ -736,37 +782,185 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                     }
                     
                     return SliverToBoxAdapter(
-                      child: Column(
-                        children: [
-                          // Tab Bar
-                          Container(
-                            color: AppColors.cream,
-                            child: TabBar(
-                              controller: _tabController,
-                              labelColor: AppColors.forestGreen,
-                              unselectedLabelColor: Colors.grey.shade600,
-                              indicatorColor: AppColors.forestGreen,
-                              indicatorWeight: 3,
-                              dividerColor: AppColors.forestGreen.withValues(alpha: 0.2),
-                              tabs: const [
-                                Tab(
-                                  icon: Icon(Icons.photo_library),
-                                  text: 'Portraits',
-                                ),
-                                Tab(
-                                  icon: Icon(Icons.emoji_events),
-                                  text: 'Awards',
-                                ),
-                              ],
+                      child: Container(
+                        color: AppColors.cream,
+                        child: TabBar(
+                          controller: _tabController,
+                          labelColor: AppColors.forestGreen,
+                          unselectedLabelColor: Colors.grey.shade600,
+                          indicatorColor: AppColors.forestGreen,
+                          indicatorWeight: 3,
+                          dividerColor: AppColors.forestGreen.withValues(alpha: 0.2),
+                          tabs: const [
+                            Tab(
+                              icon: Icon(Icons.photo_library),
+                              text: 'Portraits',
                             ),
-                          ),
-                          // Tab Content
-                          _tabController.index == 0
-                              ? _buildPortraitsTab()
-                              : _buildAwardsTab(),
-                        ],
+                            Tab(
+                              icon: Icon(Icons.emoji_events),
+                              text: 'Awards',
+                            ),
+                          ],
+                        ),
                       ),
                     );
+                  },
+                ),
+                
+                // Portraits Tab Content
+                Consumer<AuthProvider>(
+                  builder: (context, authProvider, child) {
+                    final currentUser = authProvider.currentUser;
+                    final isOwnProfile = currentUser?.uid == widget.userId;
+                    final isArtist = _userData?.isArtist ?? false;
+                    
+                    if (!isArtist && !isOwnProfile) {
+                      return const SliverToBoxAdapter(child: SizedBox.shrink());
+                    }
+                    
+                    if (_tabController.index == 0) {
+                      // Load initial portraits if needed
+                      if (_portraits.isEmpty && !_isLoadingPortraits) {
+                        WidgetsBinding.instance.addPostFrameCallback((_) {
+                          _loadPortraits();
+                        });
+                      }
+                      
+                      if (_portraits.isEmpty && _isLoadingPortraits) {
+                        return const SliverToBoxAdapter(
+                          child: Center(
+                            child: Padding(
+                              padding: EdgeInsets.all(32.0),
+                              child: CircularProgressIndicator(
+                                valueColor: AlwaysStoppedAnimation<Color>(AppColors.forestGreen),
+                              ),
+                            ),
+                          ),
+                        );
+                      }
+                      
+                      if (_portraits.isEmpty) {
+                        return const SliverToBoxAdapter(
+                          child: Center(
+                            child: Padding(
+                              padding: EdgeInsets.all(32.0),
+                              child: Column(
+                                children: [
+                                  Icon(
+                                    Icons.photo_library,
+                                    size: 64,
+                                    color: AppColors.forestGreen,
+                                  ),
+                                  SizedBox(height: 16),
+                                  Text(
+                                    'No portraits yet',
+                                    style: TextStyle(
+                                      fontSize: 18,
+                                      color: AppColors.forestGreen,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        );
+                      }
+                      
+                      return SliverPadding(
+                        padding: const EdgeInsets.all(16),
+                        sliver: SliverGrid(
+                          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: 2,
+                            mainAxisSpacing: 16,
+                            crossAxisSpacing: 16,
+                            childAspectRatio: 1,
+                          ),
+                          delegate: SliverChildBuilderDelegate(
+                            (context, index) {
+                              // Load more portraits when reaching the end
+                              if (index == _portraits.length - 3 && _hasMorePortraits && !_isLoadingPortraits) {
+                                WidgetsBinding.instance.addPostFrameCallback((_) {
+                                  _loadPortraits();
+                                });
+                              }
+                              
+                              // Show loading indicator at the end
+                              if (index == _portraits.length) {
+                                if (_hasMorePortraits) {
+                                  return Container(
+                                    padding: const EdgeInsets.all(16),
+                                    child: const Center(
+                                      child: CircularProgressIndicator(
+                                        valueColor: AlwaysStoppedAnimation<Color>(AppColors.forestGreen),
+                                      ),
+                                    ),
+                                  );
+                                }
+                                return const SizedBox.shrink();
+                              }
+                              
+                              final portrait = _portraits[index];
+                              return GestureDetector(
+                                onTap: () {
+                                  showDialog(
+                                    context: context,
+                                    builder: (context) => PortraitDetailsDialog(
+                                      portrait: portrait,
+                                      user: _userData,
+                                      currentUserId: widget.userId,
+                                      onPortraitModified: () {
+                                        setState(() {});
+                                      },
+                                    ),
+                                  );
+                                },
+                                child: ClipRRect(
+                                  borderRadius: BorderRadius.circular(8),
+                                  child: CachedNetworkImage(
+                                    imageUrl: portrait.imageUrl,
+                                    fit: BoxFit.cover,
+                                    memCacheWidth: 400,
+                                    maxWidthDiskCache: 300,
+                                    maxHeightDiskCache: 300,
+                                    placeholder: (context, url) => Container(
+                                      color: Colors.grey[200],
+                                      child: const Center(
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                        ),
+                                      ),
+                                    ),
+                                    errorWidget: (context, url, error) => Container(
+                                      color: Colors.grey[200],
+                                      child: const Icon(
+                                        Icons.error,
+                                        color: Colors.grey,
+                                        size: 24,
+                                      ),
+                                    ),
+                                    fadeInDuration: const Duration(milliseconds: 200),
+                                    fadeOutDuration: const Duration(milliseconds: 200),
+                                  ),
+                                ),
+                              );
+                            },
+                            childCount: _portraits.length + (_hasMorePortraits ? 1 : 0),
+                          ),
+                        ),
+                      );
+                    } else {
+                      // Awards Tab
+                      return SliverToBoxAdapter(
+                        child: Padding(
+                          padding: const EdgeInsets.all(16),
+                          child: AwardsTab(
+                            userId: widget.userId,
+                            isOwnProfile: currentUser?.uid == widget.userId,
+                          ),
+                        ),
+                      );
+                    }
                   },
                 ),
               ],
@@ -774,103 +968,7 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
           );
   }
 
-  Widget _buildPortraitsTab() {
-    return Consumer<PortraitProvider>(
-      builder: (context, portraitProvider, child) {
-        return StreamBuilder<List<PortraitModel>>(
-          stream: portraitProvider.getUserPortraitsReversed(widget.userId),
-          builder: (context, snapshot) {
-            if (snapshot.hasError) {
-              return Center(
-                child: Text('Error: ${snapshot.error}'),
-              );
-            }
 
-            if (!snapshot.hasData) {
-              return const Center(
-                child: CircularProgressIndicator(),
-              );
-            }
-
-            final portraits = snapshot.data!;
-            _lastPortraitCount = portraits.length;
-
-            if (portraits.isEmpty) {
-              return Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(
-                      Icons.photo_library,
-                      size: 64,
-                      color: AppColors.forestGreen.withValues(alpha: 0.5),
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      'No portraits yet',
-                      style: TextStyle(
-                        fontSize: 18,
-                        color: AppColors.forestGreen,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ],
-                ),
-              );
-            }
-
-            return GridView.builder(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              padding: const EdgeInsets.all(16),
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 2,
-                mainAxisSpacing: 16,
-                crossAxisSpacing: 16,
-                childAspectRatio: 1,
-              ),
-              itemCount: portraits.length,
-              itemBuilder: (context, index) {
-                final portrait = portraits[index];
-                return GestureDetector(
-                  onTap: () {
-                    showDialog(
-                      context: context,
-                      builder: (context) => PortraitDetailsDialog(
-                        portrait: portrait,
-                        user: _userData,
-                        currentUserId: widget.userId,
-                        onPortraitModified: () {
-                          setState(() {});
-                        },
-                      ),
-                    );
-                  },
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(8),
-                    child: CachedNetworkImage(
-                      imageUrl: portrait.imageUrl,
-                      fit: BoxFit.cover,
-                      placeholder: (context, url) => Container(
-                        color: Colors.grey[200],
-                        child: const Center(
-                          child: CircularProgressIndicator(),
-                        ),
-                      ),
-                      errorWidget: (context, url, error) => Container(
-                        color: Colors.grey[200],
-                        child: const Icon(Icons.error),
-                      ),
-                    ),
-                  ),
-                );
-              },
-            );
-          },
-        );
-      },
-    );
-  }
 
   Widget _buildAwardsTab() {
     final authProvider = Provider.of<AuthProvider>(context, listen: false);

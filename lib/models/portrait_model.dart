@@ -1,5 +1,15 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+class PortraitPaginationResult {
+  final List<PortraitModel> portraits;
+  final DocumentSnapshot? lastDocument;
+
+  PortraitPaginationResult({
+    required this.portraits,
+    this.lastDocument,
+  });
+}
+
 class PortraitModel {
   final String id;
   final String userId;
