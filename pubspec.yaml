@@ -61,6 +61,11 @@ dependencies:
   path: ^1.9.0
   shared_preferences: ^2.2.2
   app_settings: ^5.1.1
+  
+  # Social sharing
+  share_plus: ^7.2.1
+  screenshot: ^3.0.0
+  path_provider: ^2.1.2
 
   # Custom gallery access
   photo_manager: ^3.7.1

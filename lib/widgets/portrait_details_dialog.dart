@@ -11,6 +11,7 @@ import '../services/portrait_service.dart';
 
 import '../providers/model_provider.dart';
 import '../services/award_service.dart';
+import '../services/instagram_sharing_service.dart';
 
 class PortraitDetailsDialog extends StatefulWidget {
   final PortraitModel portrait;
@@ -101,57 +102,43 @@ class _PortraitDetailsDialogState extends State<PortraitDetailsDialog> {
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                             ),
-                          if (widget.user != null) ...[
-                            const SizedBox(height: 2),
-                            // Role Badge
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                              decoration: BoxDecoration(
-                                color: widget.user!.isArtist 
-                                    ? Colors.blue.shade100 
-                                    : Colors.green.shade100,
-                                borderRadius: BorderRadius.circular(12),
-                                border: Border.all(
+                            ...(widget.user != null ? [
+                              const SizedBox(height: 2),
+                              // Role Badge
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                decoration: BoxDecoration(
                                   color: widget.user!.isArtist 
-                                      ? Colors.blue.shade300 
-                                      : Colors.green.shade300,
+                                      ? Colors.blue.shade100 
+                                      : Colors.green.shade100,
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(
+                                    color: widget.user!.isArtist 
+                                        ? Colors.blue.shade300 
+                                        : Colors.green.shade300,
+                                  ),
+                                ),
+                                child: Text(
+                                  widget.user!.isArtist ? 'Artist' : 'Appreciator',
+                                  style: TextStyle(
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.w600,
+                                    color: widget.user!.isArtist 
+                                        ? Colors.blue.shade700 
+                                        : Colors.green.shade700,
+                                  ),
                                 ),
                               ),
-                              child: Text(
-                                widget.user!.isArtist ? 'Artist' : 'Appreciator',
-                                style: TextStyle(
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.w600,
-                                  color: widget.user!.isArtist 
-                                      ? Colors.blue.shade700 
-                                      : Colors.green.shade700,
-                                ),
-                              ),
-                            ),
+                            ] : []),
                           ],
-                        ],
-                      ),
-                    ),
-                    if (isOwner && !_showDeleteConfirmation) ...[
-                      IconButton(
-                        icon: const Icon(Icons.edit, color: Colors.blue),
-                        onPressed: () => _editPortrait(context),
-                      ),
-                      IconButton(
-                        icon: const Icon(Icons.delete, color: Colors.red),
-                        onPressed: () {
-                          setState(() {
-                            _showDeleteConfirmation = true;
-                          });
-                        },
+                        ),
                       ),
                     ],
-                  ],
+                  ),
                 ),
-                ),
-                const SizedBox(height: 16),
+                SizedBox(height: 16),
                 // Model section - below artist
-                if (widget.portrait.modelName != null && widget.portrait.modelName!.isNotEmpty) ...[
+                ...(widget.portrait.modelName != null && widget.portrait.modelName!.isNotEmpty ? [
                   Consumer<ModelProvider>(
                     builder: (context, modelProvider, child) {
                       return StreamBuilder<List<ModelModel>>(
@@ -234,21 +221,21 @@ class _PortraitDetailsDialogState extends State<PortraitDetailsDialog> {
                                   ),
                                 ],
                               ),
-                              // Model date - smaller and below
-                              if (model != null) ...[
+                                                            // Model date - smaller and below
+                              ...(model != null ? [
                                 const SizedBox(height: 4),
                                 Padding(
                                   padding: const EdgeInsets.only(left: 48),
-                                                                     child: Text(
-                                     'Modeled ${_formatDate(model.date)}',
-                                     style: TextStyle(
-                                       fontSize: 14,
-                                       color: AppColors.forestGreen.withValues(alpha: 0.6),
-                                       fontStyle: FontStyle.italic,
-                                     ),
-                                   ),
+                                  child: Text(
+                                    'Modeled ${_formatDate(model.date)}',
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      color: AppColors.forestGreen.withValues(alpha: 0.6),
+                                      fontStyle: FontStyle.italic,
+                                    ),
+                                  ),
                                 ),
-                              ],
+                              ] : []),
                             ],
                           );
                         },
@@ -256,9 +243,9 @@ class _PortraitDetailsDialogState extends State<PortraitDetailsDialog> {
                     },
                   ),
                   const SizedBox(height: 16),
-                ],
+                ] : []),
                 // Description section - at the bottom
-                if (widget.portrait.description != null && widget.portrait.description!.isNotEmpty) ...[
+                ...(widget.portrait.description != null && widget.portrait.description!.isNotEmpty ? [
                   Text(
                     widget.portrait.description!,
                     style: TextStyle(
@@ -268,7 +255,7 @@ class _PortraitDetailsDialogState extends State<PortraitDetailsDialog> {
                     ),
                   ),
                   const SizedBox(height: 16),
-                ],
+                ] : []),
                 // Model name section
 
                 // Awards section
@@ -343,7 +330,7 @@ class _PortraitDetailsDialogState extends State<PortraitDetailsDialog> {
                                 ],
                               ),
                             );
-                          }).toList(),
+                          }),
                           const SizedBox(height: 16),
                         ],
                       );
@@ -353,7 +340,7 @@ class _PortraitDetailsDialogState extends State<PortraitDetailsDialog> {
                 ),
 
                 // Delete confirmation section
-                if (_showDeleteConfirmation) ...[
+                ...(_showDeleteConfirmation ? [
                   const SizedBox(height: 16),
                   Container(
                     padding: const EdgeInsets.all(12),
@@ -418,7 +405,37 @@ class _PortraitDetailsDialogState extends State<PortraitDetailsDialog> {
                       ],
                     ),
                   ),
-                ],
+                ] : []),
+                
+                // Action buttons at the bottom
+                SizedBox(height: 16),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    // Share button - available to everyone
+                    IconButton(
+                      onPressed: () => _sharePortrait(context),
+                      icon: const Icon(Icons.share, color: AppColors.rustyOrange),
+                      tooltip: 'Share',
+                    ),
+                    ...(isOwner && !_showDeleteConfirmation ? [
+                      IconButton(
+                        onPressed: () => _editPortrait(context),
+                        icon: const Icon(Icons.edit, color: Colors.blue),
+                        tooltip: 'Edit',
+                      ),
+                      IconButton(
+                        onPressed: () {
+                          setState(() {
+                            _showDeleteConfirmation = true;
+                          });
+                        },
+                        icon: const Icon(Icons.delete, color: Colors.red),
+                        tooltip: 'Delete',
+                      ),
+                    ] : []),
+                  ],
+                ),
               ],
             ),
           ),
@@ -568,6 +585,70 @@ class _PortraitDetailsDialogState extends State<PortraitDetailsDialog> {
           builder: (context) => ProfileScreen(userId: widget.user!.id),
         ),
       );
+    }
+  }
+
+  Future<void> _sharePortrait(BuildContext context) async {
+    if (widget.user == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Unable to share: Artist information not available'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    try {
+      // Get awards for this portrait
+      final List<Map<String, dynamic>> awards = await _awardService.getPortraitAwards(widget.portrait.id);
+      final List<String> awardCategories = awards.map((award) => award['category'] as String).toList();
+      
+      // Get artist's Instagram handle
+      final String? artistInstagram = widget.user!.instagram;
+      
+      // Show loading indicator
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => const Center(
+          child: CircularProgressIndicator(),
+        ),
+      );
+
+      // Share to Instagram
+      await InstagramSharingService.sharePortraitToInstagram(
+        portrait: widget.portrait,
+        artist: widget.user!,
+        awards: awardCategories.isNotEmpty ? awardCategories : null,
+        artistInstagram: artistInstagram,
+      );
+
+      // Close loading dialog
+      if (mounted) {
+        Navigator.of(context).pop();
+        
+        // Show success message
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Portrait shared successfully!'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (e) {
+      // Close loading dialog
+      if (mounted) {
+        Navigator.of(context).pop();
+        
+        // Show error message
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to share portrait: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     }
   }
 } 
