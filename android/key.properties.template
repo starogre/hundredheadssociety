@@ -1,0 +1,8 @@
+# Copy this file to key.properties and fill in your actual values
+# This template file is safe to commit to version control
+# The actual key.properties file is in .gitignore
+
+storePassword=your-keystore-password
+keyPassword=your-key-password
+keyAlias=your-key-alias
+storeFile=/path/to/your/keystore.jks

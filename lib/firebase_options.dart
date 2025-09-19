@@ -42,7 +42,7 @@ class DefaultFirebaseOptions {
 
   static const FirebaseOptions web = FirebaseOptions(
     apiKey: 'AIzaSyA10pLiV5uk6K3O1LtAmiOXVxIKDZ6MD7M',
-    appId: '1:901674071868:web:your-web-app-id',
+    appId: '1:901674071868:web:715c892c86f1dd287a1039',
     messagingSenderId: '901674071868',
     projectId: 'hundredheadssociety',
     authDomain: 'hundredheadssociety.firebaseapp.com',
@@ -59,7 +59,7 @@ class DefaultFirebaseOptions {
 
   static const FirebaseOptions ios = FirebaseOptions(
     apiKey: 'AIzaSyA10pLiV5uk6K3O1LtAmiOXVxIKDZ6MD7M',
-    appId: '1:901674071868:ios:your-ios-app-id',
+    appId: '1:901674071868:ios:d71dcb8dea79182c7a1039',
     messagingSenderId: '901674071868',
     projectId: 'hundredheadssociety',
     storageBucket: 'hundredheadssociety.firebasestorage.app',
@@ -68,7 +68,7 @@ class DefaultFirebaseOptions {
 
   static const FirebaseOptions macos = FirebaseOptions(
     apiKey: 'AIzaSyA10pLiV5uk6K3O1LtAmiOXVxIKDZ6MD7M',
-    appId: '1:901674071868:macos:your-macos-app-id',
+    appId: '1:901674071868:macos:caccfeebb722027f7a1039',
     messagingSenderId: '901674071868',
     projectId: 'hundredheadssociety',
     storageBucket: 'hundredheadssociety.firebasestorage.app',
@@ -77,7 +77,7 @@ class DefaultFirebaseOptions {
 
   static const FirebaseOptions windows = FirebaseOptions(
     apiKey: 'AIzaSyA10pLiV5uk6K3O1LtAmiOXVxIKDZ6MD7M',
-    appId: '1:901674071868:windows:your-windows-app-id',
+    appId: '1:901674071868:windows:caccfeebb722027f7a1039',
     messagingSenderId: '901674071868',
     projectId: 'hundredheadssociety',
     storageBucket: 'hundredheadssociety.firebasestorage.app',
