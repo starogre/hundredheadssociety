@@ -416,13 +416,63 @@ class _SignupScreenState extends State<SignupScreen> {
                         padding: const EdgeInsets.all(12),
                         margin: const EdgeInsets.only(bottom: 16),
                         decoration: BoxDecoration(
-                          color: Colors.red.shade50,
+                          color: authProvider.error!.contains('already exists') 
+                              ? Colors.orange.shade50 
+                              : Colors.red.shade50,
                           borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: Colors.red.shade200),
+                          border: Border.all(
+                            color: authProvider.error!.contains('already exists') 
+                                ? Colors.orange.shade200 
+                                : Colors.red.shade200,
+                          ),
                         ),
-                        child: Text(
-                          authProvider.error!,
-                          style: TextStyle(color: Colors.red.shade700),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Icon(
+                                  authProvider.error!.contains('already exists') 
+                                      ? Icons.info_outline 
+                                      : Icons.error_outline,
+                                  color: authProvider.error!.contains('already exists') 
+                                      ? Colors.orange.shade700 
+                                      : Colors.red.shade700,
+                                  size: 20,
+                                ),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Text(
+                                    authProvider.error!,
+                                    style: TextStyle(
+                                      color: authProvider.error!.contains('already exists') 
+                                          ? Colors.orange.shade700 
+                                          : Colors.red.shade700,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            if (authProvider.error!.contains('already exists')) ...[
+                              const SizedBox(height: 12),
+                              SizedBox(
+                                width: double.infinity,
+                                child: ElevatedButton(
+                                  onPressed: () {
+                                    // Clear the error and navigate to sign in
+                                    authProvider.clearError();
+                                    Navigator.of(context).pop();
+                                  },
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: AppColors.forestGreen,
+                                    foregroundColor: Colors.white,
+                                    padding: const EdgeInsets.symmetric(vertical: 8),
+                                  ),
+                                  child: const Text('Go to Sign In'),
+                                ),
+                              ),
+                            ],
+                          ],
                         ),
                       ),
 

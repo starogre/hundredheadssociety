@@ -55,8 +55,27 @@ class AuthProvider extends ChangeNotifier {
         
         // If user data doesn't exist, create it (fallback for failed initial creation)
         if (_userData == null) {
-          debugPrint('[AuthProvider] User document not found, creating fallback document...');
+          debugPrint('[AuthProvider] User document not found, checking if user exists by email...');
+          
+          // First, check if a user document exists with this email but different UID
+          // This can happen if Firebase Auth UID changes or if there's a data inconsistency
           try {
+            final existingUser = await _authService.getUserByEmail(_currentUser!.email ?? '');
+            
+            if (existingUser != null) {
+              // User exists with this email but different UID - this is a data inconsistency
+              debugPrint('[AuthProvider] Found existing user with email ${_currentUser!.email} but different UID');
+              debugPrint('[AuthProvider] Existing UID: ${existingUser.id}, Current UID: ${_currentUser!.uid}');
+              
+              // This is a critical data inconsistency - don't create a new document
+              _error = 'Account data inconsistency detected. Please contact support or try signing in with your existing account.';
+              debugPrint('[AuthProvider] CRITICAL: Not creating fallback document due to UID mismatch');
+              debugPrint('[AuthProvider] Existing user data: ${existingUser.name} (${existingUser.email})');
+              return;
+            }
+            
+            // No existing user found with this email, safe to create new document
+            debugPrint('[AuthProvider] No existing user found with email, creating fallback document...');
             await _authService.createUserDocument(
               userId: _currentUser!.uid,
               email: _currentUser!.email ?? '',
@@ -212,6 +231,11 @@ class AuthProvider extends ChangeNotifier {
       
       _setLoading(false);
       return true;
+    } on AuthException catch (e) {
+      // Handle our custom authentication exceptions
+      _setError(e.message);
+      _setLoading(false);
+      return false;
     } catch (e) {
       _setError('Sign up failed: $e');
       _setLoading(false);
@@ -244,6 +268,11 @@ class AuthProvider extends ChangeNotifier {
       
       _setLoading(false);
       return true;
+    } on AuthException catch (e) {
+      // Handle our custom authentication exceptions
+      _setError(e.message);
+      _setLoading(false);
+      return false;
     } catch (e) {
       _setError('Sign in failed: $e');
       _setLoading(false);

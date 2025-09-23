@@ -4,6 +4,17 @@ import '../models/user_model.dart';
 import 'activity_log_service.dart';
 import 'push_notification_service.dart';
 
+/// Custom exception for authentication errors
+class AuthException implements Exception {
+  final String message;
+  final String code;
+  
+  AuthException(this.message, {required this.code});
+  
+  @override
+  String toString() => message;
+}
+
 class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -23,6 +34,16 @@ class AuthService {
   }) async {
     try {
       print('Attempting to create user with email: $email');
+      
+      // First, check if a user already exists with this email
+      final existingUser = await getUserByEmail(email);
+      if (existingUser != null) {
+        throw AuthException(
+          'An account with this email address already exists. Please try signing in instead.',
+          code: 'email-already-exists',
+        );
+      }
+      
       UserCredential result = await _auth.createUserWithEmailAndPassword(
         email: email,
         password: password,
@@ -98,10 +119,35 @@ class AuthService {
       }
 
       return result;
+    } on FirebaseAuthException catch (e) {
+      print('Firebase Auth error in signUpWithEmailAndPassword: $e');
+      String userFriendlyMessage;
+      
+      switch (e.code) {
+        case 'email-already-in-use':
+          userFriendlyMessage = 'An account with this email address already exists. Please try signing in instead.';
+          break;
+        case 'weak-password':
+          userFriendlyMessage = 'The password is too weak. Please choose a stronger password.';
+          break;
+        case 'invalid-email':
+          userFriendlyMessage = 'The email address is not valid. Please check and try again.';
+          break;
+        case 'operation-not-allowed':
+          userFriendlyMessage = 'Email/password accounts are not enabled. Please contact support.';
+          break;
+        default:
+          userFriendlyMessage = 'Sign up failed: ${e.message ?? 'Unknown error occurred'}';
+      }
+      
+      throw AuthException(userFriendlyMessage, code: e.code);
+    } on AuthException {
+      // Re-throw our custom exceptions
+      rethrow;
     } catch (e) {
       print('Error in signUpWithEmailAndPassword: $e');
       print('Error type: ${e.runtimeType}');
-      rethrow;
+      throw AuthException('Sign up failed: ${e.toString()}', code: 'unknown-error');
     }
   }
 
@@ -266,8 +312,34 @@ class AuthService {
       }
       
       return result;
+    } on FirebaseAuthException catch (e) {
+      print('Firebase Auth error in signInWithEmailAndPassword: $e');
+      String userFriendlyMessage;
+      
+      switch (e.code) {
+        case 'user-not-found':
+          userFriendlyMessage = 'No account found with this email address. Please check your email or sign up for a new account.';
+          break;
+        case 'wrong-password':
+          userFriendlyMessage = 'Incorrect password. Please try again.';
+          break;
+        case 'invalid-email':
+          userFriendlyMessage = 'The email address is not valid. Please check and try again.';
+          break;
+        case 'user-disabled':
+          userFriendlyMessage = 'This account has been disabled. Please contact support.';
+          break;
+        case 'too-many-requests':
+          userFriendlyMessage = 'Too many failed attempts. Please try again later.';
+          break;
+        default:
+          userFriendlyMessage = 'Sign in failed: ${e.message ?? 'Unknown error occurred'}';
+      }
+      
+      throw AuthException(userFriendlyMessage, code: e.code);
     } catch (e) {
-      rethrow;
+      print('Error in signInWithEmailAndPassword: $e');
+      throw AuthException('Sign in failed: ${e.toString()}', code: 'unknown-error');
     }
   }
 
@@ -303,8 +375,17 @@ class AuthService {
     try {
       print('Creating user document with raw operation...');
       
-      // Try using a more direct approach
+      // First, check if document already exists to prevent overwrites
       final docRef = _firestore.collection('users').doc(userId);
+      final existingDoc = await docRef.get();
+      
+      if (existingDoc.exists) {
+        print('WARNING: User document already exists! Not creating new document to prevent data loss.');
+        print('Existing document data: ${existingDoc.data()}');
+        return; // Don't overwrite existing data
+      }
+      
+      // Try using a more direct approach
       final data = <String, dynamic>{
         'email': email,
         'name': name,
@@ -319,6 +400,7 @@ class AuthService {
         'isModerator': false,
         'awards': <String>[],
         'totalVotesCast': 0,
+        'emailVerified': false,
       };
       
       await docRef.set(data);
@@ -330,12 +412,21 @@ class AuthService {
       // Last resort: try without any complex types
       try {
         print('Trying minimal document creation...');
-        await _firestore.collection('users').doc(userId).set({
+        final docRef = _firestore.collection('users').doc(userId);
+        final existingDoc = await docRef.get();
+        
+        if (existingDoc.exists) {
+          print('WARNING: User document already exists! Not creating minimal document to prevent data loss.');
+          return;
+        }
+        
+        await docRef.set({
           'email': email,
           'name': name,
           'status': 'approved',
           'userRole': userRole,
           'isModerator': false,
+          'emailVerified': false,
         });
         print('Minimal user document created');
       } catch (minimalError) {
@@ -361,6 +452,41 @@ class AuthService {
       await _firestore.collection('users').doc(userId).update(updates);
     } catch (e) {
       rethrow;
+    }
+  }
+
+  // Check if a user exists with the given email address
+  Future<bool> userExistsWithEmail(String email) async {
+    try {
+      final query = await _firestore
+          .collection('users')
+          .where('email', isEqualTo: email)
+          .limit(1)
+          .get();
+      return query.docs.isNotEmpty;
+    } catch (e) {
+      print('Error checking if user exists with email: $e');
+      return false;
+    }
+  }
+
+  // Get user by email address
+  Future<UserModel?> getUserByEmail(String email) async {
+    try {
+      final query = await _firestore
+          .collection('users')
+          .where('email', isEqualTo: email)
+          .limit(1)
+          .get();
+      
+      if (query.docs.isNotEmpty) {
+        final doc = query.docs.first;
+        return UserModel.fromMap(doc.data(), doc.id);
+      }
+      return null;
+    } catch (e) {
+      print('Error getting user by email: $e');
+      return null;
     }
   }
 

@@ -10,6 +10,7 @@ import 'activity_log_screen.dart';
 import 'model_management_screen.dart';
 import 'test_notifications_screen.dart';
 import 'push_notifications_settings_screen.dart';
+import 'user_data_repair_screen.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
@@ -47,6 +48,18 @@ class SettingsScreen extends StatelessWidget {
                   onTap: () {
                     Navigator.of(context).push(
                       MaterialPageRoute(builder: (context) => const ActivityLogScreen()),
+                    );
+                  },
+                ),
+              // Show User Data Repair for admins only
+              if (isAdmin)
+                ListTile(
+                  leading: const Icon(Icons.build),
+                  title: const Text('User Data Repair'),
+                  subtitle: const Text('Repair user data inconsistencies'),
+                  onTap: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(builder: (context) => const UserDataRepairScreen()),
                     );
                   },
                 ),
