@@ -59,5 +59,8 @@
 	<!-- Add if you record video/voice -->
 	<key>NSMicrophoneUsageDescription</key>
 	<string>This app needs microphone access to record audio.</string>
+
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
 </dict>
 </plist>
