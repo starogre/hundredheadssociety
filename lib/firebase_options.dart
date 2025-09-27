@@ -58,12 +58,12 @@ class DefaultFirebaseOptions {
   );
 
   static const FirebaseOptions ios = FirebaseOptions(
-    apiKey: 'AIzaSyA10pLiV5uk6K3O1LtAmiOXVxIKDZ6MD7M',
-    appId: '1:901674071868:ios:d71dcb8dea79182c7a1039',
+    apiKey: 'AIzaSyCbmhgPAzOSdRSY0ZxYC1S1JlcUgTWOff0',
+    appId: '1:901674071868:ios:dcc641246bfa48767a1039',
     messagingSenderId: '901674071868',
     projectId: 'hundredheadssociety',
     storageBucket: 'hundredheadssociety.firebasestorage.app',
-    iosBundleId: 'com.hundredheadsociety.app',
+    iosBundleId: 'com.hundredheadssociety.app',
   );
 
   static const FirebaseOptions macos = FirebaseOptions(
