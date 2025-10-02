@@ -5,6 +5,7 @@ import '../models/portrait_model.dart';
 import '../services/weekly_session_service.dart';
 import '../services/user_service.dart';
 import '../services/push_notification_service.dart';
+import '../services/crashlytics_service.dart';
 import '../models/user_model.dart';
 
 // Defines the award categories
@@ -139,38 +140,65 @@ class WeeklySessionProvider extends ChangeNotifier {
 
   // RSVP for the current session
   Future<void> rsvpForCurrentSession(String userId) async {
-    if (_currentSession == null) return;
+    if (_currentSession == null) {
+      _error = 'No active session found';
+      notifyListeners();
+      return;
+    }
 
     try {
-      await _weeklySessionService.rsvpForSession(_currentSession!.id, userId);
-      // Update locally for immediate UI feedback
-      if (!_currentSession!.rsvpUserIds.contains(userId)) {
-        _currentSession = _currentSession!.copyWith(
-          rsvpUserIds: [..._currentSession!.rsvpUserIds, userId],
-        );
-        // Load the user data immediately
-        final user = await _userService.getUserById(userId);
-        if (user != null && !_rsvpUsers.any((u) => u.id == userId)) {
-          _rsvpUsers.add(user);
-          notifyListeners();
-        }
-        
-        // Send RSVP confirmation push notification
-        try {
-          await _pushNotificationService.sendRSVPConfirmation(
-            userId,
-            'Weekly Session',
-            _currentSession!.sessionDate,
-          );
-        } catch (e) {
-          // Don't fail the RSVP if push notification fails
-          if (kDebugMode) {
-            print('Error sending RSVP confirmation notification: $e');
-          }
-        }
+      print('Attempting to RSVP user $userId for session ${_currentSession!.id}');
+      
+      // Check if user is already RSVP'd locally
+      if (_currentSession!.rsvpUserIds.contains(userId)) {
+        print('User $userId is already RSVP\'d locally');
+        return;
       }
+      
+      await _weeklySessionService.rsvpForSession(_currentSession!.id, userId);
+      
+      // Update locally for immediate UI feedback
+      _currentSession = _currentSession!.copyWith(
+        rsvpUserIds: [..._currentSession!.rsvpUserIds, userId],
+      );
+      
+      // Load the user data immediately
+      final user = await _userService.getUserById(userId);
+      if (user != null && !_rsvpUsers.any((u) => u.id == userId)) {
+        _rsvpUsers.add(user);
+        notifyListeners();
+      }
+      
+      print('Successfully RSVP\'d user $userId for session ${_currentSession!.id}');
+      
+      // Send RSVP confirmation push notification
+      try {
+        await _pushNotificationService.sendRSVPConfirmation(
+          userId,
+          'Weekly Session',
+          _currentSession!.sessionDate,
+        );
+        print('RSVP confirmation notification sent successfully');
+      } catch (e) {
+        // Don't fail the RSVP if push notification fails
+        print('Error sending RSVP confirmation notification: $e');
+      }
+      
+      // Clear any previous errors
+      _error = null;
+      notifyListeners();
     } catch (e) {
-      _error = e.toString();
+      print('Error in rsvpForCurrentSession: $e');
+      
+      // Log to Crashlytics
+      CrashlyticsService.recordRsvpError(
+        e,
+        StackTrace.current,
+        userId: userId,
+        action: 'rsvp_for_current_session',
+      );
+      
+      _error = 'Failed to RSVP: ${e.toString()}';
       notifyListeners();
     }
   }

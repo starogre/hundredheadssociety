@@ -40,16 +40,64 @@ class WeeklySessionService {
 
   // RSVP for a weekly session
   Future<void> rsvpForSession(String sessionId, String userId) async {
-    await _firestore.collection('weekly_sessions').doc(sessionId).update({
-      'rsvpUserIds': FieldValue.arrayUnion([userId]),
-    });
+    try {
+      // First, check if the session exists and if user is already RSVP'd
+      final sessionDoc = await _firestore.collection('weekly_sessions').doc(sessionId).get();
+      
+      if (!sessionDoc.exists) {
+        throw Exception('Session not found');
+      }
+      
+      final sessionData = sessionDoc.data()!;
+      final currentRsvpIds = List<String>.from(sessionData['rsvpUserIds'] ?? []);
+      
+      if (currentRsvpIds.contains(userId)) {
+        // User is already RSVP'd - this is not an error, just return silently
+        print('User $userId is already RSVP\'d for session $sessionId');
+        return;
+      }
+      
+      // Add user to RSVP list
+      await _firestore.collection('weekly_sessions').doc(sessionId).update({
+        'rsvpUserIds': FieldValue.arrayUnion([userId]),
+      });
+      
+      print('Successfully RSVP\'d user $userId for session $sessionId');
+    } catch (e) {
+      print('Error in rsvpForSession: $e');
+      rethrow;
+    }
   }
 
   // Cancel RSVP for a weekly session
   Future<void> cancelRsvp(String sessionId, String userId) async {
-    await _firestore.collection('weekly_sessions').doc(sessionId).update({
-      'rsvpUserIds': FieldValue.arrayRemove([userId]),
-    });
+    try {
+      // First, check if the session exists
+      final sessionDoc = await _firestore.collection('weekly_sessions').doc(sessionId).get();
+      
+      if (!sessionDoc.exists) {
+        throw Exception('Session not found');
+      }
+      
+      final sessionData = sessionDoc.data()!;
+      final currentRsvpIds = List<String>.from(sessionData['rsvpUserIds'] ?? []);
+      
+      if (!currentRsvpIds.contains(userId)) {
+        // User is not RSVP'd - this is not an error, just return silently
+        print('User $userId is not RSVP\'d for session $sessionId');
+        return;
+      }
+      
+      // Remove user from RSVP list
+      await _firestore.collection('weekly_sessions').doc(sessionId).update({
+        'rsvpUserIds': FieldValue.arrayRemove([userId]),
+      });
+      
+      print('Successfully cancelled RSVP for user $userId from session $sessionId');
+    } catch (e) {
+      print('Error in cancelRsvp: $e');
+      rethrow;
+    }
   }
 
   // Submit a portrait for the weekly session

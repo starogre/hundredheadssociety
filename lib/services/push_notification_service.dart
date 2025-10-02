@@ -3,7 +3,9 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import '../screens/user_management_screen.dart';
 
 class PushNotificationService {
   static final PushNotificationService _instance = PushNotificationService._internal();
@@ -16,10 +18,16 @@ class PushNotificationService {
 
   String? _fcmToken;
   bool _isInitialized = false;
+  GlobalKey<NavigatorState>? _navigatorKey;
 
   // Getters
   String? get fcmToken => _fcmToken;
   bool get isInitialized => _isInitialized;
+  
+  // Set navigator key for push notification navigation
+  void setNavigatorKey(GlobalKey<NavigatorState> navigatorKey) {
+    _navigatorKey = navigatorKey;
+  }
 
   // Initialize push notifications
   Future<void> initialize() async {
@@ -190,10 +198,53 @@ class PushNotificationService {
 
   // Handle notification navigation
   void _handleNotificationNavigation(Map<String, dynamic> data) {
-    // This will be implemented based on your app's navigation structure
-    // For now, we'll just log the data
     if (kDebugMode) {
       debugPrint('Navigation data: $data');
+    }
+    
+    // Get the current context from the navigator key
+    final context = _navigatorKey?.currentContext;
+    if (context == null) {
+      if (kDebugMode) {
+        debugPrint('No navigation context available for push notification');
+      }
+      return;
+    }
+    
+    try {
+      // Handle different notification types based on data
+      final action = data['action'] as String?;
+      final navigateTo = data['navigateTo'] as String?;
+      
+      if (navigateTo == 'weekly_sessions' || action == 'rsvp_reminder' || action == 'rsvp_confirmed') {
+        // Navigate to weekly sessions screen
+        Navigator.of(context).pushNamed('/weekly-sessions');
+      } else if (action == 'upgrade_request') {
+        // Navigate to user management with upgrade requests tab
+        Navigator.of(context).push(MaterialPageRoute(
+          builder: (_) => UserManagementScreen(initialTab: 3),
+        ));
+      } else if (action == 'new_artist_signup') {
+        // Navigate to user management with approvals tab
+        Navigator.of(context).push(MaterialPageRoute(
+          builder: (_) => UserManagementScreen(initialTab: 2),
+        ));
+      } else {
+        // Default to home/dashboard
+        Navigator.of(context).pushNamedAndRemoveUntil('/', (route) => false);
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('Error handling notification navigation: $e');
+      }
+      // Fallback: navigate to home
+      try {
+        Navigator.of(context).pushNamedAndRemoveUntil('/', (route) => false);
+      } catch (fallbackError) {
+        if (kDebugMode) {
+          debugPrint('Fallback navigation also failed: $fallbackError');
+        }
+      }
     }
   }
 

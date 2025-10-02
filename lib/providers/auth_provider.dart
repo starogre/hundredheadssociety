@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../services/auth_service.dart';
 import '../services/push_notification_service.dart';
+import '../services/crashlytics_service.dart';
 import '../models/user_model.dart';
 
 class AuthProvider extends ChangeNotifier {
@@ -19,6 +20,12 @@ class AuthProvider extends ChangeNotifier {
   bool get isInitialized => _isInitialized;
   String? get error => _error;
   bool get isAuthenticated => _currentUser != null;
+  
+  // Clear error state
+  void clearError() {
+    _error = null;
+    notifyListeners();
+  }
 
   AuthProvider() {
     // Delay initialization to ensure Firebase is ready
@@ -31,26 +38,48 @@ class AuthProvider extends ChangeNotifier {
     if (_isInitialized) return;
     
     try {
+      debugPrint('[AuthProvider] Initializing AuthProvider...');
       _isInitialized = true;
-      _authService.authStateChanges.listen((User? user) {
-        _currentUser = user;
-        if (user != null) {
-          _loadUserData();
-        } else {
-          _userData = null;
-        }
+      _authService.authStateChanges.listen(
+        (User? user) {
+          debugPrint('[AuthProvider] Auth state changed: ${user?.uid ?? 'null'}');
+          _currentUser = user;
+          if (user != null) {
+            _loadUserData();
+          } else {
+            _userData = null;
+          }
+          notifyListeners();
+        },
+        onError: (error) {
+          debugPrint('[AuthProvider] Auth state listener error: $error');
+          _error = 'Authentication error: $error';
+          _isInitialized = false;
+          notifyListeners();
+        },
+      );
+      debugPrint('[AuthProvider] AuthProvider initialized successfully');
+      } catch (e) {
+        debugPrint('[AuthProvider] CRITICAL ERROR initializing AuthProvider: $e');
+        debugPrint('[AuthProvider] Error type: ${e.runtimeType}');
+        
+        // Log to Crashlytics
+        CrashlyticsService.recordAuthError(
+          e,
+          StackTrace.current,
+          action: 'initialization',
+        );
+        
+        _error = 'Failed to initialize authentication: $e';
+        _isInitialized = false;
         notifyListeners();
-      });
-    } catch (e) {
-      _error = 'Failed to listen to auth state changes: $e';
-      _isInitialized = false;
-      notifyListeners();
-    }
+      }
   }
 
   Future<void> _loadUserData() async {
     if (_currentUser != null) {
       try {
+        debugPrint('[AuthProvider] Loading user data for ${_currentUser!.uid}');
         _userData = await _authService.getUserData(_currentUser!.uid);
         
         // If user data doesn't exist, create it (fallback for failed initial creation)
@@ -141,7 +170,25 @@ class AuthProvider extends ChangeNotifier {
         
         notifyListeners();
       } catch (e) {
-        _error = 'Failed to load user data: $e';
+        debugPrint('[AuthProvider] CRITICAL ERROR loading user data: $e');
+        debugPrint('[AuthProvider] Error type: ${e.runtimeType}');
+        debugPrint('[AuthProvider] Stack trace: ${StackTrace.current}');
+        
+        // Log to Crashlytics with user context
+        CrashlyticsService.setUserContext();
+        CrashlyticsService.recordAuthError(
+          e,
+          StackTrace.current,
+          userId: _currentUser?.uid,
+          email: _currentUser?.email,
+          action: 'load_user_data',
+        );
+        
+        // Set a user-friendly error message
+        _error = 'Unable to load your account data. Please try restarting the app or contact support if the issue persists.';
+        
+        // Don't crash the app - set userData to null so user can still access login
+        _userData = null;
         notifyListeners();
       }
     }
@@ -211,7 +258,7 @@ class AuthProvider extends ChangeNotifier {
     required String userRole,
   }) async {
     _setLoading(true);
-    _clearError();
+    clearError();
     
     try {
       await _authService.signUpWithEmailAndPassword(
@@ -248,7 +295,7 @@ class AuthProvider extends ChangeNotifier {
     required String password,
   }) async {
     _setLoading(true);
-    _clearError(); // Clear any previous errors
+    clearError(); // Clear any previous errors
     
     try {
       await _authService.signInWithEmailAndPassword(
@@ -299,7 +346,7 @@ class AuthProvider extends ChangeNotifier {
     if (_currentUser == null) return false;
     
     _setLoading(true);
-    _clearError();
+    clearError();
     
     try {
       await _authService.updateUserProfile(
@@ -329,14 +376,5 @@ class AuthProvider extends ChangeNotifier {
   void _setError(String error) {
     _error = error;
     notifyListeners();
-  }
-
-  void _clearError() {
-    _error = null;
-    notifyListeners();
-  }
-
-  void clearError() {
-    _clearError();
   }
 } 

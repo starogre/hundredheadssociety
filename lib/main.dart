@@ -1,5 +1,7 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:provider/provider.dart';
 import 'firebase_options.dart';
 import 'providers/auth_provider.dart';
@@ -16,12 +18,26 @@ import 'screens/email_verification_screen.dart';
 import 'theme/app_theme.dart';
 
 import 'screens/profile_screen.dart';
+import 'screens/weekly_sessions_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  
+  // Initialize Firebase
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
+  
+  // Initialize Crashlytics
+  FlutterError.onError = (errorDetails) {
+    FirebaseCrashlytics.instance.recordFlutterFatalError(errorDetails);
+  };
+  
+  // Pass all uncaught asynchronous errors to Crashlytics
+  PlatformDispatcher.instance.onError = (error, stack) {
+    FirebaseCrashlytics.instance.recordError(error, stack, fatal: true);
+    return true;
+  };
   
   // Initialize push notification service
   await PushNotificationService().initialize();
@@ -34,6 +50,11 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final navigatorKey = GlobalKey<NavigatorState>();
+    
+    // Set the navigator key for push notification service
+    PushNotificationService().setNavigatorKey(navigatorKey);
+    
     return MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => AuthProvider()),
@@ -43,6 +64,7 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => ModelProvider()),
       ],
       child: MaterialApp(
+        navigatorKey: navigatorKey,
         title: '100 Heads Society',
         theme: AppTheme.lightTheme,
         routes: {
@@ -50,6 +72,7 @@ class MyApp extends StatelessWidget {
             final userId = ModalRoute.of(context)!.settings.arguments as String;
             return ProfileScreen(userId: userId);
           },
+          '/weekly-sessions': (context) => const WeeklySessionsScreen(),
         },
         home: FutureBuilder(
           future: Firebase.initializeApp(
@@ -94,6 +117,55 @@ class MyApp extends StatelessWidget {
             // Firebase initialized successfully, show the app
             return Consumer<AuthProvider>(
               builder: (context, authProvider, child) {
+                // Handle AuthProvider errors
+                if (authProvider.error != null) {
+                  return Scaffold(
+                    backgroundColor: AppColors.cream,
+                    body: Center(
+                      child: Padding(
+                        padding: const EdgeInsets.all(24),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.warning, size: 64, color: AppColors.rustyOrange),
+                            const SizedBox(height: 16),
+                            const Text(
+                              'Authentication Error',
+                              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                            ),
+                            const SizedBox(height: 16),
+                            Text(
+                              authProvider.error!,
+                              style: const TextStyle(fontSize: 16),
+                              textAlign: TextAlign.center,
+                            ),
+                            const SizedBox(height: 24),
+                            ElevatedButton(
+                              onPressed: () {
+                                // Clear error and try to reinitialize
+                                authProvider.clearError();
+                              },
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: AppColors.forestGreen,
+                                foregroundColor: Colors.white,
+                              ),
+                              child: const Text('Try Again'),
+                            ),
+                            const SizedBox(height: 12),
+                            TextButton(
+                              onPressed: () {
+                                // Force logout and show login screen
+                                authProvider.signOut();
+                              },
+                              child: const Text('Sign Out and Try Again'),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  );
+                }
+                
                 if (!authProvider.isInitialized || authProvider.isLoading) {
                   return const SplashScreen();
                 }

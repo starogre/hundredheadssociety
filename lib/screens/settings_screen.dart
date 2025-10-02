@@ -11,6 +11,7 @@ import 'model_management_screen.dart';
 import 'test_notifications_screen.dart';
 import 'push_notifications_settings_screen.dart';
 import 'user_data_repair_screen.dart';
+import 'rsvp_debug_screen.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
@@ -60,6 +61,18 @@ class SettingsScreen extends StatelessWidget {
                   onTap: () {
                     Navigator.of(context).push(
                       MaterialPageRoute(builder: (context) => const UserDataRepairScreen()),
+                    );
+                  },
+                ),
+              // Show RSVP Debug Tools for admins only
+              if (isAdmin)
+                ListTile(
+                  leading: const Icon(Icons.bug_report),
+                  title: const Text('RSVP Debug Tools'),
+                  subtitle: const Text('Test and debug RSVP functionality'),
+                  onTap: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(builder: (context) => const RSVPDebugScreen()),
                     );
                   },
                 ),
