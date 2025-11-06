@@ -3,11 +3,10 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import 'package:photo_manager/photo_manager.dart';
+import 'package:wechat_assets_picker/wechat_assets_picker.dart';
 import '../providers/portrait_provider.dart';
 import '../theme/app_theme.dart';
 import '../providers/auth_provider.dart';
-import '../widgets/multi_image_picker_gallery.dart';
-import '../widgets/bulk_image_grid_picker.dart';
 import '../widgets/model_dropdown.dart';
 import '../services/portrait_service.dart';
 
@@ -83,58 +82,93 @@ class _AddPortraitScreenState extends State<AddPortraitScreen> {
   }
 
   Future<void> _pickBulkImages() async {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Opening image picker...')),
-    );
-    
-    final result = await Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (context) => BulkImageGridPicker(
-          maxSelection: _maxBulkCount,
-        ),
-      ),
-    );
-    
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Picker returned: ${result?.length ?? 0} images')),
-    );
-    
-    if (result != null && result is List<AssetEntity> && result.isNotEmpty) {
-      final files = await Future.wait(result.map((a) => a.file).toList());
-      final validFiles = files.whereType<File>().toList();
+    try {
+      // Request permission first
+      final PermissionState permission = await PhotoManager.requestPermissionExtend();
       
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Valid files: ${validFiles.length}')),
+      if (!permission.isAuth) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Photo access permission denied. Please enable it in settings.'),
+              duration: Duration(seconds: 3),
+            ),
+          );
+          // Open app settings
+          PhotoManager.openSetting();
+        }
+        return;
+      }
+      
+      // Use wechat_assets_picker for better UX
+      final List<AssetEntity>? result = await AssetPicker.pickAssets(
+        context,
+        pickerConfig: AssetPickerConfig(
+          maxAssets: _maxBulkCount,
+          requestType: RequestType.image,
+          selectedAssets: [],
+          themeColor: AppColors.forestGreen,
+          textDelegate: const EnglishAssetPickerTextDelegate(),
+          sortPathsByModifiedDate: true,
+          // Allow access to all albums
+          pathNameBuilder: (AssetPathEntity path) {
+            return path.name;
+          },
+        ),
       );
       
-      if (validFiles.isNotEmpty) {
-        // Find the next available week numbers without gaps
-        final portraitService = PortraitService();
-        final existingPortraits = await portraitService.getUserPortraits(widget.userId).first;
-        final existingWeeks = existingPortraits.map((p) => p.weekNumber).toSet();
+      if (result != null && result.isNotEmpty) {
+        // Convert AssetEntity to File
+        final files = await Future.wait(
+          result.map((asset) async {
+            final file = await asset.file;
+            return file;
+          }),
+        );
+        final validFiles = files.whereType<File>().toList();
         
-        // Find the next available week numbers
-        final nextWeeks = <int>[];
-        int weekToCheck = 1;
-        while (nextWeeks.length < validFiles.length) {
-          if (!existingWeeks.contains(weekToCheck)) {
-            nextWeeks.add(weekToCheck);
+        if (validFiles.isNotEmpty) {
+          // Find the next available week numbers without gaps
+          final portraitService = PortraitService();
+          final existingPortraits = await portraitService.getUserPortraits(widget.userId).first;
+          final existingWeeks = existingPortraits.map((p) => p.weekNumber).toSet();
+          
+          // Find the next available week numbers
+          final nextWeeks = <int>[];
+          int weekToCheck = 1;
+          while (nextWeeks.length < validFiles.length) {
+            if (!existingWeeks.contains(weekToCheck)) {
+              nextWeeks.add(weekToCheck);
+            }
+            weekToCheck++;
           }
-          weekToCheck++;
+          
+          setState(() {
+            _isBulkMode = true;
+            _bulkImages = validFiles;
+            _bulkDescriptionControllers = List.generate(_bulkImages.length, (_) => TextEditingController());
+            _bulkModelIds = List.generate(_bulkImages.length, (_) => null);
+            _bulkModelNames = List.generate(_bulkImages.length, (_) => null);
+            _bulkWeekNumbers = nextWeeks;
+          });
+          
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('${_bulkImages.length} images selected'),
+                backgroundColor: AppColors.forestGreen,
+              ),
+            );
+          }
         }
-        
-        setState(() {
-          _isBulkMode = true; // Set bulk mode to true when images are selected
-          _bulkImages = validFiles;
-    
-          _bulkDescriptionControllers = List.generate(_bulkImages.length, (_) => TextEditingController());
-          _bulkModelIds = List.generate(_bulkImages.length, (_) => null);
-          _bulkModelNames = List.generate(_bulkImages.length, (_) => null);
-          _bulkWeekNumbers = nextWeeks;
-        });
-        
+      }
+    } catch (e) {
+      if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Bulk mode activated with ${_bulkImages.length} images')),
+          SnackBar(
+            content: Text('Error selecting images: $e'),
+            backgroundColor: Colors.red,
+          ),
         );
       }
     }
