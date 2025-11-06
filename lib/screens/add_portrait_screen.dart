@@ -67,9 +67,14 @@ class _AddPortraitScreenState extends State<AddPortraitScreen> {
   int get _maxBulkCount {
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     final completed = authProvider.userData?.portraitsCompleted ?? 0;
-    final remaining = 100 - completed;
-    // Ensure at least 1, max 100
-    return remaining.clamp(1, 100);
+    // Calculate remaining portraits in current set of 100
+    // e.g., if completed = 97, can select 3 more to reach 100
+    // if completed = 100, can select 100 more to reach 200
+    // if completed = 157, can select 43 more to reach 200
+    final nextMilestone = ((completed ~/ 100) + 1) * 100;
+    final remaining = nextMilestone - completed;
+    // Ensure at least 1 (in case of any calculation issues)
+    return remaining > 0 ? remaining : 100;
   }
 
   Future<void> _pickImage(ImageSource source) async {
@@ -85,23 +90,8 @@ class _AddPortraitScreenState extends State<AddPortraitScreen> {
 
   Future<void> _pickBulkImages() async {
     try {
-      // Check if user has room for more portraits
+      // Get max count for current milestone
       final maxCount = _maxBulkCount;
-      final authProvider = Provider.of<AuthProvider>(context, listen: false);
-      final completed = authProvider.userData?.portraitsCompleted ?? 0;
-      
-      if (completed >= 100) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('You have already completed all 100 portraits!'),
-              backgroundColor: AppColors.rustyOrange,
-              duration: Duration(seconds: 3),
-            ),
-          );
-        }
-        return;
-      }
       
       // Request permission first
       final PermissionState permission = await PhotoManager.requestPermissionExtend();
