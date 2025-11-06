@@ -67,7 +67,9 @@ class _AddPortraitScreenState extends State<AddPortraitScreen> {
   int get _maxBulkCount {
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     final completed = authProvider.userData?.portraitsCompleted ?? 0;
-    return 100 - completed;
+    final remaining = 100 - completed;
+    // Ensure at least 1, max 100
+    return remaining.clamp(1, 100);
   }
 
   Future<void> _pickImage(ImageSource source) async {
@@ -83,6 +85,24 @@ class _AddPortraitScreenState extends State<AddPortraitScreen> {
 
   Future<void> _pickBulkImages() async {
     try {
+      // Check if user has room for more portraits
+      final maxCount = _maxBulkCount;
+      final authProvider = Provider.of<AuthProvider>(context, listen: false);
+      final completed = authProvider.userData?.portraitsCompleted ?? 0;
+      
+      if (completed >= 100) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('You have already completed all 100 portraits!'),
+              backgroundColor: AppColors.rustyOrange,
+              duration: Duration(seconds: 3),
+            ),
+          );
+        }
+        return;
+      }
+      
       // Request permission first
       final PermissionState permission = await PhotoManager.requestPermissionExtend();
       
@@ -104,7 +124,7 @@ class _AddPortraitScreenState extends State<AddPortraitScreen> {
       final List<AssetEntity>? result = await AssetPicker.pickAssets(
         context,
         pickerConfig: AssetPickerConfig(
-          maxAssets: _maxBulkCount,
+          maxAssets: maxCount,
           requestType: RequestType.image,
           selectedAssets: [],
           themeColor: AppColors.forestGreen,
