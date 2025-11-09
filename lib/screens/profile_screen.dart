@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../providers/auth_provider.dart';
 import '../providers/portrait_provider.dart';
@@ -366,7 +367,7 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                                       child: CircularProgressIndicator(strokeWidth: 2),
                                     ),
                                     errorWidget: (context, url, error) => Center(
-                                      child: Icon(Icons.error, color: Colors.red, size: 32),
+                                      child: PhosphorIcon(PhosphorIconsDuotone.warningCircle, color: Colors.red, size: 32),
                                     ),
                                   ),
                                 ),
@@ -487,7 +488,7 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                                         },
                                         child: Row(
                                           children: [
-                                            Icon(FontAwesomeIcons.instagram, color: AppColors.forestGreen, size: 20),
+                                            PhosphorIcon(PhosphorIconsDuotone.instagramLogo, color: AppColors.forestGreen, size: 20),
                                             const SizedBox(width: 6),
                                             Expanded(
                                               child: Text(
@@ -524,7 +525,7 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                                     },
                                     child: Row(
                                       children: [
-                                        Icon(Icons.email, color: AppColors.forestGreen, size: 20),
+                                        PhosphorIcon(PhosphorIconsDuotone.envelope, color: AppColors.forestGreen, size: 20),
                                         const SizedBox(width: 6),
                                         Expanded(
                                           child: Text(
@@ -588,8 +589,8 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                               children: [
                                 Row(
                                   children: [
-                                    Icon(
-                                      Icons.brush,
+                                    PhosphorIcon(
+                                      PhosphorIconsDuotone.paintBrush,
                                       color: Colors.orange.shade700,
                                       size: 24,
                                     ),
@@ -622,7 +623,7 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                                     ),
                                     child: Row(
                                       children: [
-                                        Icon(Icons.hourglass_top, color: Colors.orange.shade700),
+                                        PhosphorIcon(PhosphorIconsDuotone.hourglass, color: Colors.orange.shade700),
                                         const SizedBox(width: 8),
                                         const Expanded(
                                           child: Text(
@@ -741,8 +742,8 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                             children: [
                               Row(
                                 children: [
-                                  Icon(
-                                    Icons.info_outline,
+                                  PhosphorIcon(
+                                    PhosphorIconsDuotone.info,
                                     color: Colors.grey.shade600,
                                     size: 20,
                                   ),
@@ -800,8 +801,8 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                               children: [
                                 Row(
                                   children: [
-                                    Icon(
-                                      Icons.emoji_events,
+                                    PhosphorIcon(
+                                      PhosphorIconsDuotone.trophy,
                                       color: Colors.blue.shade700,
                                       size: 24,
                                     ),
@@ -858,8 +859,8 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                                     ),
                                     child: Row(
                                       children: [
-                                        Icon(
-                                          Icons.trending_up,
+                                        PhosphorIcon(
+                                          PhosphorIconsDuotone.trendUp,
                                           color: Colors.grey.shade600,
                                           size: 16,
                                         ),
@@ -910,11 +911,11 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                           dividerColor: AppColors.forestGreen.withValues(alpha: 0.2),
                           tabs: const [
                             Tab(
-                              icon: Icon(Icons.photo_library),
+                              icon: PhosphorIcon(PhosphorIconsDuotone.images),
                               text: 'Portraits',
                             ),
                             Tab(
-                              icon: Icon(Icons.emoji_events),
+                              icon: PhosphorIcon(PhosphorIconsDuotone.trophy),
                               text: 'Awards',
                             ),
                           ],
@@ -963,8 +964,8 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                               padding: EdgeInsets.all(32.0),
                               child: Column(
                                 children: [
-                                  Icon(
-                                    Icons.photo_library,
+                                  PhosphorIcon(
+                                    PhosphorIconsDuotone.images,
                                     size: 64,
                                     color: AppColors.forestGreen,
                                   ),
@@ -1050,8 +1051,8 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                                     ),
                                     errorWidget: (context, url, error) => Container(
                                       color: Colors.grey[200],
-                                      child: const Icon(
-                                        Icons.error,
+                                      child: PhosphorIcon(
+                                        PhosphorIconsDuotone.warningCircle,
                                         color: Colors.grey,
                                         size: 24,
                                       ),
@@ -1249,7 +1250,7 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                   Navigator.of(context).pop();
                   _pickAndUploadProfileImage();
                 },
-                icon: const Icon(Icons.camera_alt, size: 18),
+                icon: PhosphorIcon(PhosphorIconsDuotone.camera, size: 18),
                 label: const Text('Change Picture'),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.forestGreen,
@@ -1289,7 +1290,7 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                   Navigator.of(context).pop();
                   _editName();
                 },
-                icon: const Icon(Icons.edit, size: 18),
+                icon: PhosphorIcon(PhosphorIconsDuotone.pencil, size: 18),
                 label: const Text('Edit Name'),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.forestGreen,
@@ -1317,7 +1318,7 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                 ),
                 child: Row(
                   children: [
-                    Icon(FontAwesomeIcons.instagram, color: AppColors.forestGreen, size: 16),
+                    PhosphorIcon(PhosphorIconsDuotone.instagramLogo, color: AppColors.forestGreen, size: 16),
                     const SizedBox(width: 8),
                     Text(
                       _userData!.instagram?.isNotEmpty == true
@@ -1350,7 +1351,7 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                     await _loadUserData();
                   }
                 },
-                icon: const Icon(Icons.edit, size: 18),
+                icon: PhosphorIcon(PhosphorIconsDuotone.pencil, size: 18),
                 label: const Text('Edit Instagram'),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.forestGreen,
@@ -1378,7 +1379,7 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                 ),
                 child: Row(
                   children: [
-                    Icon(Icons.email, color: AppColors.forestGreen, size: 16),
+                    PhosphorIcon(PhosphorIconsDuotone.envelope, color: AppColors.forestGreen, size: 16),
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
@@ -1409,7 +1410,7 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                     await _loadUserData();
                   }
                 },
-                icon: const Icon(Icons.edit, size: 18),
+                icon: PhosphorIcon(PhosphorIconsDuotone.pencil, size: 18),
                 label: const Text('Edit Email'),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.forestGreen,
