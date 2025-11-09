@@ -306,8 +306,8 @@ class _CommunityScreenState extends State<CommunityScreen>
           padding: const EdgeInsets.all(16),
           child: TextField(
             decoration: InputDecoration(
-              hintText: 'Filter by model name or artist...',
-              prefixIcon: PhosphorIcon(PhosphorIconsDuotone.funnelSimple),
+              hintText: 'Search for artist or model',
+              prefixIcon: PhosphorIcon(PhosphorIconsDuotone.magnifyingGlass),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(25),
               ),
