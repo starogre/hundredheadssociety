@@ -155,13 +155,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
           ];
           navigationItems = [
             BottomNavigationBarItem(
-              icon: PhosphorIcon(PhosphorIconsRegular.users),
-              activeIcon: PhosphorIcon(PhosphorIconsDuotone.users),
+              icon: PhosphorIcon(PhosphorIconsDuotone.users),
               label: 'Community',
             ),
             BottomNavigationBarItem(
-              icon: PhosphorIcon(PhosphorIconsRegular.user),
-              activeIcon: PhosphorIcon(PhosphorIconsDuotone.user),
+              icon: PhosphorIcon(PhosphorIconsDuotone.user),
               label: 'Profile',
             ),
           ];
@@ -175,23 +173,19 @@ class _DashboardScreenState extends State<DashboardScreen> {
           ];
           navigationItems = [
             BottomNavigationBarItem(
-              icon: PhosphorIcon(PhosphorIconsRegular.squaresFour),
-              activeIcon: PhosphorIcon(PhosphorIconsDuotone.squaresFour),
+              icon: PhosphorIcon(PhosphorIconsDuotone.squaresFour),
               label: 'My Heads',
             ),
             BottomNavigationBarItem(
-              icon: PhosphorIcon(PhosphorIconsRegular.users),
-              activeIcon: PhosphorIcon(PhosphorIconsDuotone.users),
+              icon: PhosphorIcon(PhosphorIconsDuotone.users),
               label: 'Community',
             ),
             BottomNavigationBarItem(
-              icon: PhosphorIcon(PhosphorIconsRegular.user),
-              activeIcon: PhosphorIcon(PhosphorIconsDuotone.user),
+              icon: PhosphorIcon(PhosphorIconsDuotone.user),
               label: 'Profile',
             ),
             BottomNavigationBarItem(
-              icon: PhosphorIcon(PhosphorIconsRegular.calendar),
-              activeIcon: PhosphorIcon(PhosphorIconsDuotone.calendar),
+              icon: PhosphorIcon(PhosphorIconsDuotone.calendar),
               label: 'Weekly Sessions',
             ),
           ];
@@ -219,7 +213,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             appBarTitle = userData?.name ?? 'Profile';
             appBarActions.add(
               IconButton(
-                icon: PhosphorIcon(PhosphorIconsRegular.gear),
+                icon: PhosphorIcon(PhosphorIconsDuotone.gear),
                 onPressed: () {
                   Navigator.of(context).push(
                     MaterialPageRoute(builder: (context) => const SettingsScreen()),
@@ -237,7 +231,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             appBarTitle = userData?.name ?? 'Profile';
             appBarActions.add(
               IconButton(
-                icon: PhosphorIcon(PhosphorIconsRegular.gear),
+                icon: PhosphorIcon(PhosphorIconsDuotone.gear),
                 onPressed: () {
                   Navigator.of(context).push(
                     MaterialPageRoute(builder: (context) => const SettingsScreen()),
@@ -276,7 +270,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   ? FloatingActionButton(
                       onPressed: () => _showAddPortraitDialog(context, authProvider, (authProvider.userData?.portraitsCompleted ?? 0) + 1),
                       backgroundColor: AppColors.rustyOrange,
-                      child: PhosphorIcon(PhosphorIconsBold.camera, color: Colors.white),
+                      child: PhosphorIcon(PhosphorIconsDuotone.camera, color: Colors.white, size: 28),
                     )
                   : null,
         );
