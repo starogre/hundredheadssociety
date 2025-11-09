@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'dart:async';
 import '../services/user_service.dart';
 import '../services/portrait_service.dart';
@@ -99,7 +100,7 @@ class _CommunityScreenState extends State<CommunityScreen>
             controller: _searchController,
             decoration: InputDecoration(
               hintText: 'Search members...',
-              prefixIcon: const Icon(Icons.search),
+              prefixIcon: PhosphorIcon(PhosphorIconsDuotone.magnifyingGlass),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(25),
               ),
@@ -138,8 +139,8 @@ class _CommunityScreenState extends State<CommunityScreen>
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(
-                        Icons.people,
+                      PhosphorIcon(
+                        PhosphorIconsDuotone.users,
                         size: 64,
                         color: Colors.grey,
                       ),
@@ -306,7 +307,7 @@ class _CommunityScreenState extends State<CommunityScreen>
           child: TextField(
             decoration: InputDecoration(
               hintText: 'Filter by model name or artist...',
-              prefixIcon: const Icon(Icons.filter_alt),
+              prefixIcon: PhosphorIcon(PhosphorIconsDuotone.funnelSimple),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(25),
               ),
@@ -356,8 +357,8 @@ class _CommunityScreenState extends State<CommunityScreen>
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(
-                        Icons.photo_library,
+                      PhosphorIcon(
+                        PhosphorIconsDuotone.images,
                         size: 64,
                         color: AppColors.forestGreen.withValues(alpha: 0.5),
                       ),
@@ -439,8 +440,8 @@ class _CommunityScreenState extends State<CommunityScreen>
                                   ),
                                   errorWidget: (context, url, error) => Container(
                                     color: AppColors.forestGreen.withValues(alpha: 0.1),
-                                    child: Icon(
-                                      Icons.error,
+                                    child: PhosphorIcon(
+                                      PhosphorIconsDuotone.warningCircle,
                                       color: AppColors.rustyOrange,
                                     ),
                                   ),
@@ -577,8 +578,8 @@ class _CommunityScreenState extends State<CommunityScreen>
                                                                         color: AppColors.forestGreen,
                                                                         borderRadius: BorderRadius.circular(12.5),
                                                                       ),
-                                                                      child: const Icon(
-                                                                        Icons.person,
+                                                                      child: PhosphorIcon(
+                                                                        PhosphorIconsDuotone.user,
                                                                         color: Colors.white,
                                                                         size: 14,
                                                                       ),
