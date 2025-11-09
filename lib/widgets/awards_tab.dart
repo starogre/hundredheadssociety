@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
 import '../models/user_model.dart';
 import '../services/award_service.dart';
 import '../services/portrait_service.dart';
@@ -217,7 +218,7 @@ class _AwardsTabState extends State<AwardsTab> {
           child: _buildSummaryCard(
             'Portrait Trophies',
             _trophyCount.toString(),
-            Icons.emoji_events,
+            PhosphorIconsDuotone.trophy,
             AppColors.rustyOrange,
           ),
         ),
@@ -226,7 +227,7 @@ class _AwardsTabState extends State<AwardsTab> {
           child: _buildSummaryCard(
             'Community Exp',
             _communityExp.toString(),
-            Icons.star,
+            PhosphorIconsDuotone.star,
             AppColors.forestGreen,
           ),
         ),
@@ -312,8 +313,8 @@ class _AwardsTabState extends State<AwardsTab> {
                       color: AppColors.forestGreen,
                       borderRadius: BorderRadius.circular(20),
                     ),
-                    child: const Icon(
-                      Icons.add,
+                    child: PhosphorIcon(
+                      PhosphorIconsDuotone.plus,
                       color: AppColors.white,
                       size: 20,
                     ),
@@ -358,8 +359,8 @@ class _AwardsTabState extends State<AwardsTab> {
                         const SizedBox(width: 6),
                         GestureDetector(
                           onTap: () => _removeMerchItem(item),
-                          child: const Icon(
-                            Icons.close,
+                          child: PhosphorIcon(
+                            PhosphorIconsDuotone.x,
                             size: 16,
                             color: AppColors.rustyOrange,
                           ),
@@ -378,12 +379,12 @@ class _AwardsTabState extends State<AwardsTab> {
   IconData _getMerchIcon(String item) {
     switch (item.toLowerCase()) {
       case 't-shirt':
-        return Icons.checkroom;
+        return PhosphorIconsDuotone.tShirt;
       case 'tator tot pin':
       case 'hydra pin':
-        return Icons.push_pin;
+        return PhosphorIconsDuotone.pushPin;
       default:
-        return Icons.shopping_bag;
+        return PhosphorIconsDuotone.shoppingBag;
     }
   }
 
