@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
 import '../providers/auth_provider.dart';
 import '../providers/portrait_provider.dart';
 import '../providers/notification_provider.dart';
@@ -153,12 +154,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
             ProfileScreen(userId: authProvider.currentUser!.uid),
           ];
           navigationItems = [
-            const BottomNavigationBarItem(
-              icon: Icon(Icons.people),
+            BottomNavigationBarItem(
+              icon: PhosphorIcon(PhosphorIconsRegular.users),
+              activeIcon: PhosphorIcon(PhosphorIconsDuotone.users),
               label: 'Community',
             ),
-            const BottomNavigationBarItem(
-              icon: Icon(Icons.person),
+            BottomNavigationBarItem(
+              icon: PhosphorIcon(PhosphorIconsRegular.user),
+              activeIcon: PhosphorIcon(PhosphorIconsDuotone.user),
               label: 'Profile',
             ),
           ];
@@ -171,20 +174,24 @@ class _DashboardScreenState extends State<DashboardScreen> {
             const WeeklySessionsScreen(),
           ];
           navigationItems = [
-            const BottomNavigationBarItem(
-              icon: Icon(Icons.dashboard),
+            BottomNavigationBarItem(
+              icon: PhosphorIcon(PhosphorIconsRegular.squaresFour),
+              activeIcon: PhosphorIcon(PhosphorIconsDuotone.squaresFour),
               label: 'My Heads',
             ),
-            const BottomNavigationBarItem(
-              icon: Icon(Icons.people),
+            BottomNavigationBarItem(
+              icon: PhosphorIcon(PhosphorIconsRegular.users),
+              activeIcon: PhosphorIcon(PhosphorIconsDuotone.users),
               label: 'Community',
             ),
-            const BottomNavigationBarItem(
-              icon: Icon(Icons.person),
+            BottomNavigationBarItem(
+              icon: PhosphorIcon(PhosphorIconsRegular.user),
+              activeIcon: PhosphorIcon(PhosphorIconsDuotone.user),
               label: 'Profile',
             ),
-            const BottomNavigationBarItem(
-              icon: Icon(Icons.event),
+            BottomNavigationBarItem(
+              icon: PhosphorIcon(PhosphorIconsRegular.calendar),
+              activeIcon: PhosphorIcon(PhosphorIconsDuotone.calendar),
               label: 'Weekly Sessions',
             ),
           ];
@@ -212,7 +219,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             appBarTitle = userData?.name ?? 'Profile';
             appBarActions.add(
               IconButton(
-                icon: const Icon(Icons.settings),
+                icon: PhosphorIcon(PhosphorIconsRegular.gear),
                 onPressed: () {
                   Navigator.of(context).push(
                     MaterialPageRoute(builder: (context) => const SettingsScreen()),
@@ -230,7 +237,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             appBarTitle = userData?.name ?? 'Profile';
             appBarActions.add(
               IconButton(
-                icon: const Icon(Icons.settings),
+                icon: PhosphorIcon(PhosphorIconsRegular.gear),
                 onPressed: () {
                   Navigator.of(context).push(
                     MaterialPageRoute(builder: (context) => const SettingsScreen()),
@@ -269,7 +276,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   ? FloatingActionButton(
                       onPressed: () => _showAddPortraitDialog(context, authProvider, (authProvider.userData?.portraitsCompleted ?? 0) + 1),
                       backgroundColor: AppColors.rustyOrange,
-                      child: const Icon(Icons.add_a_photo),
+                      child: PhosphorIcon(PhosphorIconsBold.camera, color: Colors.white),
                     )
                   : null,
         );
@@ -340,7 +347,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(Icons.error, size: 48, color: AppColors.rustyOrange),
+                        PhosphorIcon(PhosphorIconsDuotone.warningCircle, size: 48, color: AppColors.rustyOrange),
                         const SizedBox(height: 16),
                         Text(
                           'Error loading portraits',
@@ -391,7 +398,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(Icons.error, size: 48, color: AppColors.rustyOrange),
+                        PhosphorIcon(PhosphorIconsDuotone.warningCircle, size: 48, color: AppColors.rustyOrange),
                         const SizedBox(height: 16),
                         const Text(
                           'Error processing portraits',

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
 
 class AppColors {
   static const cream = Color(0xFFFBF6E9);
@@ -19,6 +20,46 @@ class AppFonts {
   // 2. Add them to assets/fonts/
   // 3. Update pubspec.yaml with the new font family
   // 4. Change 'Satoshi' above to the new font family name
+}
+
+class AppIcons {
+  // Centralized icon styling - Phosphor Icons with duotone support
+  
+  // Default icon style (can be: regular, thin, light, bold, fill, duotone)
+  static const PhosphorIconsStyle defaultStyle = PhosphorIconsStyle.duotone;
+  
+  // Default icon size
+  static const double defaultSize = 24.0;
+  static const double largeSize = 32.0;
+  static const double smallSize = 20.0;
+  
+  // Helper method to create duotone icons with app colors
+  static PhosphorIcon duotone(
+    PhosphorIconData icon, {
+    Color? primaryColor,
+    Color? secondaryColor,
+    double? size,
+  }) {
+    return PhosphorIcon(
+      icon,
+      color: primaryColor ?? AppColors.forestGreen,
+      duotoneSecondaryColor: secondaryColor ?? AppColors.rustyOrange.withOpacity(0.3),
+      size: size ?? defaultSize,
+    );
+  }
+  
+  // Helper for single-color icons
+  static PhosphorIcon regular(
+    PhosphorIconData icon, {
+    Color? color,
+    double? size,
+  }) {
+    return PhosphorIcon(
+      icon,
+      color: color ?? AppColors.forestGreen,
+      size: size ?? defaultSize,
+    );
+  }
 }
 
 class AppTheme {
