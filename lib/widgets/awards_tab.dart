@@ -251,7 +251,7 @@ class _AwardsTabState extends State<AwardsTab> {
       ),
       child: Column(
         children: [
-          Icon(icon, color: color, size: 32),
+          PhosphorIcon(icon, color: color, size: 32),
           const SizedBox(height: 8),
           Text(
             value,
@@ -346,7 +346,7 @@ class _AwardsTabState extends State<AwardsTab> {
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(_getMerchIcon(item), size: 16, color: AppColors.forestGreen),
+                      PhosphorIcon(_getMerchIcon(item), size: 16, color: AppColors.forestGreen),
                       const SizedBox(width: 6),
                       Text(
                         item,
