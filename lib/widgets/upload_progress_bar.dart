@@ -74,7 +74,7 @@ class UploadProgressBar extends StatelessWidget {
                             child: LinearProgressIndicator(
                               value: uploadService.progress,
                               backgroundColor: Colors.white.withValues(alpha: 0.3),
-                              valueColor: const AlwaysStoppedAnimation<Color>(AppColors.mintGreen),
+                              valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
                               minHeight: 4,
                             ),
                           ),

@@ -111,7 +111,7 @@ class _AddPortraitScreenState extends State<AddPortraitScreen> {
               duration: const Duration(seconds: 4),
               action: SnackBarAction(
                 label: 'Settings',
-                textColor: AppColors.mintGreen,
+                textColor: Colors.white,
                 onPressed: () => PhotoManager.openSetting(),
               ),
             ),
@@ -128,7 +128,7 @@ class _AddPortraitScreenState extends State<AddPortraitScreen> {
               duration: const Duration(seconds: 3),
               action: SnackBarAction(
                 label: 'Open Settings',
-                textColor: AppColors.mintGreen,
+                textColor: Colors.white,
                 onPressed: () => PhotoManager.openSetting(),
               ),
             ),
@@ -239,7 +239,7 @@ class _AddPortraitScreenState extends State<AddPortraitScreen> {
             onPressed: () => Navigator.of(context).pop(),
             child: Text(
               'Continue',
-              style: TextStyle(color: AppColors.mintGreen),
+              style: TextStyle(color: AppColors.forestGreen),
             ),
           ),
         ],
