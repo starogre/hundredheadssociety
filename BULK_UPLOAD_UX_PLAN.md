@@ -154,14 +154,29 @@ Portrait #3 → Week 3
 [Auto-assign weeks] [Custom week assignment]
 ```
 
-### 4. Upload Progress Improvements
+### 4. Upload Progress Improvements (Instagram-Style Background Upload)
 
 **Current:**
 - Shows "Uploading X of Y"
 - Linear progress bar
+- User stuck on upload screen
 
 **Proposed:**
 ```
+┌─────────────────────────────────────┐
+│  ⏳ Uploading 5 of 12 portraits... ▼ │  ← Persistent top bar
+│  ████████░░░░░░░░  42%              │
+└─────────────────────────────────────┘
+
+   [User can navigate anywhere in app]
+
+On "My Heads" (Profile) screen:
+┌─────────────────────────────────────┐
+│  ⏳ Uploading 5 of 12 portraits... ▼ │  ← Same bar follows
+│  ████████░░░░░░░░  42%              │
+└─────────────────────────────────────┘
+
+Tap to expand:
 ┌─────────────────────────────────────┐
 │  Uploading 5 of 12 portraits...      │
 ├─────────────────────────────────────┤
@@ -180,10 +195,16 @@ Portrait #3 → Week 3
 ```
 
 Features:
+- ✅ **Persistent progress bar at top of screen**
+- ✅ **User can navigate away while uploading**
+- ✅ **Progress bar visible on Add Portrait AND Profile screens**
+- ✅ **Tap to expand for detailed view**
 - ✅ Show individual upload status
 - ✅ Clear visual feedback
 - ✅ Option to cancel
-- ❌ Show which ones failed with retry option
+- ✅ Show which ones failed with retry option
+- ✅ Continue upload in background
+- ✅ Handle app backgrounding/foregrounding
 
 ### 5. Error Handling
 
@@ -237,6 +258,7 @@ if (hasSavedDraft) {
 2. ✅ Better preview grid layout
 3. ✅ "Select More" button to add additional images
 4. ✅ Quick edit modal for each image
+5. ✅ Background upload with persistent progress bar (Instagram-style)
 
 ### Phase 3: Nice to Have
 1. ⏳ Drag & reorder functionality
