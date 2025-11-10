@@ -576,14 +576,14 @@ class _AddPortraitScreenState extends State<AddPortraitScreen> {
                 : GridView.builder(
                     padding: const EdgeInsets.all(16),
                     gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 3,
-                      crossAxisSpacing: 8,
-                      mainAxisSpacing: 8,
-                      childAspectRatio: 1,
+                      crossAxisCount: 2,
+                      crossAxisSpacing: 12,
+                      mainAxisSpacing: 12,
+                      childAspectRatio: 0.75,
                     ),
                     itemCount: _bulkImages.length,
                     itemBuilder: (context, i) {
-                      return _buildImageThumbnail(i);
+                      return _buildImageCard(i);
                     },
                   ),
           ),
@@ -626,95 +626,145 @@ class _AddPortraitScreenState extends State<AddPortraitScreen> {
     );
   }
 
-  // Build individual image thumbnail with remove button and tap to edit
-  Widget _buildImageThumbnail(int index) {
-    return GestureDetector(
-      onTap: () => _editImageAtIndex(index),
-      child: Stack(
-        fit: StackFit.expand,
+  // Build individual image card with model selector
+  Widget _buildImageCard(int index) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey[300]!),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // Image
-          ClipRRect(
-            borderRadius: BorderRadius.circular(8),
-            child: Image.file(
-              _bulkImages[index],
-              fit: BoxFit.cover,
+          // Image thumbnail with badges
+          Expanded(
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                // Image
+                ClipRRect(
+                  borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
+                  child: Image.file(
+                    _bulkImages[index],
+                    fit: BoxFit.cover,
+                  ),
+                ),
+                // Gradient overlay
+                Container(
+                  decoration: BoxDecoration(
+                    borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [
+                        Colors.black.withValues(alpha: 0.4),
+                        Colors.transparent,
+                      ],
+                      stops: const [0.0, 0.5],
+                    ),
+                  ),
+                ),
+                // Number badge (top-left)
+                Positioned(
+                  top: 6,
+                  left: 6,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: AppColors.forestGreen,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(
+                      '${index + 1}',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ),
+                // Remove button (top-right)
+                Positioned(
+                  top: 6,
+                  right: 6,
+                  child: GestureDetector(
+                    onTap: () => _removeImageAtIndex(index),
+                    child: Container(
+                      padding: const EdgeInsets.all(4),
+                      decoration: BoxDecoration(
+                        color: Colors.red[700],
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.close,
+                        color: Colors.white,
+                        size: 16,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
-          // Gradient overlay for better visibility of badges
+          // Info section
           Container(
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(8),
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [
-                  Colors.black.withValues(alpha: 0.4),
-                  Colors.transparent,
-                  Colors.black.withValues(alpha: 0.4),
-                ],
-                stops: const [0.0, 0.3, 1.0],
-              ),
-            ),
-          ),
-          // Number badge (top-left)
-          Positioned(
-            top: 4,
-            left: 4,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              decoration: BoxDecoration(
-                color: AppColors.forestGreen,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Text(
-                '${index + 1}',
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 12,
-                  fontWeight: FontWeight.bold,
+            padding: const EdgeInsets.all(8),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Week number
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: AppColors.rustyOrange.withValues(alpha: 0.2),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: Text(
+                        'Week ${_bulkWeekNumbers[index]}',
+                        style: TextStyle(
+                          color: AppColors.rustyOrange,
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                    const Spacer(),
+                    // Edit icon
+                    GestureDetector(
+                      onTap: () => _editImageAtIndex(index),
+                      child: Icon(
+                        Icons.edit,
+                        size: 16,
+                        color: Colors.grey[600],
+                      ),
+                    ),
+                  ],
                 ),
-              ),
-            ),
-          ),
-          // Remove button (top-right)
-          Positioned(
-            top: 4,
-            right: 4,
-            child: GestureDetector(
-              onTap: () => _removeImageAtIndex(index),
-              child: Container(
-                padding: const EdgeInsets.all(4),
-                decoration: BoxDecoration(
-                  color: Colors.red[700],
-                  shape: BoxShape.circle,
+                const SizedBox(height: 8),
+                // Model selector
+                ModelDropdown(
+                  selectedModelId: _bulkModelIds[index],
+                  selectedModelName: _bulkModelNames[index],
+                  onModelSelected: (modelId, modelName) {
+                    setState(() {
+                      _bulkModelIds[index] = modelId;
+                      _bulkModelNames[index] = modelName;
+                    });
+                  },
                 ),
-                child: const Icon(
-                  Icons.close,
-                  color: Colors.white,
-                  size: 16,
-                ),
-              ),
-            ),
-          ),
-          // Week badge (bottom-right)
-          Positioned(
-            bottom: 4,
-            right: 4,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-              decoration: BoxDecoration(
-                color: AppColors.rustyOrange,
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Text(
-                'W${_bulkWeekNumbers[index]}',
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 10,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
+              ],
             ),
           ),
         ],
