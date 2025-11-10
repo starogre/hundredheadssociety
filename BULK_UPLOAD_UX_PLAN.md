@@ -248,10 +248,17 @@ if (hasSavedDraft) {
 
 ## 📋 Implementation Priority
 
-### Phase 1: Critical Bug Fix (Do First!)
-1. ✅ Fix limited photo permissions issue
-2. ✅ Test on Android 13+ with limited access
-3. ✅ Test on iOS 14+ with limited access
+### Phase 1: Critical Bug Fix (✅ COMPLETED - READY FOR TESTING!)
+1. ✅ Fix limited photo permissions issue - **DONE**
+2. ⏳ Test on Android 13+ with limited access - **NEEDS USER TESTING**
+3. ⏳ Test on iOS 14+ with limited access - **NEEDS USER TESTING**
+
+**Implementation Details:**
+- Updated `_pickBulkImages()` to handle `PermissionState.limited` explicitly
+- Added user-friendly SnackBar messages for all permission states
+- Added informational dialog explaining limited access
+- Continue to picker even with limited access (previously blocked)
+- See `LIMITED_PERMISSIONS_TESTING_GUIDE.md` for comprehensive testing instructions
 
 ### Phase 2: Essential UX (Next)
 1. ✅ Add remove button on each image thumbnail
