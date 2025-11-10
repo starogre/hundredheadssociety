@@ -11,6 +11,7 @@ import '../widgets/portrait_slot.dart';
 import '../widgets/add_portrait_dialog.dart';
 import '../widgets/portrait_details_dialog.dart';
 import '../widgets/notification_badge.dart';
+import '../widgets/upload_progress_bar.dart';
 import '../services/user_service.dart';
 import '../services/portrait_service.dart';
 import '../services/push_notification_service.dart';
@@ -248,6 +249,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
           appBar: AppBar(
             title: Text(appBarTitle),
             actions: appBarActions,
+            bottom: const PreferredSize(
+              preferredSize: Size.fromHeight(0),
+              child: UploadProgressBar(),
+            ),
           ),
           body: IndexedStack(
             index: _selectedIndex,

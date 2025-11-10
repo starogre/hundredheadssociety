@@ -9,6 +9,7 @@ import '../theme/app_theme.dart';
 import '../providers/auth_provider.dart';
 import '../widgets/model_dropdown.dart';
 import '../services/portrait_service.dart';
+import '../services/bulk_upload_service.dart';
 
 class AddPortraitScreen extends StatefulWidget {
   final String userId;
@@ -45,10 +46,6 @@ class _AddPortraitScreenState extends State<AddPortraitScreen> {
   // Bulk upload model selection
   List<String?> _bulkModelIds = [];
   List<String?> _bulkModelNames = [];
-  
-  // Progress tracking for bulk upload
-  int _bulkUploadProgress = 0;
-  int _bulkUploadTotal = 0;
 
   @override
   void initState() {
@@ -406,55 +403,58 @@ class _AddPortraitScreenState extends State<AddPortraitScreen> {
 
   Future<void> _bulkUploadPortraits() async {
     if (_bulkImages.isEmpty) return;
-    bool hasError = false;
-    setState(() {
-      _isLoading = true;
-      _bulkUploadProgress = 0;
-      _bulkUploadTotal = _bulkImages.length;
-    });
     
-    final portraitProvider = Provider.of<PortraitProvider>(context, listen: false);
-    for (int i = 0; i < _bulkImages.length; i++) {
-
-      try {
-        await portraitProvider.addPortrait(
-          userId: widget.userId,
-          imageFile: _bulkImages[i],
-          title: '', // Title deprecated
-          description: _bulkDescriptionControllers[i].text.trim().isEmpty ? null : _bulkDescriptionControllers[i].text.trim(),
-          weekNumber: _bulkWeekNumbers[i],
-          modelName: _bulkModelNames[i],
-          context: context,
-        );
-        setState(() {
-          _bulkUploadProgress = i + 1;
-        });
-      } catch (e) {
-        hasError = true;
-        setState(() {
-          _bulkUploadProgress = i + 1;
-        });
-      }
-    }
-    setState(() {
-      _isLoading = false;
-      _bulkImages.clear();
-      _bulkDescriptionControllers.clear();
-      _bulkModelIds.clear();
-      _bulkModelNames.clear();
-      _bulkWeekNumbers.clear();
-      _isBulkMode = false;
-      _bulkUploadProgress = 0;
-      _bulkUploadTotal = 0;
-    });
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(hasError ? 'Some portraits failed to upload.' : 'All portraits uploaded successfully!'),
-          backgroundColor: hasError ? Colors.red : Colors.green,
-        ),
+    final bulkUploadService = Provider.of<BulkUploadService>(context, listen: false);
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    
+    try {
+      // Start the bulk upload in the background
+      await bulkUploadService.startBulkUpload(
+        userId: widget.userId,
+        images: _bulkImages,
+        descriptions: _bulkDescriptionControllers.map((c) => c.text.trim().isEmpty ? null : c.text.trim()).toList(),
+        modelNames: _bulkModelNames,
+        weekNumbers: _bulkWeekNumbers,
       );
-      if (!hasError) Navigator.of(context).pop();
+      
+      // Clear local state
+      setState(() {
+        _bulkImages.clear();
+        for (var controller in _bulkDescriptionControllers) {
+          controller.dispose();
+        }
+        _bulkDescriptionControllers.clear();
+        _bulkModelIds.clear();
+        _bulkModelNames.clear();
+        _bulkWeekNumbers.clear();
+        _isBulkMode = false;
+      });
+      
+      // Show success message and navigate back
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('Upload started! You can navigate away while portraits upload in the background.'),
+            backgroundColor: AppColors.forestGreen,
+            duration: const Duration(seconds: 3),
+          ),
+        );
+        
+        // Reload user data to get updated portrait count
+        await authProvider.reloadUserData();
+        
+        // Navigate back
+        Navigator.of(context).pop();
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to start upload: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     }
   }
 
@@ -588,7 +588,7 @@ class _AddPortraitScreenState extends State<AddPortraitScreen> {
                   ),
           ),
           
-          // Upload Progress and Submit Button
+          // Submit Button
           if (_bulkImages.isNotEmpty)
             Container(
               padding: const EdgeInsets.all(16),
@@ -602,53 +602,23 @@ class _AddPortraitScreenState extends State<AddPortraitScreen> {
                   ),
                 ],
               ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  if (_isLoading) ...[
-                    Text(
-                      'Uploading $_bulkUploadProgress of $_bulkUploadTotal portraits...',
-                      style: TextStyle(
-                        color: AppColors.forestGreen,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    LinearProgressIndicator(
-                      value: _bulkUploadTotal > 0 ? _bulkUploadProgress / _bulkUploadTotal : 0,
-                      backgroundColor: Colors.grey[300],
-                      valueColor: AlwaysStoppedAnimation<Color>(AppColors.forestGreen),
-                    ),
-                    const SizedBox(height: 16),
-                  ],
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      onPressed: _isLoading ? null : _bulkUploadPortraits,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.rustyOrange,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                      ),
-                      child: _isLoading
-                          ? const SizedBox(
-                              height: 20,
-                              width: 20,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                              ),
-                            )
-                          : Text(
-                              'Upload ${_bulkImages.length} ${_bulkImages.length == 1 ? 'Portrait' : 'Portraits'}',
-                              style: const TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
+              child: SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: _bulkUploadPortraits,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.rustyOrange,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                  ),
+                  child: Text(
+                    'Upload ${_bulkImages.length} ${_bulkImages.length == 1 ? 'Portrait' : 'Portraits'}',
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
                     ),
                   ),
-                ],
+                ),
               ),
             ),
         ],

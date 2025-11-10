@@ -10,6 +10,7 @@ import 'providers/portrait_provider.dart';
 import 'providers/weekly_session_provider.dart';
 import 'providers/model_provider.dart';
 import 'services/push_notification_service.dart';
+import 'services/bulk_upload_service.dart';
 import 'screens/login_screen.dart';
 import 'screens/dashboard_screen.dart';
 import 'screens/splash_screen.dart';
@@ -62,6 +63,7 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => PortraitProvider()),
         ChangeNotifierProvider(create: (_) => WeeklySessionProvider()),
         ChangeNotifierProvider(create: (_) => ModelProvider()),
+        ChangeNotifierProvider(create: (_) => BulkUploadService()),
       ],
       child: MaterialApp(
         navigatorKey: navigatorKey,
