@@ -93,24 +93,55 @@ class _AddPortraitScreenState extends State<AddPortraitScreen> {
       // Get max count for current milestone
       final maxCount = _maxBulkCount;
       
-      // Request permission first
-      final PermissionState permission = await PhotoManager.requestPermissionExtend();
+      // Request permission with proper options for limited access
+      final PermissionState permission = await PhotoManager.requestPermissionExtend(
+        requestOption: const PermissionRequestOption(
+          iosAccessLevel: IosAccessLevel.readWrite,
+        ),
+      );
       
-      if (!permission.isAuth) {
+      // Handle different permission states
+      if (permission == PermissionState.authorized) {
+        // Full access - proceed normally
+        print('Photo permission: AUTHORIZED (full access)');
+      } else if (permission == PermissionState.limited) {
+        // Limited access - show helpful message but still allow picking
+        print('Photo permission: LIMITED (selected photos only)');
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Photo access permission denied. Please enable it in settings.'),
-              duration: Duration(seconds: 3),
+            SnackBar(
+              content: const Text('You\'ve granted access to selected photos. Tap to add more photos in Settings.'),
+              duration: const Duration(seconds: 4),
+              action: SnackBarAction(
+                label: 'Settings',
+                textColor: AppColors.mintGreen,
+                onPressed: () => PhotoManager.openSetting(),
+              ),
             ),
           );
-          // Open app settings
-          PhotoManager.openSetting();
         }
-        return;
+        // Continue to picker - it will show the limited photo set
+      } else {
+        // Denied - show settings dialog
+        print('Photo permission: DENIED');
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: const Text('Photo access permission denied. Please enable it in settings.'),
+              duration: const Duration(seconds: 3),
+              action: SnackBarAction(
+                label: 'Open Settings',
+                textColor: AppColors.mintGreen,
+                onPressed: () => PhotoManager.openSetting(),
+              ),
+            ),
+          );
+        }
+        return; // Don't open picker if permission denied
       }
       
       // Use wechat_assets_picker for better UX
+      // This works with both full and limited access
       final List<AssetEntity>? result = await AssetPicker.pickAssets(
         context,
         pickerConfig: AssetPickerConfig(
@@ -120,7 +151,7 @@ class _AddPortraitScreenState extends State<AddPortraitScreen> {
           themeColor: AppColors.forestGreen,
           textDelegate: const EnglishAssetPickerTextDelegate(),
           sortPathsByModifiedDate: true,
-          // Allow access to all albums
+          // Allow access to all albums (or limited set if permission is limited)
           pathNameBuilder: (AssetPathEntity path) {
             return path.name;
           },
@@ -182,6 +213,41 @@ class _AddPortraitScreenState extends State<AddPortraitScreen> {
         );
       }
     }
+  }
+
+  Future<void> _showLimitedAccessInfo() async {
+    return showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Limited Photo Access'),
+        content: const Text(
+          'You\'ve granted access to selected photos only.\n\n'
+          'You can:\n'
+          '• Select from your chosen photos now\n'
+          '• Add more photos in Settings > Privacy > Photos\n\n'
+          'For the best experience, consider granting full access to your photo library.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+              PhotoManager.openSetting();
+            },
+            child: Text(
+              'Open Settings',
+              style: TextStyle(color: AppColors.forestGreen),
+            ),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: Text(
+              'Continue',
+              style: TextStyle(color: AppColors.mintGreen),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   Future<void> _savePortrait() async {
