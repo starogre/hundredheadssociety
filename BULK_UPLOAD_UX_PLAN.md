@@ -260,12 +260,24 @@ if (hasSavedDraft) {
 - Continue to picker even with limited access (previously blocked)
 - See `LIMITED_PERMISSIONS_TESTING_GUIDE.md` for comprehensive testing instructions
 
-### Phase 2: Essential UX (Next)
-1. ✅ Add remove button on each image thumbnail
-2. ✅ Better preview grid layout
-3. ✅ "Select More" button to add additional images
-4. ✅ Quick edit modal for each image
-5. ✅ Background upload with persistent progress bar (Instagram-style)
+### Phase 2: Essential UX (✅ COMPLETED!)
+1. ✅ Add remove button on each image thumbnail - **DONE**
+2. ✅ Better preview grid layout - **DONE**
+3. ✅ "Select More" button to add additional images - **DONE**
+4. ✅ Quick edit modal for each image - **DONE**
+5. ✅ Background upload with persistent progress bar (Instagram-style) - **DONE**
+
+**Implementation Summary:**
+- Responsive 3-column grid with thumbnails
+- Remove button ([x]) on each thumbnail
+- Edit modal with image preview, description, model dropdown
+- Number badges, week badges, gradient overlays
+- Background upload service (BulkUploadService)
+- Persistent progress bar in AppBar (all screens)
+- Tap to expand for detailed upload status
+- Retry failed uploads functionality
+- Users can navigate app while uploads continue
+- See commit: "Phase 2.5: Instagram-style background upload with progress bar"
 
 ### Phase 3: Nice to Have
 1. ⏳ Drag & reorder functionality
