@@ -250,6 +250,110 @@ class _AddPortraitScreenState extends State<AddPortraitScreen> {
     );
   }
 
+  // Remove image at specific index
+  void _removeImageAtIndex(int index) {
+    setState(() {
+      _bulkImages.removeAt(index);
+      _bulkDescriptionControllers[index].dispose();
+      _bulkDescriptionControllers.removeAt(index);
+      _bulkModelIds.removeAt(index);
+      _bulkModelNames.removeAt(index);
+      _bulkWeekNumbers.removeAt(index);
+    });
+    
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Image removed. ${_bulkImages.length} remaining.'),
+        duration: const Duration(seconds: 2),
+        backgroundColor: AppColors.forestGreen,
+      ),
+    );
+  }
+
+  // Edit image at specific index
+  Future<void> _editImageAtIndex(int index) async {
+    final descriptionController = TextEditingController(
+      text: _bulkDescriptionControllers[index].text,
+    );
+    
+    await showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Edit Portrait #${index + 1}'),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Image preview
+              ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: Image.file(
+                  _bulkImages[index],
+                  height: 150,
+                  width: double.infinity,
+                  fit: BoxFit.cover,
+                ),
+              ),
+              const SizedBox(height: 16),
+              // Week display
+              Text(
+                'Week: ${_bulkWeekNumbers[index]}',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.forestGreen,
+                ),
+              ),
+              const SizedBox(height: 16),
+              // Description field
+              TextField(
+                controller: descriptionController,
+                decoration: const InputDecoration(
+                  labelText: 'Description (optional)',
+                  border: OutlineInputBorder(),
+                  contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                ),
+                maxLines: 3,
+              ),
+              const SizedBox(height: 16),
+              // Model dropdown
+              ModelDropdown(
+                selectedModelId: _bulkModelIds[index],
+                selectedModelName: _bulkModelNames[index],
+                onModelSelected: (modelId, modelName) {
+                  setState(() {
+                    _bulkModelIds[index] = modelId;
+                    _bulkModelNames[index] = modelName;
+                  });
+                },
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              descriptionController.dispose();
+              Navigator.of(context).pop();
+            },
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () {
+              _bulkDescriptionControllers[index].dispose();
+              _bulkDescriptionControllers[index] = descriptionController;
+              Navigator.of(context).pop();
+            },
+            child: Text(
+              'Save',
+              style: TextStyle(color: AppColors.forestGreen),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Future<void> _savePortrait() async {
     if (!_formKey.currentState!.validate() || _selectedImage == null) {
       return;
@@ -363,120 +467,300 @@ class _AddPortraitScreenState extends State<AddPortraitScreen> {
         foregroundColor: Colors.white,
       ),
       body: _isBulkMode
-          ? Form(
-              key: _formKey,
-              child: ListView(
-                padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
-                children: [
-                  Row(
-                    children: [
-                      Text(
-                        '${_bulkImages.length} of $_maxBulkCount selected',
-                        style: TextStyle(
-                          color: AppColors.forestGreen,
-                          fontWeight: FontWeight.bold,
-                        ),
+          ? _buildBulkUploadView()
+          : _buildSingleUploadView(),
+    );
+  }
+
+  // Build the improved bulk upload view with grid preview
+  Widget _buildBulkUploadView() {
+    return Form(
+      key: _formKey,
+      child: Column(
+        children: [
+          // Header with count and action buttons
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: AppColors.forestGreen.withValues(alpha: 0.1),
+              border: Border(
+                bottom: BorderSide(
+                  color: AppColors.forestGreen.withValues(alpha: 0.3),
+                  width: 1,
+                ),
+              ),
+            ),
+            child: Column(
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      '${_bulkImages.length} ${_bulkImages.length == 1 ? 'portrait' : 'portraits'} selected',
+                      style: TextStyle(
+                        color: AppColors.forestGreen,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
                       ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  ElevatedButton.icon(
-                    onPressed: _pickBulkImages,
-                    icon: const Icon(Icons.photo_library),
-                    label: const Text('Select Images'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.forestGreen,
-                      foregroundColor: Colors.white,
                     ),
-                  ),
-                  const SizedBox(height: 12),
-                  ..._bulkImages.asMap().entries.map((entry) {
-                    final i = entry.key;
-                    final file = entry.value;
-                    return Card(
-                      margin: const EdgeInsets.only(bottom: 16),
-                      child: Padding(
-                        padding: const EdgeInsets.all(12),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Image.file(file, height: 100, width: double.infinity, fit: BoxFit.cover),
-                            const SizedBox(height: 8),
-                            TextFormField(
-                              controller: _bulkDescriptionControllers[i],
-                              decoration: const InputDecoration(labelText: 'Description (optional)'),
-                            ),
-                            const SizedBox(height: 8),
-                            ModelDropdown(
-                              selectedModelId: _bulkModelIds[i],
-                              selectedModelName: _bulkModelNames[i],
-                              onModelSelected: (modelId, modelName) {
-                                setState(() {
-                                  _bulkModelIds[i] = modelId;
-                                  _bulkModelNames[i] = modelName;
-                                });
-                              },
-                            ),
-                            const SizedBox(height: 8),
-                            Text('Week: ${_bulkWeekNumbers[i]}'),
-                          ],
+                    if (_bulkImages.isNotEmpty)
+                      TextButton(
+                        onPressed: () {
+                          setState(() {
+                            _bulkImages.clear();
+                            _bulkDescriptionControllers.clear();
+                            _bulkModelIds.clear();
+                            _bulkModelNames.clear();
+                            _bulkWeekNumbers.clear();
+                          });
+                        },
+                        child: Text(
+                          'Clear All',
+                          style: TextStyle(color: Colors.red[700]),
                         ),
                       ),
-                    );
-                  }),
-                  if (_bulkImages.isNotEmpty)
-                    Column(
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Expanded(
+                      child: ElevatedButton.icon(
+                        onPressed: _pickBulkImages,
+                        icon: const Icon(Icons.photo_library, size: 18),
+                        label: Text(_bulkImages.isEmpty ? 'Select Images' : 'Select More'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.forestGreen,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          
+          // Preview Grid or Empty State
+          Expanded(
+            child: _bulkImages.isEmpty
+                ? Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        if (_isLoading) ...[
-                          const SizedBox(height: 16),
-                          Text(
-                            'Uploading $_bulkUploadProgress of $_bulkUploadTotal portraits...',
-                            style: TextStyle(
-                              color: AppColors.forestGreen,
-                              fontWeight: FontWeight.bold,
-                            ),
+                        Icon(
+                          Icons.photo_library_outlined,
+                          size: 64,
+                          color: Colors.grey[400],
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          'No images selected',
+                          style: TextStyle(
+                            fontSize: 16,
+                            color: Colors.grey[600],
                           ),
-                          const SizedBox(height: 8),
-                          LinearProgressIndicator(
-                            value: _bulkUploadTotal > 0 ? _bulkUploadProgress / _bulkUploadTotal : 0,
-                            backgroundColor: Colors.grey[300],
-                            valueColor: AlwaysStoppedAnimation<Color>(AppColors.forestGreen),
-                          ),
-                          const SizedBox(height: 16),
-                        ],
-                        SizedBox(
-                          width: double.infinity,
-                          child: ElevatedButton(
-                            onPressed: _isLoading ? null : _bulkUploadPortraits,
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: AppColors.rustyOrange,
-                              foregroundColor: Colors.white,
-                              padding: const EdgeInsets.symmetric(vertical: 12),
-                            ),
-                            child: _isLoading
-                                ? const SizedBox(
-                                    height: 20,
-                                    width: 20,
-                                    child: CircularProgressIndicator(
-                                      strokeWidth: 2,
-                                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                                    ),
-                                  )
-                                : const Text('Submit All'),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'Tap "Select Images" to get started',
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: Colors.grey[500],
                           ),
                         ),
                       ],
                     ),
+                  )
+                : GridView.builder(
+                    padding: const EdgeInsets.all(16),
+                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 3,
+                      crossAxisSpacing: 8,
+                      mainAxisSpacing: 8,
+                      childAspectRatio: 1,
+                    ),
+                    itemCount: _bulkImages.length,
+                    itemBuilder: (context, i) {
+                      return _buildImageThumbnail(i);
+                    },
+                  ),
+          ),
+          
+          // Upload Progress and Submit Button
+          if (_bulkImages.isNotEmpty)
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.1),
+                    blurRadius: 8,
+                    offset: const Offset(0, -2),
+                  ),
                 ],
               ),
-            )
-          : SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
-              child: Form(
-                key: _formKey,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (_isLoading) ...[
+                    Text(
+                      'Uploading $_bulkUploadProgress of $_bulkUploadTotal portraits...',
+                      style: TextStyle(
+                        color: AppColors.forestGreen,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    LinearProgressIndicator(
+                      value: _bulkUploadTotal > 0 ? _bulkUploadProgress / _bulkUploadTotal : 0,
+                      backgroundColor: Colors.grey[300],
+                      valueColor: AlwaysStoppedAnimation<Color>(AppColors.forestGreen),
+                    ),
+                    const SizedBox(height: 16),
+                  ],
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: _isLoading ? null : _bulkUploadPortraits,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.rustyOrange,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                      ),
+                      child: _isLoading
+                          ? const SizedBox(
+                              height: 20,
+                              width: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                              ),
+                            )
+                          : Text(
+                              'Upload ${_bulkImages.length} ${_bulkImages.length == 1 ? 'Portrait' : 'Portraits'}',
+                              style: const TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  // Build individual image thumbnail with remove button and tap to edit
+  Widget _buildImageThumbnail(int index) {
+    return GestureDetector(
+      onTap: () => _editImageAtIndex(index),
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          // Image
+          ClipRRect(
+            borderRadius: BorderRadius.circular(8),
+            child: Image.file(
+              _bulkImages[index],
+              fit: BoxFit.cover,
+            ),
+          ),
+          // Gradient overlay for better visibility of badges
+          Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(8),
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  Colors.black.withValues(alpha: 0.4),
+                  Colors.transparent,
+                  Colors.black.withValues(alpha: 0.4),
+                ],
+                stops: const [0.0, 0.3, 1.0],
+              ),
+            ),
+          ),
+          // Number badge (top-left)
+          Positioned(
+            top: 4,
+            left: 4,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: AppColors.forestGreen,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Text(
+                '${index + 1}',
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ),
+          // Remove button (top-right)
+          Positioned(
+            top: 4,
+            right: 4,
+            child: GestureDetector(
+              onTap: () => _removeImageAtIndex(index),
+              child: Container(
+                padding: const EdgeInsets.all(4),
+                decoration: BoxDecoration(
+                  color: Colors.red[700],
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.close,
+                  color: Colors.white,
+                  size: 16,
+                ),
+              ),
+            ),
+          ),
+          // Week badge (bottom-right)
+          Positioned(
+            bottom: 4,
+            right: 4,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+              decoration: BoxDecoration(
+                color: AppColors.rustyOrange,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Text(
+                'W${_bulkWeekNumbers[index]}',
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 10,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Build the single upload view (existing functionality)
+  Widget _buildSingleUploadView() {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
+      child: Form(
+        key: _formKey,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
                     // Bulk Upload Toggle
                     Row(
                       children: [
