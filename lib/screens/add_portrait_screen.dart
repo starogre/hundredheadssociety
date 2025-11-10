@@ -963,8 +963,7 @@ class _AddPortraitScreenState extends State<AddPortraitScreen> {
                   ],
                 ),
               ),
-            ),
-    );
+            );
   }
 
   @override
