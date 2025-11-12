@@ -16,6 +16,7 @@ import '../services/user_service.dart';
 import '../services/portrait_service.dart';
 import '../services/push_notification_service.dart';
 import '../widgets/notification_permission_dialog.dart';
+import '../utils/milestone_utils.dart';
 import 'profile_screen.dart';
 import 'community_screen.dart';
 import '../theme/app_theme.dart';
@@ -245,9 +246,22 @@ class _DashboardScreenState extends State<DashboardScreen> {
           }
         }
 
+        // Determine app bar title widget (logo for My Heads, text for others)
+        Widget appBarTitleWidget;
+        if (!isArtAppreciator && _selectedIndex == 0) {
+          // Use logo image for My Heads screen
+          appBarTitleWidget = Image.asset(
+            'assets/images/100HS_Horiz-Logo_white.png',
+            height: 32,
+            fit: BoxFit.contain,
+          );
+        } else {
+          appBarTitleWidget = Text(appBarTitle);
+        }
+
         return Scaffold(
           appBar: AppBar(
-            title: Text(appBarTitle),
+            title: appBarTitleWidget,
             actions: appBarActions,
             bottom: const PreferredSize(
               preferredSize: Size.fromHeight(0),
@@ -284,6 +298,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Widget _buildDashboardTab(AuthProvider authProvider) {
+    final portraitCount = authProvider.userData?.portraitsCompleted ?? 0;
+    final nextMilestone = ((portraitCount ~/ 100) + 1) * 100;
+    final progressValue = portraitCount / nextMilestone;
+    final milestoneEmoji = MilestoneUtils.getMilestoneEmoji(portraitCount);
+    final userName = authProvider.userData?.name ?? 'Artist';
+    
     return Consumer<PortraitProvider>(
       builder: (context, portraitProvider, child) => Column(
         children: [
@@ -299,7 +319,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       radius: 30,
                       backgroundColor: AppColors.rustyOrange,
                       child: Text(
-                        '${authProvider.userData?.portraitsCompleted ?? 0}',
+                        '$portraitCount',
                         style: const TextStyle(
                           fontSize: 20,
                           fontWeight: FontWeight.bold,
@@ -312,18 +332,32 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(
-                            'Welcome, ${authProvider.userData?.name ?? 'Artist'}!',
-                            style: Theme.of(context).textTheme.headlineMedium,
+                          Row(
+                            children: [
+                              if (milestoneEmoji != null) ...[
+                                Text(
+                                  milestoneEmoji,
+                                  style: const TextStyle(fontSize: 24),
+                                ),
+                                const SizedBox(width: 8),
+                              ],
+                              Expanded(
+                                child: Text(
+                                  '$userName\'s heads',
+                                  style: Theme.of(context).textTheme.headlineMedium,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ],
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            '${authProvider.userData?.portraitsCompleted ?? 0} of 100 portraits completed',
+                            '$portraitCount of $nextMilestone portraits completed',
                             style: Theme.of(context).textTheme.bodyMedium,
                           ),
                           const SizedBox(height: 8),
                           LinearProgressIndicator(
-                            value: (authProvider.userData?.portraitsCompleted ?? 0) / 100,
+                            value: progressValue,
                             backgroundColor: AppColors.cream,
                             valueColor: AlwaysStoppedAnimation<Color>(AppColors.rustyOrange),
                           ),

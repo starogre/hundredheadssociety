@@ -4,7 +4,11 @@ class MilestoneUtils {
     10: '⭐',   // Star for 10 portraits
     25: '💎',   // Diamond for 25 portraits
     50: '👑',   // Crown for 50 portraits
-    100: '🐉',  // Dragon for 100 portraits (existing)
+    100: '🐉',  // Dragon for 100 portraits
+    200: '🔥',  // Fire for 200 portraits
+    300: '🚀',  // Rocket for 300 portraits
+    400: '⚡',  // Lightning for 400 portraits
+    500: '🏆',  // Trophy for 500 portraits
   };
 
   /// Returns the highest milestone emoji for a given portrait count
