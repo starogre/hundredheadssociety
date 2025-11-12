@@ -239,7 +239,7 @@ class _PortraitDetailsDialogState extends State<PortraitDetailsDialog> {
                     ],
                   ),
                 ),
-                SizedBox(height: 16),
+                const SizedBox(height: 16),
                 // Model section - below artist
                 ...(portrait.modelName != null && portrait.modelName!.isNotEmpty ? [
                   Consumer<ModelProvider>(
@@ -511,7 +511,7 @@ class _PortraitDetailsDialogState extends State<PortraitDetailsDialog> {
                 ] : []),
                 
                 // Action buttons at the bottom
-                SizedBox(height: 16),
+                const SizedBox(height: 16),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.end,
                   children: [
