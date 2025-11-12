@@ -18,8 +18,6 @@ class PortraitDetailsDialog extends StatefulWidget {
   final UserModel? user;
   final String currentUserId;
   final VoidCallback? onPortraitModified;
-  final List<PortraitModel>? allPortraits; // All portraits for swiping
-  final int? initialIndex; // Starting index in allPortraits
 
   const PortraitDetailsDialog({
     super.key,
@@ -27,8 +25,6 @@ class PortraitDetailsDialog extends StatefulWidget {
     this.user,
     required this.currentUserId,
     this.onPortraitModified,
-    this.allPortraits,
-    this.initialIndex,
   });
 
   @override
@@ -39,133 +35,34 @@ class _PortraitDetailsDialogState extends State<PortraitDetailsDialog> {
   bool _showDeleteConfirmation = false;
   bool _isDeleting = false;
   final AwardService _awardService = AwardService();
-  late PageController _pageController;
-  late int _currentIndex;
-
-  @override
-  void initState() {
-    super.initState();
-    _currentIndex = widget.initialIndex ?? 0;
-    _pageController = PageController(initialPage: _currentIndex);
-  }
-
-  @override
-  void dispose() {
-    _pageController.dispose();
-    super.dispose();
-  }
-
-  PortraitModel get _currentPortrait {
-    if (widget.allPortraits != null && widget.allPortraits!.isNotEmpty) {
-      return widget.allPortraits![_currentIndex];
-    }
-    return widget.portrait;
-  }
 
   @override
   Widget build(BuildContext context) {
-    // If we have multiple portraits, use PageView for swipeable navigation
-    if (widget.allPortraits != null && widget.allPortraits!.length > 1) {
-      return Dialog(
-        child: PageView.builder(
-          controller: _pageController,
-          onPageChanged: (index) {
-            setState(() {
-              _currentIndex = index;
-              _showDeleteConfirmation = false; // Reset delete confirmation on swipe
-            });
-          },
-          itemCount: widget.allPortraits!.length,
-          itemBuilder: (context, index) {
-            return _buildPortraitContent(widget.allPortraits![index]);
-          },
-        ),
-      );
-    }
-    
-    // Single portrait view (backwards compatible)
-    return Dialog(
-      child: _buildPortraitContent(widget.portrait),
-    );
-  }
-
-  Widget _buildPortraitContent(PortraitModel portrait) {
     final bool isOwner = widget.user?.id == widget.currentUserId;
     
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        // Portrait image with week number badge
-        Stack(
-          children: [
-            GestureDetector(
-              onTap: () => _showFullImage(context, portrait),
-              child: Container(
-                width: double.infinity,
-                height: 300,
-                decoration: BoxDecoration(
-                  borderRadius: const BorderRadius.vertical(top: Radius.circular(8)),
-                  image: DecorationImage(
-                    image: CachedNetworkImageProvider(portrait.imageUrl),
-                    fit: BoxFit.cover,
-                  ),
+    return Dialog(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          GestureDetector(
+            onTap: () => _showFullImage(context),
+            child: Container(
+              width: double.infinity,
+              height: 300,
+              decoration: BoxDecoration(
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(8)),
+                image: DecorationImage(
+                  image: CachedNetworkImageProvider(widget.portrait.imageUrl),
+                  fit: BoxFit.cover,
                 ),
               ),
+
             ),
-            // Week number badge
-            Positioned(
-              top: 12,
-              left: 12,
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                decoration: BoxDecoration(
-                  color: AppColors.forestGreen,
-                  borderRadius: BorderRadius.circular(20),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.3),
-                      blurRadius: 6,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
-                ),
-                child: Text(
-                  'Week ${portrait.weekNumber}',
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 14,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-            ),
-            // Swipe indicator (if multiple portraits)
-            if (widget.allPortraits != null && widget.allPortraits!.length > 1)
-              Positioned(
-                top: 12,
-                right: 12,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                  decoration: BoxDecoration(
-                    color: Colors.black.withOpacity(0.6),
-                    borderRadius: BorderRadius.circular(15),
-                  ),
-                  child: Text(
-                    '${_currentIndex + 1} / ${widget.allPortraits!.length}',
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
-              ),
-          ],
-        ),
-        Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
+          ),
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 // Artist section - most prominent at top
@@ -239,9 +136,9 @@ class _PortraitDetailsDialogState extends State<PortraitDetailsDialog> {
                     ],
                   ),
                 ),
-                const SizedBox(height: 16),
+                SizedBox(height: 16),
                 // Model section - below artist
-                ...(portrait.modelName != null && portrait.modelName!.isNotEmpty ? [
+                ...(widget.portrait.modelName != null && widget.portrait.modelName!.isNotEmpty ? [
                   Consumer<ModelProvider>(
                     builder: (context, modelProvider, child) {
                       return StreamBuilder<List<ModelModel>>(
@@ -250,10 +147,10 @@ class _PortraitDetailsDialogState extends State<PortraitDetailsDialog> {
                           ModelModel? model;
                           if (snapshot.hasData) {
                             model = snapshot.data!.firstWhere(
-                              (m) => m.name.toLowerCase() == portrait.modelName!.toLowerCase(),
+                              (m) => m.name.toLowerCase() == widget.portrait.modelName!.toLowerCase(),
                               orElse: () => ModelModel(
                                 id: '',
-                                name: portrait.modelName!,
+                                name: widget.portrait.modelName!,
                                 date: DateTime.now(),
                                 isActive: true,
                                 createdAt: DateTime.now(),
@@ -314,7 +211,7 @@ class _PortraitDetailsDialogState extends State<PortraitDetailsDialog> {
                                   // Model name
                                   Expanded(
                                     child: Text(
-                                      portrait.modelName!,
+                                      widget.portrait.modelName!,
                                       style: const TextStyle(
                                         fontSize: 18,
                                         fontWeight: FontWeight.w600,
@@ -348,9 +245,9 @@ class _PortraitDetailsDialogState extends State<PortraitDetailsDialog> {
                   const SizedBox(height: 16),
                 ] : []),
                 // Description section - at the bottom
-                ...(portrait.description != null && portrait.description!.isNotEmpty ? [
+                ...(widget.portrait.description != null && widget.portrait.description!.isNotEmpty ? [
                   Text(
-                    portrait.description!,
+                    widget.portrait.description!,
                     style: TextStyle(
                       fontSize: 16,
                       color: AppColors.forestGreen.withValues(alpha: 0.8),
@@ -363,7 +260,7 @@ class _PortraitDetailsDialogState extends State<PortraitDetailsDialog> {
 
                 // Awards section
                 FutureBuilder<List<Map<String, dynamic>>>(
-                  future: _awardService.getPortraitAwards(portrait.id),
+                  future: _awardService.getPortraitAwards(widget.portrait.id),
                   builder: (context, snapshot) {
                     if (snapshot.hasData && snapshot.data!.isNotEmpty) {
                       final awardDetails = _awardService.getAwardDetails();
@@ -470,7 +367,7 @@ class _PortraitDetailsDialogState extends State<PortraitDetailsDialog> {
                         ),
                         const SizedBox(height: 8),
                         Text(
-                          'Are you sure you want to delete "${_currentPortrait.title}"? This action cannot be undone.',
+                          'Are you sure you want to delete "${widget.portrait.title}"? This action cannot be undone.',
                           style: TextStyle(color: Colors.red.shade700),
                         ),
                         const SizedBox(height: 12),
@@ -511,7 +408,7 @@ class _PortraitDetailsDialogState extends State<PortraitDetailsDialog> {
                 ] : []),
                 
                 // Action buttons at the bottom
-                const SizedBox(height: 16),
+                SizedBox(height: 16),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.end,
                   children: [
@@ -552,7 +449,7 @@ class _PortraitDetailsDialogState extends State<PortraitDetailsDialog> {
     Navigator.of(context).push(
       MaterialPageRoute(
         builder: (context) => EditPortraitScreen(
-          portrait: _currentPortrait,
+          portrait: widget.portrait,
           onPortraitUpdated: () {
             widget.onPortraitModified?.call();
             // Show success message after returning from edit screen
@@ -575,7 +472,7 @@ class _PortraitDetailsDialogState extends State<PortraitDetailsDialog> {
 
     try {
       final portraitService = PortraitService();
-      await portraitService.deletePortrait(_currentPortrait.id, widget.currentUserId);
+      await portraitService.deletePortrait(widget.portrait.id, widget.currentUserId);
       widget.onPortraitModified?.call();
       
       if (mounted) {
@@ -614,7 +511,7 @@ class _PortraitDetailsDialogState extends State<PortraitDetailsDialog> {
     return '${months[date.month - 1]} ${date.day}, ${date.year}';
   }
 
-  void _showFullImage(BuildContext context, PortraitModel portrait) {
+  void _showFullImage(BuildContext context) {
     showDialog(
       context: context,
       builder: (context) => Dialog(
@@ -625,7 +522,7 @@ class _PortraitDetailsDialogState extends State<PortraitDetailsDialog> {
             Center(
               child: InteractiveViewer(
                 child: CachedNetworkImage(
-                  imageUrl: portrait.imageUrl,
+                  imageUrl: widget.portrait.imageUrl,
                   fit: BoxFit.contain,
                   placeholder: (context, url) => Container(
                     color: Colors.black,
@@ -704,7 +601,7 @@ class _PortraitDetailsDialogState extends State<PortraitDetailsDialog> {
 
     try {
       // Get awards for this portrait
-      final List<Map<String, dynamic>> awards = await _awardService.getPortraitAwards(_currentPortrait.id);
+      final List<Map<String, dynamic>> awards = await _awardService.getPortraitAwards(widget.portrait.id);
       final List<String> awardCategories = awards.map((award) => award['category'] as String).toList();
       
       // Get artist's Instagram handle
@@ -721,7 +618,7 @@ class _PortraitDetailsDialogState extends State<PortraitDetailsDialog> {
 
       // Share to Instagram
       await InstagramSharingService.sharePortraitToInstagram(
-        portrait: _currentPortrait,
+        portrait: widget.portrait,
         artist: widget.user!,
         awards: awardCategories.isNotEmpty ? awardCategories : null,
         artistInstagram: artistInstagram,

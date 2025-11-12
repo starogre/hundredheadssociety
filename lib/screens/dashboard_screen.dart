@@ -521,8 +521,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
             portrait: portrait,
             user: userSnapshot.data,
             currentUserId: authProvider.currentUser!.uid,
-            allPortraits: allPortraits,
-            initialIndex: currentIndex,
             onPortraitModified: () {
               // The streams will automatically update when Firestore data changes
               // No need to manually refresh
