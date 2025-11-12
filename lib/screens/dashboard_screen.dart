@@ -478,7 +478,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       portrait: portrait,
                       isCompleted: portrait != null,
                       onTap: portrait != null
-                          ? () => _showPortraitDetails(context, portrait)
+                          ? () {
+                              // Find the index of this portrait in the portraits list
+                              final index = portraits.indexWhere((p) => p.id == portrait.id);
+                              _showPortraitDetails(context, portrait, portraits, index >= 0 ? index : 0);
+                            }
                           : isUnlocked 
                               ? () => _showAddPortraitDialog(context, authProvider, weekNumber)
                               : null, // Disable tapping for locked weeks
@@ -504,7 +508,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  void _showPortraitDetails(BuildContext context, PortraitModel portrait) {
+  void _showPortraitDetails(BuildContext context, PortraitModel portrait, List<PortraitModel> allPortraits, int currentIndex) {
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     final userService = UserService();
     
@@ -517,6 +521,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
             portrait: portrait,
             user: userSnapshot.data,
             currentUserId: authProvider.currentUser!.uid,
+            allPortraits: allPortraits,
+            initialIndex: currentIndex,
             onPortraitModified: () {
               // The streams will automatically update when Firestore data changes
               // No need to manually refresh
