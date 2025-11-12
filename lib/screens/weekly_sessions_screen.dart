@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
 import '../providers/weekly_session_provider.dart';
 import '../providers/auth_provider.dart';
 import '../models/weekly_session_model.dart';
@@ -51,7 +52,7 @@ class _WeeklySessionsScreenState extends State<WeeklySessionsScreen>
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(Icons.error, size: 64, color: AppColors.rustyOrange),
+                PhosphorIcon(PhosphorIconsDuotone.warningCircle, size: 64, color: AppColors.rustyOrange),
                 const SizedBox(height: 16),
                 Text(
                   'Error: ${weeklySessionProvider.error}',
@@ -110,7 +111,7 @@ class _WeeklySessionsScreenState extends State<WeeklySessionsScreen>
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.event_busy, size: 64, color: AppColors.rustyOrange),
+            PhosphorIcon(PhosphorIconsDuotone.calendarX, size: 64, color: AppColors.rustyOrange),
             const SizedBox(height: 16),
             const Text(
               'No Active Session',
@@ -475,13 +476,36 @@ class _WeeklySessionsScreenState extends State<WeeklySessionsScreen>
             ),
             const SizedBox(height: 8),
             if (weeklySessionProvider.submissionsWithUsers.isEmpty)
-              Card(
+              Center(
                 child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Text(
-                    'No submissions yet. Be the first to submit your painting!',
-                    style: TextStyle(color: AppColors.forestGreen),
-                    textAlign: TextAlign.center,
+                  padding: const EdgeInsets.symmetric(vertical: 48),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      PhosphorIcon(
+                        PhosphorIconsDuotone.paintBrush,
+                        size: 64,
+                        color: AppColors.forestGreen.withOpacity(0.3),
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        'No submissions yet',
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.forestGreen,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Be the first to submit your painting!',
+                        style: TextStyle(
+                          fontSize: 16,
+                          color: Colors.grey[600],
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ],
                   ),
                 ),
               )
@@ -627,12 +651,16 @@ class _WeeklySessionsScreenState extends State<WeeklySessionsScreen>
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.emoji_events, size: 64, color: AppColors.rustyOrange),
+            PhosphorIcon(
+              PhosphorIconsDuotone.trophy,
+              size: 64,
+              color: AppColors.rustyOrange.withOpacity(0.3),
+            ),
             const SizedBox(height: 16),
             const Text(
               'No winners yet!',
               style: TextStyle(
-                fontSize: 18,
+                fontSize: 20,
                 fontWeight: FontWeight.bold,
                 color: AppColors.forestGreen,
               ),
@@ -642,7 +670,7 @@ class _WeeklySessionsScreenState extends State<WeeklySessionsScreen>
             Text(
               'No votes were cast for any submissions.',
               style: TextStyle(
-                fontSize: 14,
+                fontSize: 16,
                 color: Colors.grey[600],
               ),
               textAlign: TextAlign.center,

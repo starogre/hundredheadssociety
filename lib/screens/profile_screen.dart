@@ -17,6 +17,7 @@ import '../theme/app_theme.dart';
 import '../widgets/portrait_details_dialog.dart';
 import '../widgets/awards_tab.dart';
 import '../utils/milestone_utils.dart';
+import 'edit_profile_screen.dart';
 
 import 'package:url_launcher/url_launcher.dart';
 
@@ -1222,6 +1223,23 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
   }
 
   void _showEditProfileDialog() {
+    if (_userData == null) return;
+    
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => EditProfileScreen(
+          userData: _userData!,
+          userId: widget.userId,
+          onProfileUpdated: () {
+            _loadUserData();
+          },
+        ),
+      ),
+    );
+  }
+
+  // Old dialog method - keeping for reference, can be removed
+  void _showEditProfileDialogOld() {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
