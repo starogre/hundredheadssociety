@@ -42,11 +42,100 @@ class AboutScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 8),
                   const Text(
-                    'Version 1.0.3',
+                    'Version 1.0.4',
                     style: TextStyle(
                       color: Colors.grey,
                       fontSize: 16,
                     ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 32),
+
+            // What's New Section
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: AppColors.forestGreen.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: AppColors.forestGreen.withOpacity(0.3),
+                  width: 1,
+                ),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      const Icon(
+                        Icons.celebration,
+                        color: AppColors.rustyOrange,
+                        size: 24,
+                      ),
+                      const SizedBox(width: 8),
+                      const Text(
+                        'What\'s New in v1.0.4',
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.forestGreen,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  const Text(
+                    '🎨 Enhanced Bulk Upload Experience',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.forestGreen,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  const Text(
+                    '• Upload portraits beyond 100! No more limits on your creativity\n'
+                    '• Background upload progress bar - navigate freely while your portraits upload\n'
+                    '• Drag and drop to reorder your portraits before uploading\n'
+                    '• Improved image picker with full album access\n'
+                    '• Better support for limited photo permissions',
+                    style: TextStyle(fontSize: 15, height: 1.5),
+                  ),
+                  const SizedBox(height: 16),
+                  const Text(
+                    '✨ UI/UX Improvements',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.forestGreen,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  const Text(
+                    '• Fresh new icon library with duotone styling throughout\n'
+                    '• Satoshi font for a modern, polished look\n'
+                    '• Milestone progress tracking (100, 200, 300 portraits and beyond!)\n'
+                    '• Improved search functionality in the Community tab',
+                    style: TextStyle(fontSize: 15, height: 1.5),
+                  ),
+                  const SizedBox(height: 16),
+                  const Text(
+                    '🐛 Bug Fixes & Performance',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.forestGreen,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  const Text(
+                    '• Fixed upload button visibility on Android\n'
+                    '• Improved crash reporting with Firebase Crashlytics\n'
+                    '• Enhanced RSVP notification handling\n'
+                    '• Better error handling and user feedback',
+                    style: TextStyle(fontSize: 15, height: 1.5),
                   ),
                 ],
               ),
