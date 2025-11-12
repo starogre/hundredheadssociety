@@ -314,7 +314,7 @@ class _AwardsTabState extends State<AwardsTab> {
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: PhosphorIcon(
-                      PhosphorIconsDuotone.plus,
+                      PhosphorIconsRegular.plus,
                       color: AppColors.white,
                       size: 20,
                     ),
@@ -360,7 +360,7 @@ class _AwardsTabState extends State<AwardsTab> {
                         GestureDetector(
                           onTap: () => _removeMerchItem(item),
                           child: PhosphorIcon(
-                            PhosphorIconsDuotone.x,
+                            PhosphorIconsRegular.x,
                             size: 16,
                             color: AppColors.rustyOrange,
                           ),

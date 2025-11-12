@@ -718,7 +718,7 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                               Expanded(
                                 child: _buildStatCard(
                                   'Left',
-                                  (100 - _userData!.portraitsCompleted).toString(),
+                                  _calculatePortraitsLeft(_userData!.portraitsCompleted).toString(),
                                   AppColors.rustyOrange,
                                 ),
                               ),
@@ -1100,6 +1100,13 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
         isOwnProfile: isOwnProfile,
       ),
     );
+  }
+
+  // Calculate portraits left to next milestone
+  int _calculatePortraitsLeft(int completed) {
+    // Calculate next milestone (100, 200, 300, etc.)
+    final nextMilestone = ((completed ~/ 100) + 1) * 100;
+    return nextMilestone - completed;
   }
 
   Widget _buildStatCard(String title, String value, Color color) {
