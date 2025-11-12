@@ -23,7 +23,7 @@ class _WeeklySessionsScreenState extends State<WeeklySessionsScreen>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 3, vsync: this);
+    _tabController = TabController(length: 2, vsync: this);
     
     // Initialize the weekly session provider
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -83,7 +83,6 @@ class _WeeklySessionsScreenState extends State<WeeklySessionsScreen>
                   labelColor: AppColors.forestGreen,
                   unselectedLabelColor: AppColors.forestGreen.withValues(alpha: 0.7),
                   tabs: const [
-                    Tab(text: 'RSVP'),
                     Tab(text: 'Submissions'),
                     Tab(text: 'Winners'),
                   ],
@@ -92,7 +91,6 @@ class _WeeklySessionsScreenState extends State<WeeklySessionsScreen>
                   child: TabBarView(
                     controller: _tabController,
                     children: [
-                      _buildRsvpTab(context, weeklySessionProvider, currentSession),
                       _buildSubmissionsTab(context, weeklySessionProvider, currentSession),
                       _buildWinnersTab(context, weeklySessionProvider),
                     ],

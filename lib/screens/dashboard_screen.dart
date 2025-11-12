@@ -187,8 +187,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
               label: 'Profile',
             ),
             BottomNavigationBarItem(
-              icon: PhosphorIcon(PhosphorIconsDuotone.calendar),
-              label: 'Weekly Sessions',
+              icon: PhosphorIcon(PhosphorIconsDuotone.trophy),
+              label: 'Weekly Awards',
             ),
           ];
         }
@@ -242,7 +242,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
               ),
             );
           } else if (_selectedIndex == 3) {
-            appBarTitle = 'Weekly Sessions';
+            appBarTitle = 'Weekly Awards';
           }
         }
 
