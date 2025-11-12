@@ -401,21 +401,31 @@ class _AddPortraitScreenState extends State<AddPortraitScreen> {
     }
   }
 
-  Future<void> _bulkUploadPortraits() async {
+  void _bulkUploadPortraits() {
     if (_bulkImages.isEmpty) return;
     
     final bulkUploadService = Provider.of<BulkUploadService>(context, listen: false);
-    final authProvider = Provider.of<AuthProvider>(context, listen: false);
     
     try {
-      // Start the bulk upload in the background
-      await bulkUploadService.startBulkUpload(
+      // Start the bulk upload in the background (fire and forget)
+      bulkUploadService.startBulkUpload(
         userId: widget.userId,
         images: _bulkImages,
         descriptions: _bulkDescriptionControllers.map((c) => c.text.trim().isEmpty ? null : c.text.trim()).toList(),
         modelNames: _bulkModelNames,
         weekNumbers: _bulkWeekNumbers,
       );
+      
+      // Show success message
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('Upload started! Check the progress bar at the top.'),
+            backgroundColor: AppColors.forestGreen,
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
       
       // Clear local state
       setState(() {
@@ -430,20 +440,8 @@ class _AddPortraitScreenState extends State<AddPortraitScreen> {
         _isBulkMode = false;
       });
       
-      // Show success message and navigate back
+      // Navigate back immediately
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Text('Upload started! You can navigate away while portraits upload in the background.'),
-            backgroundColor: AppColors.forestGreen,
-            duration: const Duration(seconds: 3),
-          ),
-        );
-        
-        // Reload user data to get updated portrait count
-        await authProvider.reloadUserData();
-        
-        // Navigate back
         Navigator.of(context).pop();
       }
     } catch (e) {
@@ -452,6 +450,7 @@ class _AddPortraitScreenState extends State<AddPortraitScreen> {
           SnackBar(
             content: Text('Failed to start upload: $e'),
             backgroundColor: Colors.red,
+            duration: const Duration(seconds: 3),
           ),
         );
       }

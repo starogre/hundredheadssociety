@@ -47,13 +47,13 @@ class BulkUploadService extends ChangeNotifier {
   bool get isIdle => !_isUploading && _uploadQueue.isEmpty;
 
   // Start bulk upload
-  Future<void> startBulkUpload({
+  void startBulkUpload({
     required String userId,
     required List<File> images,
     required List<String?> descriptions,
     required List<String?> modelNames,
     required List<int> weekNumbers,
-  }) async {
+  }) {
     if (_isUploading) {
       throw Exception('Upload already in progress');
     }
@@ -74,8 +74,8 @@ class BulkUploadService extends ChangeNotifier {
     _isUploading = true;
     notifyListeners();
 
-    // Start uploading in background
-    await _processUploadQueue();
+    // Start uploading in background (fire and forget)
+    _processUploadQueue();
   }
 
   // Process the upload queue
