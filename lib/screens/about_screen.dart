@@ -42,7 +42,7 @@ class AboutScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 8),
                   const Text(
-                    'Version 1.0.4',
+                    'Version 1.0.5',
                     style: TextStyle(
                       color: Colors.grey,
                       fontSize: 16,
@@ -76,7 +76,7 @@ class AboutScreen extends StatelessWidget {
                       ),
                       const SizedBox(width: 8),
                       const Text(
-                        'What\'s New in v1.0.4',
+                        'What\'s New in v1.0.5',
                         style: TextStyle(
                           fontSize: 20,
                           fontWeight: FontWeight.bold,
@@ -87,7 +87,7 @@ class AboutScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 16),
                   const Text(
-                    '🎨 Enhanced Bulk Upload Experience',
+                    '🏆 Weekly Awards Reimagined',
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
@@ -96,16 +96,16 @@ class AboutScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 8),
                   const Text(
-                    '• Upload portraits beyond 100! No more limits on your creativity\n'
-                    '• Background upload progress bar - navigate freely while your portraits upload\n'
-                    '• Drag and drop to reorder your portraits before uploading\n'
-                    '• Improved image picker with full album access\n'
-                    '• Better support for limited photo permissions',
+                    '• Renamed from "Weekly Sessions" to better reflect competition\n'
+                    '• Auto-select portrait for submission - no more dropdown menus!\n'
+                    '• "This Week\'s Model" section shows who you\'re painting\n'
+                    '• Streamlined submission flow - just add notes and submit\n'
+                    '• Beautiful new zero-state designs with duotone icons',
                     style: TextStyle(fontSize: 15, height: 1.5),
                   ),
                   const SizedBox(height: 16),
                   const Text(
-                    '✨ UI/UX Improvements',
+                    '📱 My Heads Screen Enhancements',
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
@@ -114,15 +114,15 @@ class AboutScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 8),
                   const Text(
-                    '• Fresh new icon library with duotone styling throughout\n'
-                    '• Satoshi font for a modern, polished look\n'
-                    '• Milestone progress tracking (100, 200, 300 portraits and beyond!)\n'
-                    '• Improved search functionality in the Community tab',
+                    '• Personalized title with achievement emoji (🌟 → 🐉 → 🔥 → 🚀)\n'
+                    '• "Your Heads" shows your name with milestone emoji\n'
+                    '• Horizontal white logo in app bar for cleaner branding\n'
+                    '• Milestone progress now tracks to 100, 200, 300+ correctly',
                     style: TextStyle(fontSize: 15, height: 1.5),
                   ),
                   const SizedBox(height: 16),
                   const Text(
-                    '🐛 Bug Fixes & Performance',
+                    '🎨 Portrait Previews & Profile',
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
@@ -131,10 +131,11 @@ class AboutScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 8),
                   const Text(
-                    '• Fixed upload button visibility on Android\n'
-                    '• Improved crash reporting with Firebase Crashlytics\n'
-                    '• Enhanced RSVP notification handling\n'
-                    '• Better error handling and user feedback',
+                    '• Week number badge now shows on portrait previews\n'
+                    '• Swipe left/right to browse portraits (Tinder-style!)\n'
+                    '• Position indicator shows where you are (45/100)\n'
+                    '• Full-screen Edit Profile page (no more cramped dialog!)\n'
+                    '• Better organized profile editing with larger previews',
                     style: TextStyle(fontSize: 15, height: 1.5),
                   ),
                 ],
