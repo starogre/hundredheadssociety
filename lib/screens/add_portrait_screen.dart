@@ -573,49 +573,45 @@ class _AddPortraitScreenState extends State<AddPortraitScreen> {
                       ],
                     ),
                   )
-                : GridView.builder(
+                : ListView.builder(
                     padding: const EdgeInsets.all(16),
-                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 2,
-                      crossAxisSpacing: 12,
-                      mainAxisSpacing: 12,
-                      childAspectRatio: 0.75,
-                    ),
                     itemCount: _bulkImages.length,
-                    itemBuilder: (context, i) {
-                      return _buildImageCard(i);
+                    itemBuilder: (context, index) {
+                      return _buildHorizontalImageCard(index);
                     },
                   ),
           ),
           
           // Submit Button
           if (_bulkImages.isNotEmpty)
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.1),
-                    blurRadius: 8,
-                    offset: const Offset(0, -2),
-                  ),
-                ],
-              ),
-              child: SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: _bulkUploadPortraits,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.rustyOrange,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                  ),
-                  child: Text(
-                    'Upload ${_bulkImages.length} ${_bulkImages.length == 1 ? 'Portrait' : 'Portraits'}',
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
+            SafeArea(
+              child: Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.1),
+                      blurRadius: 8,
+                      offset: const Offset(0, -2),
+                    ),
+                  ],
+                ),
+                child: SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: _bulkUploadPortraits,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.rustyOrange,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                    ),
+                    child: Text(
+                      'Upload ${_bulkImages.length} ${_bulkImages.length == 1 ? 'Portrait' : 'Portraits'}',
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ),
                 ),
@@ -626,9 +622,11 @@ class _AddPortraitScreenState extends State<AddPortraitScreen> {
     );
   }
 
-  // Build individual image card with model selector
-  Widget _buildImageCard(int index) {
+  // Build horizontal image card with model selector (new layout)
+  Widget _buildHorizontalImageCard(int index) {
     return Container(
+      height: 160,
+      margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
@@ -641,41 +639,27 @@ class _AddPortraitScreenState extends State<AddPortraitScreen> {
           ),
         ],
       ),
-      child: Column(
+      child: Row(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // Image thumbnail with badges
-          Expanded(
+          // Left: Image thumbnail
+          ClipRRect(
+            borderRadius: const BorderRadius.only(
+              topLeft: Radius.circular(12),
+              bottomLeft: Radius.circular(12),
+            ),
             child: Stack(
-              fit: StackFit.expand,
               children: [
-                // Image
-                ClipRRect(
-                  borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
-                  child: Image.file(
-                    _bulkImages[index],
-                    fit: BoxFit.cover,
-                  ),
+                Image.file(
+                  _bulkImages[index],
+                  width: 110,
+                  height: 160,
+                  fit: BoxFit.cover,
                 ),
-                // Gradient overlay
-                Container(
-                  decoration: BoxDecoration(
-                    borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
-                    gradient: LinearGradient(
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
-                      colors: [
-                        Colors.black.withValues(alpha: 0.4),
-                        Colors.transparent,
-                      ],
-                      stops: const [0.0, 0.5],
-                    ),
-                  ),
-                ),
-                // Number badge (top-left)
+                // Number badge overlay
                 Positioned(
-                  top: 6,
-                  left: 6,
+                  top: 8,
+                  left: 8,
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(
@@ -686,28 +670,8 @@ class _AddPortraitScreenState extends State<AddPortraitScreen> {
                       '${index + 1}',
                       style: const TextStyle(
                         color: Colors.white,
-                        fontSize: 12,
+                        fontSize: 14,
                         fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                ),
-                // Remove button (top-right)
-                Positioned(
-                  top: 6,
-                  right: 6,
-                  child: GestureDetector(
-                    onTap: () => _removeImageAtIndex(index),
-                    child: Container(
-                      padding: const EdgeInsets.all(4),
-                      decoration: BoxDecoration(
-                        color: Colors.red[700],
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(
-                        Icons.close,
-                        color: Colors.white,
-                        size: 16,
                       ),
                     ),
                   ),
@@ -715,56 +679,88 @@ class _AddPortraitScreenState extends State<AddPortraitScreen> {
               ],
             ),
           ),
-          // Info section
-          Container(
-            padding: const EdgeInsets.all(8),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // Week number
-                Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                      decoration: BoxDecoration(
-                        color: AppColors.rustyOrange.withValues(alpha: 0.2),
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                      child: Text(
-                        'Week ${_bulkWeekNumbers[index]}',
-                        style: TextStyle(
-                          color: AppColors.rustyOrange,
-                          fontSize: 11,
-                          fontWeight: FontWeight.bold,
+          
+          // Right: Info section
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.all(12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  // Top: Week badge and remove button
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: AppColors.rustyOrange.withValues(alpha: 0.2),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Text(
+                          'Week ${_bulkWeekNumbers[index]}',
+                          style: TextStyle(
+                            color: AppColors.rustyOrange,
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                       ),
+                      // Remove button
+                      GestureDetector(
+                        onTap: () => _removeImageAtIndex(index),
+                        child: Container(
+                          padding: const EdgeInsets.all(4),
+                          decoration: BoxDecoration(
+                            color: Colors.red[700],
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(
+                            Icons.close,
+                            color: Colors.white,
+                            size: 16,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  
+                  // Middle: Model selector
+                  ModelDropdown(
+                    selectedModelId: _bulkModelIds[index],
+                    selectedModelName: _bulkModelNames[index],
+                    onModelSelected: (modelId, modelName) {
+                      setState(() {
+                        _bulkModelIds[index] = modelId;
+                        _bulkModelNames[index] = modelName;
+                      });
+                    },
+                  ),
+                  
+                  // Bottom: Edit button
+                  TextButton.icon(
+                    onPressed: () => _editImageAtIndex(index),
+                    icon: Icon(
+                      Icons.edit,
+                      size: 16,
+                      color: AppColors.forestGreen,
                     ),
-                    const Spacer(),
-                    // Edit icon
-                    GestureDetector(
-                      onTap: () => _editImageAtIndex(index),
-                      child: Icon(
-                        Icons.edit,
-                        size: 16,
-                        color: Colors.grey[600],
+                    label: Text(
+                      'Edit Description',
+                      style: TextStyle(
+                        color: AppColors.forestGreen,
+                        fontSize: 12,
                       ),
                     ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                // Model selector
-                ModelDropdown(
-                  selectedModelId: _bulkModelIds[index],
-                  selectedModelName: _bulkModelNames[index],
-                  onModelSelected: (modelId, modelName) {
-                    setState(() {
-                      _bulkModelIds[index] = modelId;
-                      _bulkModelNames[index] = modelName;
-                    });
-                  },
-                ),
-              ],
+                    style: TextButton.styleFrom(
+                      padding: EdgeInsets.zero,
+                      minimumSize: const Size(0, 30),
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         ],
