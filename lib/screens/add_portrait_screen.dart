@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
@@ -351,6 +352,35 @@ class _AddPortraitScreenState extends State<AddPortraitScreen> {
     );
   }
 
+  void _selectModelAtIndex(int index) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(
+          'Select Model',
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            color: AppColors.forestGreen,
+          ),
+        ),
+        content: SizedBox(
+          width: double.maxFinite,
+          child: ModelDropdown(
+            selectedModelId: _bulkModelIds[index],
+            selectedModelName: _bulkModelNames[index],
+            onModelSelected: (modelId, modelName) {
+              setState(() {
+                _bulkModelIds[index] = modelId;
+                _bulkModelNames[index] = modelName;
+              });
+              Navigator.of(context).pop();
+            },
+          ),
+        ),
+      ),
+    );
+  }
+
   Future<void> _savePortrait() async {
     if (!_formKey.currentState!.validate() || _selectedImage == null) {
       return;
@@ -575,8 +605,32 @@ class _AddPortraitScreenState extends State<AddPortraitScreen> {
                 : ReorderableListView.builder(
                     padding: const EdgeInsets.all(16),
                     itemCount: _bulkImages.length,
+                    buildDefaultDragHandles: false,
+                    proxyDecorator: (child, index, animation) {
+                      return AnimatedBuilder(
+                        animation: animation,
+                        builder: (context, child) {
+                          final animValue = Curves.easeInOut.transform(animation.value);
+                          final elevation = lerpDouble(4, 16, animValue)!;
+                          final scale = lerpDouble(1.0, 1.05, animValue)!;
+                          return Transform.scale(
+                            scale: scale,
+                            child: Material(
+                              elevation: elevation,
+                              borderRadius: BorderRadius.circular(12),
+                              child: child,
+                            ),
+                          );
+                        },
+                        child: child,
+                      );
+                    },
                     itemBuilder: (context, index) {
-                      return _buildHorizontalImageCard(index);
+                      return ReorderableDragStartListener(
+                        key: ValueKey('drag_$index'),
+                        index: index,
+                        child: _buildHorizontalImageCard(index),
+                      );
                     },
                     onReorder: (oldIndex, newIndex) {
                       setState(() {
@@ -600,6 +654,13 @@ class _AddPortraitScreenState extends State<AddPortraitScreen> {
                         
                         final week = _bulkWeekNumbers.removeAt(oldIndex);
                         _bulkWeekNumbers.insert(newIndex, week);
+                        
+                        // Recalculate all week numbers based on new order
+                        // Start from the next available week and count down for each portrait
+                        final startWeek = widget.nextWeekNumber;
+                        for (int i = 0; i < _bulkWeekNumbers.length; i++) {
+                          _bulkWeekNumbers[i] = startWeek + i;
+                        }
                       });
                     },
                   ),
@@ -657,149 +718,219 @@ class _AddPortraitScreenState extends State<AddPortraitScreen> {
         border: Border.all(color: Colors.grey[300]!),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 4,
-            offset: const Offset(0, 2),
+            color: Colors.black.withValues(alpha: 0.08),
+            blurRadius: 8,
+            offset: const Offset(0, 3),
           ),
         ],
       ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
+      child: Stack(
         children: [
-          // Drag handle
-          Container(
-            width: 40,
-            decoration: BoxDecoration(
-              color: Colors.grey[100],
-              borderRadius: const BorderRadius.only(
-                topLeft: Radius.circular(12),
-                bottomLeft: Radius.circular(12),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // Drag handle
+              Container(
+                width: 40,
+                decoration: BoxDecoration(
+                  color: Colors.grey[100],
+                  borderRadius: const BorderRadius.only(
+                    topLeft: Radius.circular(12),
+                    bottomLeft: Radius.circular(12),
+                  ),
+                ),
+                child: Center(
+                  child: Icon(
+                    Icons.drag_handle,
+                    color: Colors.grey[400],
+                    size: 24,
+                  ),
+                ),
               ),
-            ),
-            child: Center(
-              child: Icon(
-                Icons.drag_handle,
-                color: Colors.grey[400],
-                size: 24,
-              ),
-            ),
-          ),
-          
-          // Left: Image thumbnail
-          ClipRRect(
-            borderRadius: BorderRadius.zero,
-            child: Stack(
-              children: [
-                Image.file(
+              
+              // Left: Image thumbnail
+              ClipRRect(
+                borderRadius: BorderRadius.zero,
+                child: Image.file(
                   _bulkImages[index],
                   width: 110,
                   height: 160,
                   fit: BoxFit.cover,
                 ),
-                // Number badge overlay
-                Positioned(
-                  top: 8,
-                  left: 8,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: AppColors.forestGreen,
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Text(
-                      '${index + 1}',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 14,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
+              ),
           
-          // Right: Info section
-          Expanded(
-            child: Padding(
-              padding: const EdgeInsets.all(12),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  // Top: Week badge and remove button
-                  Row(
+              // Right: Info section
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.all(12),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: AppColors.rustyOrange.withValues(alpha: 0.2),
-                          borderRadius: BorderRadius.circular(6),
-                        ),
-                        child: Text(
-                          'Week ${_bulkWeekNumbers[index]}',
-                          style: TextStyle(
-                            color: AppColors.rustyOrange,
-                            fontSize: 12,
-                            fontWeight: FontWeight.bold,
+                      // Top: Week badge and remove button
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: AppColors.rustyOrange.withValues(alpha: 0.2),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: Text(
+                              'Week ${_bulkWeekNumbers[index]}',
+                              style: TextStyle(
+                                color: AppColors.rustyOrange,
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                          // Remove button
+                          GestureDetector(
+                            onTap: () => _removeImageAtIndex(index),
+                            child: Container(
+                              padding: const EdgeInsets.all(4),
+                              decoration: BoxDecoration(
+                                color: Colors.red[700],
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Icon(
+                                Icons.close,
+                                color: Colors.white,
+                                size: 16,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      
+                      // Middle: Model selector button
+                      GestureDetector(
+                        onTap: () => _selectModelAtIndex(index),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                          decoration: BoxDecoration(
+                            color: Colors.grey[50],
+                            borderRadius: BorderRadius.circular(6),
+                            border: Border.all(color: Colors.grey[300]!),
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(
+                                Icons.person,
+                                size: 16,
+                                color: _bulkModelNames[index] != null 
+                                    ? AppColors.forestGreen 
+                                    : Colors.grey[400],
+                              ),
+                              const SizedBox(width: 6),
+                              Expanded(
+                                child: Text(
+                                  _bulkModelNames[index] ?? 'Select Model',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: _bulkModelNames[index] != null 
+                                        ? AppColors.forestGreen 
+                                        : Colors.grey[600],
+                                    fontWeight: _bulkModelNames[index] != null 
+                                        ? FontWeight.w600 
+                                        : FontWeight.normal,
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                              Icon(
+                                Icons.arrow_forward_ios,
+                                size: 12,
+                                color: Colors.grey[400],
+                              ),
+                            ],
                           ),
                         ),
                       ),
-                      // Remove button
+                      
+                      // Bottom: Description button
                       GestureDetector(
-                        onTap: () => _removeImageAtIndex(index),
+                        onTap: () => _editImageAtIndex(index),
                         child: Container(
-                          padding: const EdgeInsets.all(4),
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                           decoration: BoxDecoration(
-                            color: Colors.red[700],
-                            shape: BoxShape.circle,
+                            color: Colors.grey[50],
+                            borderRadius: BorderRadius.circular(6),
+                            border: Border.all(color: Colors.grey[300]!),
                           ),
-                          child: const Icon(
-                            Icons.close,
-                            color: Colors.white,
-                            size: 16,
+                          child: Row(
+                            children: [
+                              Icon(
+                                Icons.edit,
+                                size: 16,
+                                color: _bulkDescriptionControllers[index].text.isNotEmpty
+                                    ? AppColors.forestGreen
+                                    : Colors.grey[400],
+                              ),
+                              const SizedBox(width: 6),
+                              Expanded(
+                                child: Text(
+                                  _bulkDescriptionControllers[index].text.isNotEmpty
+                                      ? _bulkDescriptionControllers[index].text
+                                      : 'Add Description',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: _bulkDescriptionControllers[index].text.isNotEmpty
+                                        ? AppColors.forestGreen
+                                        : Colors.grey[600],
+                                    fontWeight: _bulkDescriptionControllers[index].text.isNotEmpty
+                                        ? FontWeight.w600
+                                        : FontWeight.normal,
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
+                                  maxLines: 1,
+                                ),
+                              ),
+                              Icon(
+                                Icons.arrow_forward_ios,
+                                size: 12,
+                                color: Colors.grey[400],
+                              ),
+                            ],
                           ),
                         ),
                       ),
                     ],
                   ),
-                  
-                  // Middle: Model selector
-                  ModelDropdown(
-                    selectedModelId: _bulkModelIds[index],
-                    selectedModelName: _bulkModelNames[index],
-                    onModelSelected: (modelId, modelName) {
-                      setState(() {
-                        _bulkModelIds[index] = modelId;
-                        _bulkModelNames[index] = modelName;
-                      });
-                    },
-                  ),
-                  
-                  // Bottom: Edit button
-                  TextButton.icon(
-                    onPressed: () => _editImageAtIndex(index),
-                    icon: Icon(
-                      Icons.edit,
-                      size: 16,
-                      color: AppColors.forestGreen,
-                    ),
-                    label: Text(
-                      'Edit Description',
-                      style: TextStyle(
-                        color: AppColors.forestGreen,
-                        fontSize: 12,
-                      ),
-                    ),
-                    style: TextButton.styleFrom(
-                      padding: EdgeInsets.zero,
-                      minimumSize: const Size(0, 30),
-                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                    ),
+                ),
+              ),
+            ],
+          ),
+          
+          // Number badge - positioned at top left
+          Positioned(
+            top: 8,
+            left: 8,
+            child: Container(
+              width: 32,
+              height: 32,
+              decoration: BoxDecoration(
+                color: AppColors.forestGreen,
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.2),
+                    blurRadius: 4,
+                    offset: const Offset(0, 2),
                   ),
                 ],
+              ),
+              child: Center(
+                child: Text(
+                  '${index + 1}',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
               ),
             ),
           ),
@@ -817,28 +948,23 @@ class _AddPortraitScreenState extends State<AddPortraitScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-                    // Bulk Upload Toggle
-                    Row(
-                      children: [
-                        Switch(
-                          value: _isBulkMode,
-                          onChanged: (val) {
-                            setState(() {
-                              _isBulkMode = val;
-                              if (!val) {
-                                _bulkImages.clear();
-                                _bulkDescriptionControllers.clear();
-                                _bulkModelIds.clear();
-                                _bulkModelNames.clear();
-                                _bulkWeekNumbers.clear();
-                              }
-                            });
-                          },
-                          activeColor: AppColors.rustyOrange,
+                    // Bulk Upload Button
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton.icon(
+                        onPressed: () {
+                          setState(() {
+                            _isBulkMode = true;
+                          });
+                        },
+                        icon: const Icon(Icons.photo_library, size: 20),
+                        label: const Text('Add Multiple'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.rustyOrange,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 14),
                         ),
-                        const SizedBox(width: 8),
-                        const Text('Add Multiple'),
-                      ],
+                      ),
                     ),
                     const SizedBox(height: 12),
                     // Week Selection
