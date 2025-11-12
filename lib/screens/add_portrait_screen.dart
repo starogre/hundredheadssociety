@@ -573,11 +573,35 @@ class _AddPortraitScreenState extends State<AddPortraitScreen> {
                       ],
                     ),
                   )
-                : ListView.builder(
+                : ReorderableListView.builder(
                     padding: const EdgeInsets.all(16),
                     itemCount: _bulkImages.length,
                     itemBuilder: (context, index) {
                       return _buildHorizontalImageCard(index);
+                    },
+                    onReorder: (oldIndex, newIndex) {
+                      setState(() {
+                        // Adjust index if moving down
+                        if (newIndex > oldIndex) {
+                          newIndex -= 1;
+                        }
+                        
+                        // Reorder all arrays to keep data synchronized
+                        final image = _bulkImages.removeAt(oldIndex);
+                        _bulkImages.insert(newIndex, image);
+                        
+                        final desc = _bulkDescriptionControllers.removeAt(oldIndex);
+                        _bulkDescriptionControllers.insert(newIndex, desc);
+                        
+                        final modelId = _bulkModelIds.removeAt(oldIndex);
+                        _bulkModelIds.insert(newIndex, modelId);
+                        
+                        final modelName = _bulkModelNames.removeAt(oldIndex);
+                        _bulkModelNames.insert(newIndex, modelName);
+                        
+                        final week = _bulkWeekNumbers.removeAt(oldIndex);
+                        _bulkWeekNumbers.insert(newIndex, week);
+                      });
                     },
                   ),
           ),
@@ -625,6 +649,7 @@ class _AddPortraitScreenState extends State<AddPortraitScreen> {
   // Build horizontal image card with model selector (new layout)
   Widget _buildHorizontalImageCard(int index) {
     return Container(
+      key: ValueKey('portrait_$index'),
       height: 160,
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
@@ -642,12 +667,28 @@ class _AddPortraitScreenState extends State<AddPortraitScreen> {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          // Drag handle
+          Container(
+            width: 40,
+            decoration: BoxDecoration(
+              color: Colors.grey[100],
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(12),
+                bottomLeft: Radius.circular(12),
+              ),
+            ),
+            child: Center(
+              child: Icon(
+                Icons.drag_handle,
+                color: Colors.grey[400],
+                size: 24,
+              ),
+            ),
+          ),
+          
           // Left: Image thumbnail
           ClipRRect(
-            borderRadius: const BorderRadius.only(
-              topLeft: Radius.circular(12),
-              bottomLeft: Radius.circular(12),
-            ),
+            borderRadius: BorderRadius.zero,
             child: Stack(
               children: [
                 Image.file(
