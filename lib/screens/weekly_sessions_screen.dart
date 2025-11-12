@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import '../providers/weekly_session_provider.dart';
 import '../providers/auth_provider.dart';
+import '../providers/model_provider.dart';
 import '../models/weekly_session_model.dart';
 import '../models/user_model.dart';
+import '../models/model_model.dart';
 import '../theme/app_theme.dart';
 import '../widgets/submit_portrait_dialog.dart';
 import '../widgets/nomination_dialog.dart';
@@ -432,8 +435,8 @@ class _WeeklySessionsScreenState extends State<WeeklySessionsScreen>
             SizedBox(
               width: double.infinity,
               child: ElevatedButton.icon(
-                onPressed: () => _showSubmitPortraitDialog(context, weeklySessionProvider),
-                icon: const Icon(Icons.add_a_photo),
+                onPressed: () => _showSubmitPortraitDialog(context, weeklySessionProvider, session),
+                icon: PhosphorIcon(PhosphorIconsDuotone.image, size: 20),
                 label: const Text('Submit Your Painting'),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.rustyOrange,
@@ -464,6 +467,120 @@ class _WeeklySessionsScreenState extends State<WeeklySessionsScreen>
               ),
             ),
           const SizedBox(height: 24),
+
+          // This Week's Model Section
+          if (!session.isCancelled)
+            Consumer<ModelProvider>(
+              builder: (context, modelProvider, child) {
+                return StreamBuilder<List<ModelModel>>(
+                  stream: modelProvider.getModels(),
+                  builder: (context, snapshot) {
+                    if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                      return const SizedBox.shrink();
+                    }
+
+                    final models = snapshot.data!;
+                    // Find model matching session date
+                    ModelModel? sessionModel;
+                    try {
+                      sessionModel = models.firstWhere(
+                        (model) =>
+                            model.date.year == session.sessionDate.year &&
+                            model.date.month == session.sessionDate.month &&
+                            model.date.day == session.sessionDate.day,
+                        orElse: () => models.first,
+                      );
+                    } catch (e) {
+                      return const SizedBox.shrink();
+                    }
+
+                    if (sessionModel == null) {
+                      return const SizedBox.shrink();
+                    }
+
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'This Week\'s Model',
+                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                            color: AppColors.forestGreen,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        Container(
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: AppColors.forestGreen.withOpacity(0.05),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: AppColors.forestGreen.withOpacity(0.2),
+                            ),
+                          ),
+                          child: Row(
+                            children: [
+                              // Model image
+                              if (sessionModel.imageUrl != null)
+                                ClipRRect(
+                                  borderRadius: BorderRadius.circular(8),
+                                  child: CachedNetworkImage(
+                                    imageUrl: sessionModel.imageUrl!,
+                                    width: 60,
+                                    height: 60,
+                                    fit: BoxFit.cover,
+                                    errorWidget: (context, url, error) =>
+                                        Container(
+                                      width: 60,
+                                      height: 60,
+                                      decoration: BoxDecoration(
+                                        color: AppColors.forestGreen.withOpacity(0.1),
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                      child: PhosphorIcon(
+                                        PhosphorIconsDuotone.user,
+                                        color: AppColors.forestGreen,
+                                        size: 30,
+                                      ),
+                                    ),
+                                  ),
+                                )
+                              else
+                                Container(
+                                  width: 60,
+                                  height: 60,
+                                  decoration: BoxDecoration(
+                                    color: AppColors.forestGreen.withOpacity(0.1),
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: PhosphorIcon(
+                                    PhosphorIconsDuotone.user,
+                                    color: AppColors.forestGreen,
+                                    size: 30,
+                                  ),
+                                ),
+                              const SizedBox(width: 16),
+                              // Model name
+                              Expanded(
+                                child: Text(
+                                  sessionModel.name,
+                                  style: const TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                    color: AppColors.forestGreen,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 24),
+                      ],
+                    );
+                  },
+                );
+              },
+            ),
 
           // Submissions List - only show if session is not cancelled
           if (!session.isCancelled) ...[
@@ -747,10 +864,12 @@ class _WeeklySessionsScreenState extends State<WeeklySessionsScreen>
     );
   }
 
-  void _showSubmitPortraitDialog(BuildContext context, WeeklySessionProvider weeklySessionProvider) {
+  void _showSubmitPortraitDialog(BuildContext context, WeeklySessionProvider weeklySessionProvider, WeeklySessionModel session) {
     showDialog(
       context: context,
-      builder: (context) => const SubmitPortraitDialog(),
+      builder: (context) => SubmitPortraitDialog(
+        sessionDate: session.sessionDate,
+      ),
     );
   }
 
