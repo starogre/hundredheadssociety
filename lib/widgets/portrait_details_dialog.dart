@@ -564,7 +564,6 @@ class _PortraitDetailsDialogState extends State<PortraitDetailsDialog> {
                       ),
                     ],
                   ),
-            ),
           ),
         ],
       ),
