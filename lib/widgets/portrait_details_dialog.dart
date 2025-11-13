@@ -261,76 +261,76 @@ class _PortraitDetailsDialogState extends State<PortraitDetailsDialog> {
                     children: [
                       // Artist section - most prominent at top
                       GestureDetector(
-                  onTap: () => _navigateToProfile(context),
-                  child: Row(
-                    children: [
-                      CircleAvatar(
-                        radius: 20,
-                        backgroundColor: AppColors.forestGreen,
-                        backgroundImage: widget.user?.profileImageUrl != null 
-                            ? NetworkImage(widget.user!.profileImageUrl!)
-                            : null,
-                        child: widget.user?.profileImageUrl == null
-                            ? Text(
-                                widget.user?.name.isNotEmpty == true ? widget.user!.name[0].toUpperCase() : 'A',
-                                style: const TextStyle(
-                                  fontSize: 16,
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              )
-                            : null,
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+                        onTap: () => _navigateToProfile(context),
+                        child: Row(
                           children: [
-                            Text(
-                              widget.user?.name ?? 'Anonymous',
-                              style: const TextStyle(
-                                fontSize: 20,
-                                fontWeight: FontWeight.bold,
-                                color: AppColors.forestGreen,
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
+                            CircleAvatar(
+                              radius: 20,
+                              backgroundColor: AppColors.forestGreen,
+                              backgroundImage: widget.user?.profileImageUrl != null 
+                                  ? NetworkImage(widget.user!.profileImageUrl!)
+                                  : null,
+                              child: widget.user?.profileImageUrl == null
+                                  ? Text(
+                                      widget.user?.name.isNotEmpty == true ? widget.user!.name[0].toUpperCase() : 'A',
+                                      style: const TextStyle(
+                                        fontSize: 16,
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    )
+                                  : null,
                             ),
-                            ...(widget.user != null ? [
-                              const SizedBox(height: 2),
-                              // Role Badge
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                                decoration: BoxDecoration(
-                                  color: widget.user!.isArtist 
-                                      ? Colors.blue.shade100 
-                                      : Colors.green.shade100,
-                                  borderRadius: BorderRadius.circular(12),
-                                  border: Border.all(
-                                    color: widget.user!.isArtist 
-                                        ? Colors.blue.shade300 
-                                        : Colors.green.shade300,
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    widget.user?.name ?? 'Anonymous',
+                                    style: const TextStyle(
+                                      fontSize: 20,
+                                      fontWeight: FontWeight.bold,
+                                      color: AppColors.forestGreen,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
                                   ),
-                                ),
-                                child: Text(
-                                  widget.user!.isArtist ? 'Artist' : 'Appreciator',
-                                  style: TextStyle(
-                                    fontSize: 10,
-                                    fontWeight: FontWeight.w600,
-                                    color: widget.user!.isArtist 
-                                        ? Colors.blue.shade700 
-                                        : Colors.green.shade700,
-                                  ),
-                                ),
+                                  ...(widget.user != null ? [
+                                    const SizedBox(height: 2),
+                                    // Role Badge
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                      decoration: BoxDecoration(
+                                        color: widget.user!.isArtist 
+                                            ? Colors.blue.shade100 
+                                            : Colors.green.shade100,
+                                        borderRadius: BorderRadius.circular(12),
+                                        border: Border.all(
+                                          color: widget.user!.isArtist 
+                                              ? Colors.blue.shade300 
+                                              : Colors.green.shade300,
+                                        ),
+                                      ),
+                                      child: Text(
+                                        widget.user!.isArtist ? 'Artist' : 'Appreciator',
+                                        style: TextStyle(
+                                          fontSize: 10,
+                                          fontWeight: FontWeight.w600,
+                                          color: widget.user!.isArtist 
+                                              ? Colors.blue.shade700 
+                                              : Colors.green.shade700,
+                                        ),
+                                      ),
+                                    ),
+                                  ] : []),
+                                ],
                               ),
-                            ] : []),
+                            ),
                           ],
                         ),
                       ),
-                    ],
-                  ),
-                ),
-                SizedBox(height: 16),
+                      SizedBox(height: 16),
                 // Model section - below artist
                 ...(_currentPortrait.modelName != null && _currentPortrait.modelName!.isNotEmpty ? [
                   Consumer<ModelProvider>(
