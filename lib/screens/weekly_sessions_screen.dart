@@ -425,9 +425,15 @@ class _WeeklySessionsScreenState extends State<WeeklySessionsScreen>
     final currentUserId = authProvider.currentUser?.uid;
     final hasSubmitted = currentUserId != null && weeklySessionProvider.hasUserSubmitted(currentUserId);
 
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: Column(
+    return RefreshIndicator(
+      onRefresh: () async {
+        await weeklySessionProvider.initialize();
+      },
+      color: AppColors.forestGreen,
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
+        physics: const AlwaysScrollableScrollPhysics(),
+        child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Submit Button - only show if session is not cancelled
@@ -737,6 +743,7 @@ class _WeeklySessionsScreenState extends State<WeeklySessionsScreen>
           ],
         ],
       ),
+      ),
     );
   }
 
@@ -813,9 +820,15 @@ class _WeeklySessionsScreenState extends State<WeeklySessionsScreen>
       );
     }
     
-    return ListView(
-      padding: const EdgeInsets.all(16),
-      children: awardDetails.entries.map((entry) {
+    return RefreshIndicator(
+      onRefresh: () async {
+        await weeklySessionProvider.initialize();
+      },
+      color: AppColors.forestGreen,
+      child: ListView(
+        padding: const EdgeInsets.all(16),
+        physics: const AlwaysScrollableScrollPhysics(),
+        children: awardDetails.entries.map((entry) {
         final categoryKey = entry.key;
         final categoryDetails = entry.value;
         final categoryId = categoryKey.toString().split('.').last;
@@ -877,6 +890,7 @@ class _WeeklySessionsScreenState extends State<WeeklySessionsScreen>
           ),
         );
       }).toList(),
+      ),
     );
   }
 

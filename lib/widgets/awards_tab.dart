@@ -530,24 +530,17 @@ class _AwardsTabState extends State<AwardsTab> {
       );
     }
 
-    return RefreshIndicator(
-      onRefresh: _loadData,
-      color: AppColors.forestGreen,
-      child: SingleChildScrollView(
-        physics: const AlwaysScrollableScrollPhysics(),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Summary Cards
-            _buildSummaryCards(),
-            const SizedBox(height: 24),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Summary Cards
+        _buildSummaryCards(),
+        const SizedBox(height: 24),
 
-            // User's Merch Items
-            _buildUserMerchSection(),
-            const SizedBox(height: 24),
-          ],
-        ),
-      ),
+        // User's Merch Items
+        _buildUserMerchSection(),
+        const SizedBox(height: 24),
+      ],
     );
   }
 } 
