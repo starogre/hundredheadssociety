@@ -427,7 +427,9 @@ class _WeeklySessionsScreenState extends State<WeeklySessionsScreen>
 
     return RefreshIndicator(
       onRefresh: () async {
-        await weeklySessionProvider.initialize();
+        weeklySessionProvider.initialize();
+        // Wait a bit for the stream to update
+        await Future.delayed(const Duration(milliseconds: 500));
       },
       color: AppColors.forestGreen,
       child: SingleChildScrollView(
@@ -822,7 +824,9 @@ class _WeeklySessionsScreenState extends State<WeeklySessionsScreen>
     
     return RefreshIndicator(
       onRefresh: () async {
-        await weeklySessionProvider.initialize();
+        weeklySessionProvider.initialize();
+        // Wait a bit for the stream to update
+        await Future.delayed(const Duration(milliseconds: 500));
       },
       color: AppColors.forestGreen,
       child: ListView(
