@@ -625,8 +625,8 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                         Row(
                                           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                                           children: [
-                                            // Switch to Appreciator Button (for artists only)
-                                            if (user.isArtist)
+                                            // Switch to Appreciator Button (for artists only, Admin Only)
+                                            if (isAdmin && user.isArtist)
                                               Expanded(
                                                 child: ElevatedButton.icon(
                                                   onPressed: () async {
@@ -690,53 +690,54 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                                 ),
                                               ),
                                             
-                                            // Delete Button
-                                            Expanded(
-                                              child: ElevatedButton.icon(
-                                                onPressed: () async {
-                                                  final confirmed = await showDialog<bool>(
-                                                    context: context,
-                                                    builder: (context) => AlertDialog(
-                                                      title: const Text('Delete User'),
-                                                      content: Text('Are you sure you want to delete "${user.name}"? This action cannot be undone.'),
-                                                      actions: [
-                                                        TextButton(
-                                                          onPressed: () => Navigator.of(context).pop(false),
-                                                          child: const Text('Cancel'),
-                                                        ),
-                                                        TextButton(
-                                                          onPressed: () => Navigator.of(context).pop(true),
-                                                          style: TextButton.styleFrom(foregroundColor: Colors.red),
-                                                          child: const Text('Delete'),
-                                                        ),
-                                                      ],
-                                                    ),
-                                                  );
+                                            // Delete Button (Admin Only)
+                                            if (isAdmin)
+                                              Expanded(
+                                                child: ElevatedButton.icon(
+                                                  onPressed: () async {
+                                                    final confirmed = await showDialog<bool>(
+                                                      context: context,
+                                                      builder: (context) => AlertDialog(
+                                                        title: const Text('Delete User'),
+                                                        content: Text('Are you sure you want to delete "${user.name}"? This action cannot be undone.'),
+                                                        actions: [
+                                                          TextButton(
+                                                            onPressed: () => Navigator.of(context).pop(false),
+                                                            child: const Text('Cancel'),
+                                                          ),
+                                                          TextButton(
+                                                            onPressed: () => Navigator.of(context).pop(true),
+                                                            style: TextButton.styleFrom(foregroundColor: Colors.red),
+                                                            child: const Text('Delete'),
+                                                          ),
+                                                        ],
+                                                      ),
+                                                    );
 
-                                                  if (confirmed == true) {
-                                                    try {
-                                                      await _userService.deleteUser(
-                                                        user.id,
-                                                        performedBy: currentUser?.id ?? '',
-                                                        performedByName: currentUser?.name ?? 'Unknown Admin',
-                                                      );
-                                                      if (mounted) {
-                                                        ScaffoldMessenger.of(context).showSnackBar(
-                                                          SnackBar(
-                                                            content: Text('Deleted user "${user.name}"'),
-                                                            backgroundColor: AppColors.forestGreen,
-                                                          ),
+                                                    if (confirmed == true) {
+                                                      try {
+                                                        await _userService.deleteUser(
+                                                          user.id,
+                                                          performedBy: currentUser?.id ?? '',
+                                                          performedByName: currentUser?.name ?? 'Unknown Admin',
                                                         );
-                                                      }
-                                                    } catch (e) {
-                                                      if (mounted) {
-                                                        ScaffoldMessenger.of(context).showSnackBar(
-                                                          SnackBar(
-                                                            content: Text('Error deleting user: $e'),
-                                                            backgroundColor: Colors.red,
-                                                          ),
-                                                        );
-                                                      }
+                                                        if (mounted) {
+                                                          ScaffoldMessenger.of(context).showSnackBar(
+                                                            SnackBar(
+                                                              content: Text('Deleted user "${user.name}"'),
+                                                              backgroundColor: AppColors.forestGreen,
+                                                            ),
+                                                          );
+                                                        }
+                                                      } catch (e) {
+                                                        if (mounted) {
+                                                          ScaffoldMessenger.of(context).showSnackBar(
+                                                            SnackBar(
+                                                              content: Text('Error deleting user: $e'),
+                                                              backgroundColor: Colors.red,
+                                                            ),
+                                                          );
+                                                        }
                                                     }
                                                   }
                                                 },
