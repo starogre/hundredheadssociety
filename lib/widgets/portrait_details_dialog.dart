@@ -18,6 +18,8 @@ class PortraitDetailsDialog extends StatefulWidget {
   final UserModel? user;
   final String currentUserId;
   final VoidCallback? onPortraitModified;
+  final List<PortraitModel>? allPortraits; // For navigation
+  final int? initialIndex; // Starting position in allPortraits
 
   const PortraitDetailsDialog({
     super.key,
@@ -25,6 +27,8 @@ class PortraitDetailsDialog extends StatefulWidget {
     this.user,
     required this.currentUserId,
     this.onPortraitModified,
+    this.allPortraits,
+    this.initialIndex,
   });
 
   @override
@@ -35,6 +39,41 @@ class _PortraitDetailsDialogState extends State<PortraitDetailsDialog> {
   bool _showDeleteConfirmation = false;
   bool _isDeleting = false;
   final AwardService _awardService = AwardService();
+  late int _currentIndex;
+  
+  @override
+  void initState() {
+    super.initState();
+    _currentIndex = widget.initialIndex ?? 0;
+  }
+  
+  PortraitModel get _currentPortrait {
+    if (widget.allPortraits != null && widget.allPortraits!.isNotEmpty) {
+      return widget.allPortraits![_currentIndex];
+    }
+    return widget.portrait;
+  }
+  
+  bool get _canNavigatePrevious => widget.allPortraits != null && _currentIndex > 0;
+  bool get _canNavigateNext => widget.allPortraits != null && _currentIndex < (widget.allPortraits!.length - 1);
+  
+  void _navigatePrevious() {
+    if (_canNavigatePrevious) {
+      setState(() {
+        _currentIndex--;
+        _showDeleteConfirmation = false;
+      });
+    }
+  }
+  
+  void _navigateNext() {
+    if (_canNavigateNext) {
+      setState(() {
+        _currentIndex++;
+        _showDeleteConfirmation = false;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -45,20 +84,94 @@ class _PortraitDetailsDialogState extends State<PortraitDetailsDialog> {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          GestureDetector(
-            onTap: () => _showFullImage(context),
-            child: Container(
-              width: double.infinity,
-              height: 300,
-              decoration: BoxDecoration(
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(8)),
-                image: DecorationImage(
-                  image: CachedNetworkImageProvider(widget.portrait.imageUrl),
-                  fit: BoxFit.cover,
+          Stack(
+            children: [
+              GestureDetector(
+                onTap: () => _showFullImage(context),
+                child: Container(
+                  width: double.infinity,
+                  height: 300,
+                  decoration: BoxDecoration(
+                    borderRadius: const BorderRadius.vertical(top: Radius.circular(8)),
+                    image: DecorationImage(
+                      image: CachedNetworkImageProvider(_currentPortrait.imageUrl),
+                      fit: BoxFit.cover,
+                    ),
+                  ),
                 ),
               ),
-
-            ),
+              // Navigation arrows
+              if (_canNavigatePrevious)
+                Positioned(
+                  left: 8,
+                  top: 0,
+                  bottom: 0,
+                  child: Center(
+                    child: IconButton(
+                      onPressed: _navigatePrevious,
+                      icon: Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: Colors.black.withOpacity(0.6),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.chevron_left,
+                          color: Colors.white,
+                          size: 32,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              if (_canNavigateNext)
+                Positioned(
+                  right: 8,
+                  top: 0,
+                  bottom: 0,
+                  child: Center(
+                    child: IconButton(
+                      onPressed: _navigateNext,
+                      icon: Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: Colors.black.withOpacity(0.6),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.chevron_right,
+                          color: Colors.white,
+                          size: 32,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              // Portrait counter
+              if (widget.allPortraits != null && widget.allPortraits!.length > 1)
+                Positioned(
+                  top: 12,
+                  left: 0,
+                  right: 0,
+                  child: Center(
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withOpacity(0.6),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Text(
+                        '${_currentIndex + 1} / ${widget.allPortraits!.length}',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+            ],
           ),
           Padding(
             padding: const EdgeInsets.all(16),
@@ -138,7 +251,7 @@ class _PortraitDetailsDialogState extends State<PortraitDetailsDialog> {
                 ),
                 SizedBox(height: 16),
                 // Model section - below artist
-                ...(widget.portrait.modelName != null && widget.portrait.modelName!.isNotEmpty ? [
+                ...(_currentPortrait.modelName != null && _currentPortrait.modelName!.isNotEmpty ? [
                   Consumer<ModelProvider>(
                     builder: (context, modelProvider, child) {
                       return StreamBuilder<List<ModelModel>>(
@@ -147,10 +260,10 @@ class _PortraitDetailsDialogState extends State<PortraitDetailsDialog> {
                           ModelModel? model;
                           if (snapshot.hasData) {
                             model = snapshot.data!.firstWhere(
-                              (m) => m.name.toLowerCase() == widget.portrait.modelName!.toLowerCase(),
+                              (m) => m.name.toLowerCase() == _currentPortrait.modelName!.toLowerCase(),
                               orElse: () => ModelModel(
                                 id: '',
-                                name: widget.portrait.modelName!,
+                                name: _currentPortrait.modelName!,
                                 date: DateTime.now(),
                                 isActive: true,
                                 createdAt: DateTime.now(),
@@ -211,7 +324,7 @@ class _PortraitDetailsDialogState extends State<PortraitDetailsDialog> {
                                   // Model name
                                   Expanded(
                                     child: Text(
-                                      widget.portrait.modelName!,
+                                      _currentPortrait.modelName!,
                                       style: const TextStyle(
                                         fontSize: 18,
                                         fontWeight: FontWeight.w600,
@@ -245,9 +358,9 @@ class _PortraitDetailsDialogState extends State<PortraitDetailsDialog> {
                   const SizedBox(height: 16),
                 ] : []),
                 // Description section - at the bottom
-                ...(widget.portrait.description != null && widget.portrait.description!.isNotEmpty ? [
+                ...(_currentPortrait.description != null && _currentPortrait.description!.isNotEmpty ? [
                   Text(
-                    widget.portrait.description!,
+                    _currentPortrait.description!,
                     style: TextStyle(
                       fontSize: 16,
                       color: AppColors.forestGreen.withValues(alpha: 0.8),
@@ -260,7 +373,7 @@ class _PortraitDetailsDialogState extends State<PortraitDetailsDialog> {
 
                 // Awards section
                 FutureBuilder<List<Map<String, dynamic>>>(
-                  future: _awardService.getPortraitAwards(widget.portrait.id),
+                  future: _awardService.getPortraitAwards(_currentPortrait.id),
                   builder: (context, snapshot) {
                     if (snapshot.hasData && snapshot.data!.isNotEmpty) {
                       final awardDetails = _awardService.getAwardDetails();
@@ -367,7 +480,7 @@ class _PortraitDetailsDialogState extends State<PortraitDetailsDialog> {
                         ),
                         const SizedBox(height: 8),
                         Text(
-                          'Are you sure you want to delete "${widget.portrait.title}"? This action cannot be undone.',
+                          'Are you sure you want to delete "${_currentPortrait.title}"? This action cannot be undone.',
                           style: TextStyle(color: Colors.red.shade700),
                         ),
                         const SizedBox(height: 12),
@@ -449,7 +562,7 @@ class _PortraitDetailsDialogState extends State<PortraitDetailsDialog> {
     Navigator.of(context).push(
       MaterialPageRoute(
         builder: (context) => EditPortraitScreen(
-          portrait: widget.portrait,
+          portrait: _currentPortrait,
           onPortraitUpdated: () {
             widget.onPortraitModified?.call();
             // Show success message after returning from edit screen
@@ -472,7 +585,7 @@ class _PortraitDetailsDialogState extends State<PortraitDetailsDialog> {
 
     try {
       final portraitService = PortraitService();
-      await portraitService.deletePortrait(widget.portrait.id, widget.currentUserId);
+      await portraitService.deletePortrait(_currentPortrait.id, widget.currentUserId);
       widget.onPortraitModified?.call();
       
       if (mounted) {
@@ -522,7 +635,7 @@ class _PortraitDetailsDialogState extends State<PortraitDetailsDialog> {
             Center(
               child: InteractiveViewer(
                 child: CachedNetworkImage(
-                  imageUrl: widget.portrait.imageUrl,
+                  imageUrl: _currentPortrait.imageUrl,
                   fit: BoxFit.contain,
                   placeholder: (context, url) => Container(
                     color: Colors.black,
@@ -601,7 +714,7 @@ class _PortraitDetailsDialogState extends State<PortraitDetailsDialog> {
 
     try {
       // Get awards for this portrait
-      final List<Map<String, dynamic>> awards = await _awardService.getPortraitAwards(widget.portrait.id);
+      final List<Map<String, dynamic>> awards = await _awardService.getPortraitAwards(_currentPortrait.id);
       final List<String> awardCategories = awards.map((award) => award['category'] as String).toList();
       
       // Get artist's Instagram handle
@@ -618,7 +731,7 @@ class _PortraitDetailsDialogState extends State<PortraitDetailsDialog> {
 
       // Share to Instagram
       await InstagramSharingService.sharePortraitToInstagram(
-        portrait: widget.portrait,
+        portrait: _currentPortrait,
         artist: widget.user!,
         awards: awardCategories.isNotEmpty ? awardCategories : null,
         artistInstagram: artistInstagram,
