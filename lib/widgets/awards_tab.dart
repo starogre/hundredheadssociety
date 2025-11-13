@@ -180,9 +180,15 @@ class _AwardsTabState extends State<AwardsTab> {
           debugPrint('Session ${sessionDoc.id}: ${submissionsList.length} submissions');
           
           for (var submission in submissionsList) {
+            final submissionUserId = submission['userId'] as String?;
             final votesData = submission['votes'];
             
             if (votesData == null) {
+              continue;
+            }
+            
+            // Skip if this is the user's own submission (can't get community exp from voting for yourself)
+            if (submissionUserId == widget.userId) {
               continue;
             }
             
