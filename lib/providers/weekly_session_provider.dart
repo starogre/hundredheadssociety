@@ -74,11 +74,18 @@ class WeeklySessionProvider extends ChangeNotifier {
         final oldSession = _currentSession;
         _currentSession = session;
         
-        // Only reload users if session changed
-        if (session != null && (oldSession?.id != session.id || oldSession == null)) {
-          await _loadRsvpUsers(session.rsvpUserIds);
-          await _loadSubmissionsWithUsers(session.submissions);
-        } else if (session == null) {
+        // Reload users and submissions whenever session data changes
+        if (session != null) {
+          // Check if we need to reload (session changed OR submissions/rsvps changed)
+          final sessionChanged = oldSession?.id != session.id || oldSession == null;
+          final submissionsChanged = oldSession?.submissions.length != session.submissions.length;
+          final rsvpsChanged = oldSession?.rsvpUserIds.length != session.rsvpUserIds.length;
+          
+          if (sessionChanged || submissionsChanged || rsvpsChanged) {
+            await _loadRsvpUsers(session.rsvpUserIds);
+            await _loadSubmissionsWithUsers(session.submissions);
+          }
+        } else {
           _rsvpUsers = [];
           _submissionsWithUsers = [];
         }

@@ -58,14 +58,43 @@ class _SubmitPortraitDialogState extends State<SubmitPortraitDialog> {
       final modelsStream = modelProvider.getModels();
       final models = await modelsStream.first;
       
-      // Find model that matches the session date (same day)
-      _sessionModel = models.firstWhere(
-        (model) =>
-            model.date.year == widget.sessionDate.year &&
-            model.date.month == widget.sessionDate.month &&
-            model.date.day == widget.sessionDate.day,
-        orElse: () => models.first, // Fallback to most recent model
-      );
+      // Sort models by date
+      final sortedModels = models.toList()
+        ..sort((a, b) => a.date.compareTo(b.date));
+      
+      // Find the model that is currently active
+      // A model is active from its date at 9pm until the next model's date at 9pm
+      final now = DateTime.now();
+      
+      ModelModel? foundModel;
+      for (int i = 0; i < sortedModels.length; i++) {
+        final modelStartTime = DateTime(
+          sortedModels[i].date.year,
+          sortedModels[i].date.month,
+          sortedModels[i].date.day,
+          21, // 9pm
+          0,
+        );
+        
+        // Find the end time (next model's date at 9pm, or far future if last model)
+        final modelEndTime = i < sortedModels.length - 1
+            ? DateTime(
+                sortedModels[i + 1].date.year,
+                sortedModels[i + 1].date.month,
+                sortedModels[i + 1].date.day,
+                21, // 9pm
+                0,
+              )
+            : DateTime.now().add(const Duration(days: 365)); // Far future for last model
+        
+        // Check if now is between start and end
+        if (now.isAfter(modelStartTime) && now.isBefore(modelEndTime)) {
+          foundModel = sortedModels[i];
+          break;
+        }
+      }
+      
+      _sessionModel = foundModel ?? sortedModels.last;
 
       // Get user's portraits
       final portraitsStream = portraitProvider.getUserPortraits(userId);

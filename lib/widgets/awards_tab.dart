@@ -63,47 +63,49 @@ class _AwardsTabState extends State<AwardsTab> {
 
   Future<void> _loadAwardsData() async {
     try {
-      // Get user data to read stored award count
-      final userDoc = await FirebaseFirestore.instance
-          .collection('users')
-          .doc(widget.userId)
+      // Count trophies by iterating through user's portraits and counting their awards
+      final portraitsSnapshot = await FirebaseFirestore.instance
+          .collection('portraits')
+          .where('userId', isEqualTo: widget.userId)
           .get();
       
-      if (userDoc.exists) {
-        final userData = userDoc.data() as Map<String, dynamic>;
-        final portraitAwardCount = userData['portraitAwardCount'] ?? 0;
+      int totalTrophies = 0;
+      for (var portraitDoc in portraitsSnapshot.docs) {
+        // Get awards for this portrait
+        final awards = await _awardService.getPortraitAwards(portraitDoc.id);
+        totalTrophies += awards.length;
+      }
+      
+      // Count community exp (voting activity) - get all weekly sessions
+      final sessionsSnapshot = await FirebaseFirestore.instance
+          .collection('weekly_sessions')
+          .get();
+      
+      int communityExp = 0;
+      for (var sessionDoc in sessionsSnapshot.docs) {
+        final sessionData = sessionDoc.data();
+        final submissions = List<Map<String, dynamic>>.from(sessionData['submissions'] ?? []);
         
-        // Count community exp (voting activity) - get all weekly sessions
-        final sessionsSnapshot = await FirebaseFirestore.instance
-            .collection('weekly_sessions')
-            .get();
-        
-        int communityExp = 0;
-        for (var sessionDoc in sessionsSnapshot.docs) {
-          final sessionData = sessionDoc.data();
-          final submissions = List<Map<String, dynamic>>.from(sessionData['submissions'] ?? []);
+        for (var submission in submissions) {
+          final votes = Map<String, List<String>>.from(submission['votes'] ?? {});
           
-          for (var submission in submissions) {
-            final votes = Map<String, List<String>>.from(submission['votes'] ?? {});
-            
-            // Count community exp (voting activity)
-            for (var categoryVotes in votes.values) {
-              if (categoryVotes.contains(widget.userId)) {
-                communityExp += 1; // +1 exp per vote
-              }
+          // Count community exp (voting activity)
+          for (var categoryVotes in votes.values) {
+            if (categoryVotes.contains(widget.userId)) {
+              communityExp += 1; // +1 exp per vote
             }
           }
         }
-        
-        if (mounted) {
-          setState(() {
-            _trophyCount = portraitAwardCount;
-            _communityExp = communityExp;
-          });
-        }
-        
-        debugPrint('Awards loaded - Trophies: $portraitAwardCount, Community Exp: $communityExp');
       }
+      
+      if (mounted) {
+        setState(() {
+          _trophyCount = totalTrophies;
+          _communityExp = communityExp;
+        });
+      }
+      
+      debugPrint('Awards loaded - Trophies: $totalTrophies, Community Exp: $communityExp');
     } catch (e) {
       debugPrint('Error loading awards data: $e');
     }
