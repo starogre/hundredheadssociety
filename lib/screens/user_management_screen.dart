@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../providers/auth_provider.dart';
 import '../services/user_service.dart';
 import '../services/portrait_service.dart';
@@ -715,6 +716,20 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                                     );
 
                                                     if (confirmed == true) {
+                                                      // Require re-authentication for critical action
+                                                      final reauthed = await _showReauthenticationDialog(context);
+                                                      if (reauthed != true) {
+                                                        if (mounted) {
+                                                          ScaffoldMessenger.of(context).showSnackBar(
+                                                            const SnackBar(
+                                                              content: Text('Authentication required to delete users'),
+                                                              backgroundColor: Colors.red,
+                                                            ),
+                                                          );
+                                                        }
+                                                        return;
+                                                      }
+                                                      
                                                       try {
                                                         await _userService.deleteUser(
                                                           user.id,
@@ -1597,5 +1612,102 @@ class _UserManagementScreenState extends State<UserManagementScreen>
 
   String _formatDate(DateTime date) {
     return '${date.month}/${date.day}/${date.year}';
+  }
+
+  // Re-authentication dialog for critical admin actions
+  Future<bool?> _showReauthenticationDialog(BuildContext context) async {
+    final TextEditingController passwordController = TextEditingController();
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final currentUserEmail = authProvider.currentUser?.email;
+
+    if (currentUserEmail == null) {
+      return false;
+    }
+
+    return showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        title: Row(
+          children: [
+            Icon(Icons.security, color: AppColors.rustyOrange),
+            const SizedBox(width: 8),
+            const Text('Verify Identity'),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'This is a critical action. Please re-enter your password to confirm.',
+              style: TextStyle(fontSize: 14),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: passwordController,
+              obscureText: true,
+              autofocus: true,
+              decoration: const InputDecoration(
+                labelText: 'Password',
+                border: OutlineInputBorder(),
+                prefixIcon: Icon(Icons.lock),
+                hintText: 'Enter your password',
+              ),
+              onSubmitted: (_) async {
+                // Allow Enter key to submit
+                final success = await _attemptReauthentication(
+                  currentUserEmail,
+                  passwordController.text,
+                );
+                if (context.mounted) {
+                  Navigator.of(context).pop(success);
+                }
+              },
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              final success = await _attemptReauthentication(
+                currentUserEmail,
+                passwordController.text,
+              );
+              if (context.mounted) {
+                Navigator.of(context).pop(success);
+              }
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.forestGreen,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Verify'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<bool> _attemptReauthentication(String email, String password) async {
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user == null) return false;
+
+      final credential = EmailAuthProvider.credential(
+        email: email,
+        password: password,
+      );
+
+      await user.reauthenticateWithCredential(credential);
+      return true;
+    } catch (e) {
+      debugPrint('Re-authentication failed: $e');
+      return false;
+    }
   }
 } 
