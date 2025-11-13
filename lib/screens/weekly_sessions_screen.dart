@@ -756,33 +756,64 @@ class _WeeklySessionsScreenState extends State<WeeklySessionsScreen>
     
     // Only show winners during the designated time period
     if (!shouldShowWinners) {
+      // Calculate Wednesday noon to show exact date/time
+      String winnersAnnouncementText = 'Winners will be announced soon!';
+      if (weeklySessionProvider.currentSession != null) {
+        final sessionDate = weeklySessionProvider.currentSession!.sessionDate;
+        final wednesday = sessionDate.add(const Duration(days: 2));
+        final wednesdayNoon = DateTime(wednesday.year, wednesday.month, wednesday.day, 12, 0);
+        
+        // Format: "Wednesday, November 15 at 12:00 PM"
+        final months = ['', 'January', 'February', 'March', 'April', 'May', 'June', 
+                        'July', 'August', 'September', 'October', 'November', 'December'];
+        final monthName = months[wednesdayNoon.month];
+        final dayOfMonth = wednesdayNoon.day;
+        
+        winnersAnnouncementText = 'Winners announced Wednesday, $monthName $dayOfMonth at 12:00 PM';
+      }
+      
       return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.schedule, size: 64, color: AppColors.rustyOrange),
-            const SizedBox(height: 16),
-            Text(
-              isVotingClosed ? 'Results will show on Wednesday at Noon!' : 'Winners will be available soon!',
-              style: const TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: AppColors.forestGreen,
+        child: Padding(
+          padding: const EdgeInsets.all(24.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              PhosphorIcon(
+                PhosphorIconsDuotone.clockCountdown,
+                size: 80,
+                color: AppColors.rustyOrange,
               ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 8),
-            Text(
-              isVotingClosed 
-                ? 'Keep voting for your favorite paintings!'
-                : 'Vote for your favorite paintings to see winners here!',
-              style: TextStyle(
-                fontSize: 14,
-                color: Colors.grey[600],
+              const SizedBox(height: 24),
+              Text(
+                'Winners Coming Soon!',
+                style: const TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.forestGreen,
+                ),
+                textAlign: TextAlign.center,
               ),
-              textAlign: TextAlign.center,
-            ),
-          ],
+              const SizedBox(height: 16),
+              Text(
+                winnersAnnouncementText,
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.rustyOrange,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 12),
+              Text(
+                'Keep voting for your favorite paintings until then!',
+                style: TextStyle(
+                  fontSize: 14,
+                  color: Colors.grey[600],
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
         ),
       );
     }
