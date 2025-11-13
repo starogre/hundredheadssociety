@@ -76,21 +76,22 @@ class _AwardsTabState extends State<AwardsTab> {
       final cachedCommunityExp = userData?['totalVotesCast'] as int? ?? 0;
       final lastUpdate = userData?['awardsLastCalculated'] as Timestamp?;
       
-      // If we have cached data from within the last hour, use it
-      if (lastUpdate != null) {
-        final age = DateTime.now().difference(lastUpdate.toDate());
-        if (age.inHours < 1) {
-          debugPrint('Using cached awards - Age: ${age.inMinutes} minutes');
-          if (mounted) {
-            setState(() {
-              _trophyCount = cachedTrophies;
-              _communityExp = cachedCommunityExp;
-            });
-          }
-          debugPrint('Awards loaded from cache - Trophies: $cachedTrophies, Community Exp: $cachedCommunityExp');
-          return; // Skip recalculation
-        }
-      }
+      // TEMPORARILY DISABLED CACHING TO DEBUG AWARD COUNTING
+      // TODO: Re-enable after verifying counts are correct
+      // if (lastUpdate != null) {
+      //   final age = DateTime.now().difference(lastUpdate.toDate());
+      //   if (age.inHours < 1) {
+      //     debugPrint('Using cached awards - Age: ${age.inMinutes} minutes');
+      //     if (mounted) {
+      //       setState(() {
+      //         _trophyCount = cachedTrophies;
+      //         _communityExp = cachedCommunityExp;
+      //       });
+      //     }
+      //     debugPrint('Awards loaded from cache - Trophies: $cachedTrophies, Community Exp: $cachedCommunityExp');
+      //     return; // Skip recalculation
+      //   }
+      // }
       
       debugPrint('Cache miss or stale - Recalculating awards');
       
