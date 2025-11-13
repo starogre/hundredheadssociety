@@ -756,20 +756,20 @@ class _WeeklySessionsScreenState extends State<WeeklySessionsScreen>
     
     // Only show winners during the designated time period
     if (!shouldShowWinners) {
-      // Calculate Wednesday noon to show exact date/time
+      // Calculate Friday noon to show exact date/time
       String winnersAnnouncementText = 'Winners will be announced soon!';
       if (weeklySessionProvider.currentSession != null) {
         final sessionDate = weeklySessionProvider.currentSession!.sessionDate;
-        final wednesday = sessionDate.add(const Duration(days: 2));
-        final wednesdayNoon = DateTime(wednesday.year, wednesday.month, wednesday.day, 12, 0);
+        final friday = sessionDate.add(const Duration(days: 4));
+        final fridayNoon = DateTime(friday.year, friday.month, friday.day, 12, 0);
         
-        // Format: "Wednesday, November 15 at 12:00 PM"
+        // Format: "Friday, November 15 at 12:00 PM"
         final months = ['', 'January', 'February', 'March', 'April', 'May', 'June', 
                         'July', 'August', 'September', 'October', 'November', 'December'];
-        final monthName = months[wednesdayNoon.month];
-        final dayOfMonth = wednesdayNoon.day;
+        final monthName = months[fridayNoon.month];
+        final dayOfMonth = fridayNoon.day;
         
-        winnersAnnouncementText = 'Winners announced Wednesday, $monthName $dayOfMonth at 12:00 PM';
+        winnersAnnouncementText = 'Winners announced Friday, $monthName $dayOfMonth at 12:00 PM';
       }
       
       return Center(
