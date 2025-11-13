@@ -76,22 +76,21 @@ class _AwardsTabState extends State<AwardsTab> {
       final cachedCommunityExp = userData?['totalVotesCast'] as int? ?? 0;
       final lastUpdate = userData?['awardsLastCalculated'] as Timestamp?;
       
-      // TEMPORARILY DISABLED CACHING TO DEBUG AWARD COUNTING
-      // TODO: Re-enable after verifying counts are correct
-      // if (lastUpdate != null) {
-      //   final age = DateTime.now().difference(lastUpdate.toDate());
-      //   if (age.inHours < 1) {
-      //     debugPrint('Using cached awards - Age: ${age.inMinutes} minutes');
-      //     if (mounted) {
-      //       setState(() {
-      //         _trophyCount = cachedTrophies;
-      //         _communityExp = cachedCommunityExp;
-      //       });
-      //     }
-      //     debugPrint('Awards loaded from cache - Trophies: $cachedTrophies, Community Exp: $cachedCommunityExp');
-      //     return; // Skip recalculation
-      //   }
-      // }
+      // Use cached data if it's less than 5 minutes old
+      if (lastUpdate != null) {
+        final age = DateTime.now().difference(lastUpdate.toDate());
+        if (age.inMinutes < 5) {
+          debugPrint('Using cached awards - Age: ${age.inMinutes} minutes');
+          if (mounted) {
+            setState(() {
+              _trophyCount = cachedTrophies;
+              _communityExp = cachedCommunityExp;
+            });
+          }
+          debugPrint('Awards loaded from cache - Trophies: $cachedTrophies, Community Exp: $cachedCommunityExp');
+          return; // Skip recalculation
+        }
+      }
       
       debugPrint('Cache miss or stale - Recalculating awards');
       
@@ -531,17 +530,24 @@ class _AwardsTabState extends State<AwardsTab> {
       );
     }
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // Summary Cards
-        _buildSummaryCards(),
-        const SizedBox(height: 24),
+    return RefreshIndicator(
+      onRefresh: _loadData,
+      color: AppColors.forestGreen,
+      child: SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Summary Cards
+            _buildSummaryCards(),
+            const SizedBox(height: 24),
 
-        // User's Merch Items
-        _buildUserMerchSection(),
-        const SizedBox(height: 24),
-      ],
+            // User's Merch Items
+            _buildUserMerchSection(),
+            const SizedBox(height: 24),
+          ],
+        ),
+      ),
     );
   }
 } 
