@@ -65,6 +65,35 @@ class _AwardsTabState extends State<AwardsTab> {
     try {
       debugPrint('=== STARTING AWARDS CALCULATION FOR USER: ${widget.userId} ===');
       
+      // First, try to get cached counts from user document
+      final userDoc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(widget.userId)
+          .get();
+      
+      final userData = userDoc.data();
+      final cachedTrophies = userData?['portraitAwardCount'] as int? ?? 0;
+      final cachedCommunityExp = userData?['totalVotesCast'] as int? ?? 0;
+      final lastUpdate = userData?['awardsLastCalculated'] as Timestamp?;
+      
+      // If we have cached data from within the last hour, use it
+      if (lastUpdate != null) {
+        final age = DateTime.now().difference(lastUpdate.toDate());
+        if (age.inHours < 1) {
+          debugPrint('Using cached awards - Age: ${age.inMinutes} minutes');
+          if (mounted) {
+            setState(() {
+              _trophyCount = cachedTrophies;
+              _communityExp = cachedCommunityExp;
+            });
+          }
+          debugPrint('Awards loaded from cache - Trophies: $cachedTrophies, Community Exp: $cachedCommunityExp');
+          return; // Skip recalculation
+        }
+      }
+      
+      debugPrint('Cache miss or stale - Recalculating awards');
+      
       // Count trophies by batch querying all awards for user's portraits
       final portraitsSnapshot = await FirebaseFirestore.instance
           .collection('portraits')
@@ -155,11 +184,28 @@ class _AwardsTabState extends State<AwardsTab> {
       debugPrint('Total community exp: $communityExp');
       debugPrint('=== AWARDS CALCULATION COMPLETE ===');
       
+      // Update UI
       if (mounted) {
         setState(() {
           _trophyCount = totalTrophies;
           _communityExp = communityExp;
         });
+      }
+      
+      // Save calculated values to user document for future caching
+      try {
+        await FirebaseFirestore.instance
+            .collection('users')
+            .doc(widget.userId)
+            .update({
+          'portraitAwardCount': totalTrophies,
+          'totalVotesCast': communityExp,
+          'awardsLastCalculated': FieldValue.serverTimestamp(),
+        });
+        debugPrint('Cached awards saved to user document');
+      } catch (e) {
+        debugPrint('Error saving awards cache: $e');
+        // Don't fail if cache save fails
       }
       
       debugPrint('Awards loaded - Trophies: $totalTrophies, Community Exp: $communityExp');
