@@ -42,7 +42,7 @@ class AboutScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 8),
                   const Text(
-                    'Version 1.0.6',
+                    'Version 1.0.7',
                     style: TextStyle(
                       color: Colors.grey,
                       fontSize: 16,
@@ -76,7 +76,7 @@ class AboutScreen extends StatelessWidget {
                       ),
                       const SizedBox(width: 8),
                       const Text(
-                        'What\'s New in v1.0.6',
+                        'What\'s New in v1.0.7',
                         style: TextStyle(
                           fontSize: 20,
                           fontWeight: FontWeight.bold,
@@ -87,7 +87,7 @@ class AboutScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 16),
                   const Text(
-                    '🎯 Portrait Navigation',
+                    '🔐 Enhanced Admin Security',
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
@@ -96,15 +96,15 @@ class AboutScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 8),
                   const Text(
-                    '• Left/right arrow buttons in portrait preview dialog\n'
-                    '• Navigate between portraits without going back to gallery\n'
-                    '• Position counter shows which portrait you\'re viewing (3/15)\n'
-                    '• Works from both My Heads and Profile screens',
+                    '• Password re-authentication required for critical actions\n'
+                    '• Admins must verify identity before deleting users\n'
+                    '• Prevents unauthorized changes from compromised sessions\n'
+                    '• Enhanced Firestore security rules for better protection',
                     style: TextStyle(fontSize: 15, height: 1.5),
                   ),
                   const SizedBox(height: 16),
                   const Text(
-                    '⏰ Weekly Awards Timing Fix',
+                    '🛡️ Improved User Management',
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
@@ -113,15 +113,15 @@ class AboutScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 8),
                   const Text(
-                    '• Fixed model selection - no longer 1 week ahead!\n'
-                    '• Model now active from their date at 9pm until next model\'s 9pm\n'
-                    '• Upload portraits for the full week after painting session\n'
-                    '• Correct model automatically selected for submissions',
+                    '• Moderators can no longer delete user accounts\n'
+                    '• User deletion restricted to admins only\n'
+                    '• Role switching (Artist ↔ Appreciator) admin-only\n'
+                    '• Safer community management permissions',
                     style: TextStyle(fontSize: 15, height: 1.5),
                   ),
                   const SizedBox(height: 16),
                   const Text(
-                    '⚡ Real-Time Updates & Stats',
+                    '✨ Backend Security Updates',
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
@@ -130,11 +130,10 @@ class AboutScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 8),
                   const Text(
-                    '• Submissions now update immediately after posting\n'
-                    '• No need to close and reopen app to see your submission\n'
-                    '• Trophy count now tallies correctly from portrait awards\n'
-                    '• Community Experience tracks all your voting activity\n'
-                    '• Profile stats update in real-time',
+                    '• Updated Firestore rules for granular permissions\n'
+                    '• Activity logging for all admin actions\n'
+                    '• Better safeguards against unauthorized access\n'
+                    '• Improved data protection and audit trail',
                     style: TextStyle(fontSize: 15, height: 1.5),
                   ),
                 ],
