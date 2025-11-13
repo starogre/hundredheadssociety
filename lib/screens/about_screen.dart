@@ -42,7 +42,7 @@ class AboutScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 8),
                   const Text(
-                    'Version 1.0.5',
+                    'Version 1.0.6',
                     style: TextStyle(
                       color: Colors.grey,
                       fontSize: 16,
@@ -76,7 +76,7 @@ class AboutScreen extends StatelessWidget {
                       ),
                       const SizedBox(width: 8),
                       const Text(
-                        'What\'s New in v1.0.5',
+                        'What\'s New in v1.0.6',
                         style: TextStyle(
                           fontSize: 20,
                           fontWeight: FontWeight.bold,
@@ -87,7 +87,7 @@ class AboutScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 16),
                   const Text(
-                    '🏆 Weekly Awards Reimagined',
+                    '🎯 Portrait Navigation',
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
@@ -96,16 +96,15 @@ class AboutScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 8),
                   const Text(
-                    '• Renamed from "Weekly Sessions" to better reflect competition\n'
-                    '• Auto-select portrait for submission - no more dropdown menus!\n'
-                    '• "This Week\'s Model" section shows who you\'re painting\n'
-                    '• Streamlined submission flow - just add notes and submit\n'
-                    '• Beautiful new zero-state designs with duotone icons',
+                    '• Left/right arrow buttons in portrait preview dialog\n'
+                    '• Navigate between portraits without going back to gallery\n'
+                    '• Position counter shows which portrait you\'re viewing (3/15)\n'
+                    '• Works from both My Heads and Profile screens',
                     style: TextStyle(fontSize: 15, height: 1.5),
                   ),
                   const SizedBox(height: 16),
                   const Text(
-                    '📱 My Heads Screen Enhancements',
+                    '⏰ Weekly Awards Timing Fix',
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
@@ -114,15 +113,15 @@ class AboutScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 8),
                   const Text(
-                    '• Personalized title with achievement emoji (🌟 → 🐉 → 🔥 → 🚀)\n'
-                    '• "Your Heads" shows your name with milestone emoji\n'
-                    '• Horizontal white logo in app bar for cleaner branding\n'
-                    '• Milestone progress now tracks to 100, 200, 300+ correctly',
+                    '• Fixed model selection - no longer 1 week ahead!\n'
+                    '• Model now active from their date at 9pm until next model\'s 9pm\n'
+                    '• Upload portraits for the full week after painting session\n'
+                    '• Correct model automatically selected for submissions',
                     style: TextStyle(fontSize: 15, height: 1.5),
                   ),
                   const SizedBox(height: 16),
                   const Text(
-                    '🎨 Portrait Previews & Profile',
+                    '⚡ Real-Time Updates & Stats',
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
@@ -131,11 +130,11 @@ class AboutScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 8),
                   const Text(
-                    '• Week number badge now shows on portrait previews\n'
-                    '• Swipe left/right to browse portraits (Tinder-style!)\n'
-                    '• Position indicator shows where you are (45/100)\n'
-                    '• Full-screen Edit Profile page (no more cramped dialog!)\n'
-                    '• Better organized profile editing with larger previews',
+                    '• Submissions now update immediately after posting\n'
+                    '• No need to close and reopen app to see your submission\n'
+                    '• Trophy count now tallies correctly from portrait awards\n'
+                    '• Community Experience tracks all your voting activity\n'
+                    '• Profile stats update in real-time',
                     style: TextStyle(fontSize: 15, height: 1.5),
                   ),
                 ],
