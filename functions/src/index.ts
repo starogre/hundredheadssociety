@@ -730,11 +730,11 @@ export const sendUploadDeadlineReminders = onSchedule({
 });
 
 /**
- * 9. VOTING REMINDER (Wednesday 1 hour before close)
- * Sends reminders to artists to vote before voting closes
+ * 9. VOTING REMINDER (Wednesday evening)
+ * Sends reminders to artists to vote if they haven't voted yet
  */
 export const sendVotingReminders = onSchedule({
-  schedule: "0 11 * * 3", // Every Wednesday at 11:00 AM (1 hour before 12 PM close)
+  schedule: "0 19 * * 3", // Every Wednesday at 7:00 PM
   timeZone: "America/New_York",
 }, async () => {
   try {
@@ -759,7 +759,7 @@ export const sendVotingReminders = onSchedule({
     const session = sessionsSnapshot.docs[0];
     const sessionData = session.data() as WeeklySession;
 
-    // Get all approved artists who haven't voted yet
+    // Get all approved artists
     const artistsSnapshot = await db.collection("users")
         .where("status", "==", "approved")
         .where("role", "==", "artist")
@@ -770,13 +770,19 @@ export const sendVotingReminders = onSchedule({
       ...doc.data(),
     })) as User[];
 
-    // Check which artists haven't voted (simplified check)
+    // Check which artists haven't voted yet by looking at submissions
     const artistsWithoutVotes = artists.filter(artist => {
-      // This is a simplified check - in a real implementation, you'd check actual votes
-      return true; // For now, send to all artists
+      // Check if this artist has voted in any submission
+      const hasVoted = sessionData.submissions.some((submission: WeeklySubmission) => {
+        // Check all vote categories
+        return Object.values(submission.votes || {}).some((voterIds: string[]) => 
+          voterIds.includes(artist.id)
+        );
+      });
+      return !hasVoted; // Only include artists who haven't voted at all
     });
 
-    // Send voting reminders to artists who have this notification enabled
+    // Send voting reminders to artists who haven't voted and have this notification enabled
     for (const artist of artistsWithoutVotes) {
       try {
         // Check if artist has this notification type enabled
@@ -789,8 +795,8 @@ export const sendVotingReminders = onSchedule({
           await db.collection("users").doc(artist.id).collection("notifications").add({
             userId: artist.id,
             type: "voting_reminder",
-            title: "🗳️ Vote Now!",
-            message: "Voting closes in 1 hour! Don't forget to vote for your favorite portraits!",
+            title: "🗳️ Cast Your Votes!",
+            message: "Don't forget to vote for your favorite portraits! Voting closes Friday at noon.",
             createdAt: new Date(),
             read: false,
             data: {
@@ -807,93 +813,10 @@ export const sendVotingReminders = onSchedule({
       }
     }
 
-    logger.info(`Sent voting reminders to ${artistsWithoutVotes.length} artists`);
+    logger.info(`Sent voting reminders to ${artistsWithoutVotes.length} artists who haven't voted`);
   } catch (error) {
     logger.error("Error sending voting reminders:", error);
   }
 });
 
-/**
- * 10. RSVP REMINDER (Saturday noon)
- * Sends reminders to artists to RSVP for next Monday's session
- */
-export const sendRSVPReminders = onSchedule({
-  schedule: "0 12 * * 6", // Every Saturday at 12:00 PM (noon)
-  timeZone: "America/New_York",
-}, async () => {
-  try {
-    logger.info("Sending RSVP reminders...");
-
-    // Find active session for next Monday
-    const nextMonday = new Date();
-    nextMonday.setDate(nextMonday.getDate() + (8 - nextMonday.getDay()) % 7);
-    nextMonday.setHours(9, 0, 0, 0);
-
-    const sessionsSnapshot = await db.collection("weeklySessions")
-        .where("sessionDate", "==", nextMonday)
-        .where("isActive", "==", true)
-        .limit(1)
-        .get();
-
-    if (sessionsSnapshot.empty) {
-      logger.info("No active session found for next Monday");
-      return;
-    }
-
-    const session = sessionsSnapshot.docs[0];
-    const sessionData = session.data() as WeeklySession;
-
-    // Get all approved artists who haven't RSVP'd yet
-    const artistsSnapshot = await db.collection("users")
-        .where("status", "==", "approved")
-        .where("role", "==", "artist")
-        .get();
-
-    const artists = artistsSnapshot.docs.map((doc) => ({
-      id: doc.id,
-      ...doc.data(),
-    })) as User[];
-
-    // Filter artists who haven't RSVP'd
-    const artistsWithoutRSVP = artists.filter(artist => 
-      !sessionData.rsvpUserIds.includes(artist.id)
-    );
-
-    // Send RSVP reminders to artists who have this notification enabled
-    for (const artist of artistsWithoutRSVP) {
-      try {
-        // Check if artist has this notification type enabled
-        const userDoc = await db.collection("users").doc(artist.id).get();
-        const userData = userDoc.data();
-        const notificationPreferences = userData?.notificationPreferences || {};
-        const isRSVPReminderEnabled = notificationPreferences.rsvp_reminder !== false; // Default to true
-
-        if (isRSVPReminderEnabled) {
-          await db.collection("users").doc(artist.id).collection("notifications").add({
-            userId: artist.id,
-            type: "rsvp_reminder",
-            title: "📅 RSVP for Monday's Session",
-            message: "Will you be joining us for this week's session? Please RSVP!",
-            createdAt: new Date(),
-            read: false,
-            data: {
-              sessionTitle: `Weekly Session - ${nextMonday.toLocaleDateString()}`,
-              sessionDate: nextMonday,
-              action: "rsvp_reminder",
-              navigateTo: "weekly_sessions"
-            }
-          });
-          logger.info(`Sent RSVP reminder to artist ${artist.id}`);
-        } else {
-          logger.info(`Skipped RSVP reminder for artist ${artist.id} (disabled)`);
-        }
-      } catch (error) {
-        logger.error(`Error sending RSVP reminder to artist ${artist.id}:`, error);
-      }
-    }
-
-    logger.info(`Sent RSVP reminders to ${artistsWithoutRSVP.length} artists`);
-  } catch (error) {
-    logger.error("Error sending RSVP reminders:", error);
-  }
-});
+// RSVP REMINDER REMOVED - Users now pay on website, no RSVP needed
