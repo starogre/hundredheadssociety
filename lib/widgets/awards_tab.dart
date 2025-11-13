@@ -65,7 +65,7 @@ class _AwardsTabState extends State<AwardsTab> {
     try {
       debugPrint('=== STARTING AWARDS CALCULATION FOR USER: ${widget.userId} ===');
       
-      // Count trophies by iterating through user's portraits and counting their awards
+      // Count trophies by batch querying all awards for user's portraits
       final portraitsSnapshot = await FirebaseFirestore.instance
           .collection('portraits')
           .where('userId', isEqualTo: widget.userId)
@@ -74,14 +74,30 @@ class _AwardsTabState extends State<AwardsTab> {
       debugPrint('Found ${portraitsSnapshot.docs.length} portraits for user');
       
       int totalTrophies = 0;
-      for (var portraitDoc in portraitsSnapshot.docs) {
-        try {
-          // Get awards for this portrait
-          final awards = await _awardService.getPortraitAwards(portraitDoc.id);
-          debugPrint('Portrait ${portraitDoc.id}: ${awards.length} awards');
-          totalTrophies += awards.length;
-        } catch (e) {
-          debugPrint('Error getting awards for portrait ${portraitDoc.id}: $e');
+      
+      if (portraitsSnapshot.docs.isNotEmpty) {
+        // Get all portrait IDs
+        final portraitIds = portraitsSnapshot.docs.map((doc) => doc.id).toList();
+        
+        // Batch query all awards at once (max 10 at a time due to Firestore 'in' limit)
+        int batchSize = 10;
+        for (int i = 0; i < portraitIds.length; i += batchSize) {
+          final batch = portraitIds.sublist(
+            i,
+            i + batchSize > portraitIds.length ? portraitIds.length : i + batchSize,
+          );
+          
+          try {
+            final awardsSnapshot = await FirebaseFirestore.instance
+                .collection('portrait_awards')
+                .where('portraitId', whereIn: batch)
+                .get();
+            
+            totalTrophies += awardsSnapshot.docs.length;
+            debugPrint('Batch ${i ~/ batchSize + 1}: Found ${awardsSnapshot.docs.length} awards');
+          } catch (e) {
+            debugPrint('Error getting awards for batch: $e');
+          }
         }
       }
       
