@@ -426,6 +426,7 @@ class _WeeklySessionsScreenState extends State<WeeklySessionsScreen>
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     final currentUserId = authProvider.currentUser?.uid;
     final hasSubmitted = currentUserId != null && weeklySessionProvider.hasUserSubmitted(currentUserId);
+    final isArtist = authProvider.userData?.isArtist ?? false;
 
     return RefreshIndicator(
       onRefresh: () async {
@@ -440,8 +441,8 @@ class _WeeklySessionsScreenState extends State<WeeklySessionsScreen>
         child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Submit Button - only show if session is not cancelled
-          if (currentUserId != null && !hasSubmitted && !session.isCancelled)
+          // Submit Button - only show for artists if session is not cancelled
+          if (isArtist && currentUserId != null && !hasSubmitted && !session.isCancelled)
             SizedBox(
               width: double.infinity,
               child: ElevatedButton.icon(
@@ -455,7 +456,7 @@ class _WeeklySessionsScreenState extends State<WeeklySessionsScreen>
                 ),
               ),
             ),
-          if (currentUserId != null && hasSubmitted && !session.isCancelled)
+          if (isArtist && currentUserId != null && hasSubmitted && !session.isCancelled)
             SizedBox(
               width: double.infinity,
               child: ElevatedButton.icon(

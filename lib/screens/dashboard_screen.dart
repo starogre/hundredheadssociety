@@ -150,10 +150,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
         List<BottomNavigationBarItem> navigationItems = [];
         
         if (isArtAppreciator) {
-          // Art appreciators only see Community and Profile
+          // Art appreciators see Community, Profile, and Weekly Awards (but can't submit)
           availableTabs = [
             const CommunityScreen(),
             ProfileScreen(userId: authProvider.currentUser!.uid),
+            const WeeklySessionsScreen(),
           ];
           navigationItems = [
             BottomNavigationBarItem(
@@ -163,6 +164,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
             BottomNavigationBarItem(
               icon: PhosphorIcon(PhosphorIconsDuotone.user),
               label: 'Profile',
+            ),
+            BottomNavigationBarItem(
+              icon: PhosphorIcon(PhosphorIconsDuotone.trophy),
+              label: 'Weekly Awards',
             ),
           ];
         } else {
@@ -223,6 +228,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 },
               ),
             );
+          } else if (_selectedIndex == 2) {
+            appBarTitle = 'Weekly Awards';
           }
         } else {
           if (_selectedIndex == 0) {
