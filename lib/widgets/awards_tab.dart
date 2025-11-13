@@ -94,50 +94,76 @@ class _AwardsTabState extends State<AwardsTab> {
       
       debugPrint('Cache miss or stale - Recalculating awards');
       
-      // Count trophies by batch querying all awards for user's portraits
-      final portraitsSnapshot = await FirebaseFirestore.instance
-          .collection('portraits')
-          .where('userId', isEqualTo: widget.userId)
-          .get();
-      
-      debugPrint('Found ${portraitsSnapshot.docs.length} portraits for user');
-      
+      // Count trophies by checking weekly sessions (awards are stored there)
+      // We need to get all weekly sessions and count how many times this user's portraits won
       int totalTrophies = 0;
       
-      if (portraitsSnapshot.docs.isNotEmpty) {
-        // Get all portrait IDs
-        final portraitIds = portraitsSnapshot.docs.map((doc) => doc.id).toList();
-        
-        // Batch query all awards at once (max 10 at a time due to Firestore 'in' limit)
-        int batchSize = 10;
-        for (int i = 0; i < portraitIds.length; i += batchSize) {
-          final batch = portraitIds.sublist(
-            i,
-            i + batchSize > portraitIds.length ? portraitIds.length : i + batchSize,
-          );
+      final sessionsSnapshot = await FirebaseFirestore.instance
+          .collection('weekly_sessions')
+          .get();
+      
+      debugPrint('Found ${sessionsSnapshot.docs.length} sessions to check for awards');
+      
+      for (var sessionDoc in sessionsSnapshot.docs) {
+        try {
+          final sessionData = sessionDoc.data();
+          final submissions = sessionData['submissions'];
           
-          try {
-            final awardsSnapshot = await FirebaseFirestore.instance
-                .collection('portrait_awards')
-                .where('portraitId', whereIn: batch)
-                .get();
+          if (submissions == null) continue;
+          
+          final submissionsList = List<Map<String, dynamic>>.from(submissions);
+          
+          // Check each submission to see if it belongs to this user and won awards
+          for (var submission in submissionsList) {
+            final submissionUserId = submission['userId'] as String?;
             
-            totalTrophies += awardsSnapshot.docs.length;
-            debugPrint('Batch ${i ~/ batchSize + 1}: Found ${awardsSnapshot.docs.length} awards');
-          } catch (e) {
-            debugPrint('Error getting awards for batch: $e');
+            if (submissionUserId == widget.userId) {
+              // This submission belongs to our user - count their awards
+              final votes = submission['votes'];
+              if (votes != null) {
+                final votesMap = Map<String, dynamic>.from(votes);
+                
+                // Check each category (likeness, style, fun, topHead)
+                for (var category in ['likeness', 'style', 'fun', 'topHead']) {
+                  final categoryVotes = votesMap[category];
+                  if (categoryVotes != null) {
+                    final votesList = List<String>.from(categoryVotes);
+                    if (votesList.isNotEmpty) {
+                      // Check if this submission won this category
+                      int maxVotes = 0;
+                      for (var otherSubmission in submissionsList) {
+                        final otherVotes = otherSubmission['votes'];
+                        if (otherVotes != null) {
+                          final otherCategoryVotes = Map<String, dynamic>.from(otherVotes)[category];
+                          if (otherCategoryVotes != null) {
+                            final otherVotesList = List<String>.from(otherCategoryVotes);
+                            if (otherVotesList.length > maxVotes) {
+                              maxVotes = otherVotesList.length;
+                            }
+                          }
+                        }
+                      }
+                      
+                      // If this submission has the most votes, it won!
+                      if (votesList.length == maxVotes && maxVotes > 0) {
+                        totalTrophies++;
+                        debugPrint('Found award for user in session ${sessionDoc.id}, category: $category');
+                      }
+                    }
+                  }
+                }
+              }
+            }
           }
+        } catch (e) {
+          debugPrint('Error processing session ${sessionDoc.id} for awards: $e');
         }
       }
       
       debugPrint('Total trophies counted: $totalTrophies');
       
-      // Count community exp (voting activity) - get all weekly sessions
-      final sessionsSnapshot = await FirebaseFirestore.instance
-          .collection('weekly_sessions')
-          .get();
-      
-      debugPrint('Found ${sessionsSnapshot.docs.length} weekly sessions');
+      // Count community exp (voting activity) - reuse the sessions we already loaded
+      debugPrint('Counting community exp from same ${sessionsSnapshot.docs.length} sessions');
       
       int communityExp = 0;
       for (var sessionDoc in sessionsSnapshot.docs) {
