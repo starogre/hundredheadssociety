@@ -84,8 +84,10 @@ class _WeeklySessionsScreenState extends State<WeeklySessionsScreen>
                 TabBar(
                   controller: _tabController,
                   indicatorColor: AppColors.rustyOrange,
+                  indicatorWeight: 3,
                   labelColor: AppColors.forestGreen,
                   unselectedLabelColor: AppColors.forestGreen.withValues(alpha: 0.7),
+                  dividerColor: AppColors.forestGreen.withValues(alpha: 0.2),
                   tabs: const [
                     Tab(text: 'Submissions'),
                     Tab(text: 'Winners'),
