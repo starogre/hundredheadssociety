@@ -480,19 +480,35 @@ class _WeeklySessionsScreenState extends State<WeeklySessionsScreen>
                     }
 
                     final models = snapshot.data!;
-                    // Find model matching session date
+                    
+                    // Find the currently active model
+                    // A model is active from their date at 9pm until the next model's date at 9pm
+                    final now = DateTime.now();
+                    final sortedModels = models.toList()
+                      ..sort((a, b) => a.date.compareTo(b.date));
+                    
                     ModelModel? sessionModel;
-                    try {
-                      sessionModel = models.firstWhere(
-                        (model) =>
-                            model.date.year == session.sessionDate.year &&
-                            model.date.month == session.sessionDate.month &&
-                            model.date.day == session.sessionDate.day,
-                        orElse: () => models.first,
+                    
+                    // Start from the end and work backwards to find the most recent model
+                    // whose 9pm start time has passed
+                    for (int i = sortedModels.length - 1; i >= 0; i--) {
+                      final modelStartTime = DateTime(
+                        sortedModels[i].date.year,
+                        sortedModels[i].date.month,
+                        sortedModels[i].date.day,
+                        21, // 9pm
+                        0,
                       );
-                    } catch (e) {
-                      return const SizedBox.shrink();
+                      
+                      // If we've passed this model's start time, this is the active model
+                      if (now.isAfter(modelStartTime) || now.isAtSameMomentAs(modelStartTime)) {
+                        sessionModel = sortedModels[i];
+                        break;
+                      }
                     }
+                    
+                    // If no model found (current time is before all models), use the first model
+                    sessionModel ??= sortedModels.first;
 
                     if (sessionModel == null) {
                       return const SizedBox.shrink();

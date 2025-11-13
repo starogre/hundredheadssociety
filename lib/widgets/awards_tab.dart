@@ -63,40 +63,81 @@ class _AwardsTabState extends State<AwardsTab> {
 
   Future<void> _loadAwardsData() async {
     try {
+      debugPrint('=== STARTING AWARDS CALCULATION FOR USER: ${widget.userId} ===');
+      
       // Count trophies by iterating through user's portraits and counting their awards
       final portraitsSnapshot = await FirebaseFirestore.instance
           .collection('portraits')
           .where('userId', isEqualTo: widget.userId)
           .get();
       
+      debugPrint('Found ${portraitsSnapshot.docs.length} portraits for user');
+      
       int totalTrophies = 0;
       for (var portraitDoc in portraitsSnapshot.docs) {
-        // Get awards for this portrait
-        final awards = await _awardService.getPortraitAwards(portraitDoc.id);
-        totalTrophies += awards.length;
+        try {
+          // Get awards for this portrait
+          final awards = await _awardService.getPortraitAwards(portraitDoc.id);
+          debugPrint('Portrait ${portraitDoc.id}: ${awards.length} awards');
+          totalTrophies += awards.length;
+        } catch (e) {
+          debugPrint('Error getting awards for portrait ${portraitDoc.id}: $e');
+        }
       }
+      
+      debugPrint('Total trophies counted: $totalTrophies');
       
       // Count community exp (voting activity) - get all weekly sessions
       final sessionsSnapshot = await FirebaseFirestore.instance
           .collection('weekly_sessions')
           .get();
       
+      debugPrint('Found ${sessionsSnapshot.docs.length} weekly sessions');
+      
       int communityExp = 0;
       for (var sessionDoc in sessionsSnapshot.docs) {
-        final sessionData = sessionDoc.data();
-        final submissions = List<Map<String, dynamic>>.from(sessionData['submissions'] ?? []);
-        
-        for (var submission in submissions) {
-          final votes = Map<String, List<String>>.from(submission['votes'] ?? {});
+        try {
+          final sessionData = sessionDoc.data();
+          final submissions = sessionData['submissions'];
           
-          // Count community exp (voting activity)
-          for (var categoryVotes in votes.values) {
-            if (categoryVotes.contains(widget.userId)) {
-              communityExp += 1; // +1 exp per vote
+          if (submissions == null) {
+            debugPrint('Session ${sessionDoc.id}: No submissions');
+            continue;
+          }
+          
+          final submissionsList = List<Map<String, dynamic>>.from(submissions);
+          debugPrint('Session ${sessionDoc.id}: ${submissionsList.length} submissions');
+          
+          for (var submission in submissionsList) {
+            final votesData = submission['votes'];
+            
+            if (votesData == null) {
+              continue;
+            }
+            
+            // Handle both Map<String, dynamic> and Map<String, List> formats
+            final votes = Map<String, dynamic>.from(votesData);
+            
+            // Count how many times this user voted in this submission
+            for (var categoryVotes in votes.values) {
+              try {
+                final voterList = List<String>.from(categoryVotes);
+                if (voterList.contains(widget.userId)) {
+                  communityExp += 1;
+                  debugPrint('Found vote by user in session ${sessionDoc.id}');
+                }
+              } catch (e) {
+                debugPrint('Error parsing votes: $e');
+              }
             }
           }
+        } catch (e) {
+          debugPrint('Error processing session ${sessionDoc.id}: $e');
         }
       }
+      
+      debugPrint('Total community exp: $communityExp');
+      debugPrint('=== AWARDS CALCULATION COMPLETE ===');
       
       if (mounted) {
         setState(() {
@@ -106,8 +147,9 @@ class _AwardsTabState extends State<AwardsTab> {
       }
       
       debugPrint('Awards loaded - Trophies: $totalTrophies, Community Exp: $communityExp');
-    } catch (e) {
+    } catch (e, stackTrace) {
       debugPrint('Error loading awards data: $e');
+      debugPrint('Stack trace: $stackTrace');
     }
   }
 

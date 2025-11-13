@@ -185,63 +185,65 @@ class UploadProgressBar extends StatelessWidget {
                   ),
                 ),
                 
-                // Actions
-                if (uploadService.isUploading)
-                  Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: Colors.grey[100],
-                      border: Border(top: BorderSide(color: Colors.grey[300]!)),
-                    ),
-                    child: SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton(
-                        onPressed: () {
-                          uploadService.cancelUpload();
-                          Navigator.of(context).pop();
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.red[700],
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 12),
-                        ),
-                        child: const Text('Cancel Upload'),
-                      ),
-                    ),
-                  )
-                else
-                  Consumer<BulkUploadService>(
-                    builder: (context, service, child) {
-                      final summary = service.getUploadSummary();
-                      final hasFailed = (summary['failed'] ?? 0) > 0;
-                      
-                      if (!hasFailed) {
-                        return const SizedBox.shrink();
-                      }
-                      
-                      return Container(
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: Colors.grey[100],
-                          border: Border(top: BorderSide(color: Colors.grey[300]!)),
-                        ),
-                        child: SizedBox(
-                          width: double.infinity,
-                          child: ElevatedButton(
-                            onPressed: () {
-                              service.retryFailed();
-                            },
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: AppColors.forestGreen,
-                              foregroundColor: Colors.white,
-                              padding: const EdgeInsets.symmetric(vertical: 12),
-                            ),
-                            child: Text('Retry Failed (${summary['failed']})'),
+                // Actions with SafeArea for system buttons
+                SafeArea(
+                  top: false,
+                  child: uploadService.isUploading
+                      ? Container(
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: Colors.grey[100],
+                            border: Border(top: BorderSide(color: Colors.grey[300]!)),
                           ),
+                          child: SizedBox(
+                            width: double.infinity,
+                            child: ElevatedButton(
+                              onPressed: () {
+                                uploadService.cancelUpload();
+                                Navigator.of(context).pop();
+                              },
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.red[700],
+                                foregroundColor: Colors.white,
+                                padding: const EdgeInsets.symmetric(vertical: 12),
+                              ),
+                              child: const Text('Cancel Upload'),
+                            ),
+                          ),
+                        )
+                      : Consumer<BulkUploadService>(
+                          builder: (context, service, child) {
+                            final summary = service.getUploadSummary();
+                            final hasFailed = (summary['failed'] ?? 0) > 0;
+                            
+                            if (!hasFailed) {
+                              return const SizedBox.shrink();
+                            }
+                            
+                            return Container(
+                              padding: const EdgeInsets.all(16),
+                              decoration: BoxDecoration(
+                                color: Colors.grey[100],
+                                border: Border(top: BorderSide(color: Colors.grey[300]!)),
+                              ),
+                              child: SizedBox(
+                                width: double.infinity,
+                                child: ElevatedButton(
+                                  onPressed: () {
+                                    service.retryFailed();
+                                  },
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: AppColors.forestGreen,
+                                    foregroundColor: Colors.white,
+                                    padding: const EdgeInsets.symmetric(vertical: 12),
+                                  ),
+                                  child: Text('Retry Failed (${summary['failed']})'),
+                                ),
+                              ),
+                            );
+                          },
                         ),
-                      );
-                    },
-                  ),
+                ),
               ],
             ),
           );

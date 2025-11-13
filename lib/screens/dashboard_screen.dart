@@ -263,14 +263,21 @@ class _DashboardScreenState extends State<DashboardScreen> {
           appBar: AppBar(
             title: appBarTitleWidget,
             actions: appBarActions,
-            bottom: const PreferredSize(
-              preferredSize: Size.fromHeight(0),
-              child: UploadProgressBar(),
-            ),
           ),
-          body: IndexedStack(
-            index: _selectedIndex,
-            children: availableTabs,
+          body: Stack(
+            children: [
+              IndexedStack(
+                index: _selectedIndex,
+                children: availableTabs,
+              ),
+              // Upload progress bar at the bottom, above navigation
+              const Positioned(
+                left: 0,
+                right: 0,
+                bottom: 0,
+                child: UploadProgressBar(),
+              ),
+            ],
           ),
           bottomNavigationBar: BottomNavigationBar(
             currentIndex: _selectedIndex,

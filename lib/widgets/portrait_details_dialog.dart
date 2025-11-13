@@ -88,14 +88,26 @@ class _PortraitDetailsDialogState extends State<PortraitDetailsDialog> {
             children: [
               GestureDetector(
                 onTap: () => _showFullImage(context),
-                child: Container(
-                  width: double.infinity,
-                  height: 300,
-                  decoration: BoxDecoration(
-                    borderRadius: const BorderRadius.vertical(top: Radius.circular(8)),
-                    image: DecorationImage(
-                      image: CachedNetworkImageProvider(_currentPortrait.imageUrl),
+                child: ClipRRect(
+                  borderRadius: const BorderRadius.vertical(top: Radius.circular(8)),
+                  child: SizedBox(
+                    width: double.infinity,
+                    height: 300,
+                    child: CachedNetworkImage(
+                      imageUrl: _currentPortrait.imageUrl,
                       fit: BoxFit.cover,
+                      placeholder: (context, url) => Container(
+                        color: Colors.grey[300],
+                        child: const Center(
+                          child: CircularProgressIndicator(
+                            valueColor: AlwaysStoppedAnimation<Color>(AppColors.forestGreen),
+                          ),
+                        ),
+                      ),
+                      errorWidget: (context, url, error) => Container(
+                        color: Colors.grey[300],
+                        child: const Icon(Icons.error, color: Colors.red),
+                      ),
                     ),
                   ),
                 ),
@@ -175,11 +187,80 @@ class _PortraitDetailsDialogState extends State<PortraitDetailsDialog> {
           ),
           Padding(
             padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Artist section - most prominent at top
-                GestureDetector(
+            child: _showDeleteConfirmation
+                ? Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Colors.red.shade50,
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: Colors.red.shade200),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Icon(Icons.warning, color: Colors.red.shade700, size: 20),
+                                const SizedBox(width: 8),
+                                Text(
+                                  'Delete Portrait',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.red.shade700,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              'Are you sure you want to delete this portrait? This can\'t be undone.',
+                              style: TextStyle(color: Colors.red.shade700),
+                            ),
+                            const SizedBox(height: 12),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.end,
+                              children: [
+                                TextButton(
+                                  onPressed: _isDeleting ? null : () {
+                                    setState(() {
+                                      _showDeleteConfirmation = false;
+                                    });
+                                  },
+                                  child: const Text('Cancel'),
+                                ),
+                                const SizedBox(width: 8),
+                                ElevatedButton(
+                                  onPressed: _isDeleting ? null : _deletePortrait,
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: Colors.red,
+                                    foregroundColor: Colors.white,
+                                  ),
+                                  child: _isDeleting
+                                      ? const SizedBox(
+                                          width: 16,
+                                          height: 16,
+                                          child: CircularProgressIndicator(
+                                            strokeWidth: 2,
+                                            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                          ),
+                                        )
+                                      : const Text('Delete'),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  )
+                : Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Artist section - most prominent at top
+                      GestureDetector(
                   onTap: () => _navigateToProfile(context),
                   child: Row(
                     children: [
@@ -451,105 +532,38 @@ class _PortraitDetailsDialogState extends State<PortraitDetailsDialog> {
                     return const SizedBox.shrink();
                   },
                 ),
-
-                // Delete confirmation section
-                ...(_showDeleteConfirmation ? [
-                  const SizedBox(height: 16),
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: Colors.red.shade50,
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: Colors.red.shade200),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            Icon(Icons.warning, color: Colors.red.shade700, size: 20),
-                            const SizedBox(width: 8),
-                            Text(
-                              'Delete Portrait',
-                              style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                                color: Colors.red.shade700,
-                              ),
+                
+                      // Action buttons at the bottom
+                      SizedBox(height: 16),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: [
+                          // Share button - available to everyone
+                          IconButton(
+                            onPressed: () => _sharePortrait(context),
+                            icon: const Icon(Icons.share, color: AppColors.rustyOrange),
+                            tooltip: 'Share',
+                          ),
+                          ...(isOwner ? [
+                            IconButton(
+                              onPressed: () => _editPortrait(context),
+                              icon: const Icon(Icons.edit, color: Colors.blue),
+                              tooltip: 'Edit',
                             ),
-                          ],
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          'Are you sure you want to delete "${_currentPortrait.title}"? This action cannot be undone.',
-                          style: TextStyle(color: Colors.red.shade700),
-                        ),
-                        const SizedBox(height: 12),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.end,
-                          children: [
-                            TextButton(
-                              onPressed: _isDeleting ? null : () {
+                            IconButton(
+                              onPressed: () {
                                 setState(() {
-                                  _showDeleteConfirmation = false;
+                                  _showDeleteConfirmation = true;
                                 });
                               },
-                              child: const Text('Cancel'),
+                              icon: const Icon(Icons.delete, color: Colors.red),
+                              tooltip: 'Delete',
                             ),
-                            const SizedBox(width: 8),
-                            ElevatedButton(
-                              onPressed: _isDeleting ? null : _deletePortrait,
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.red,
-                                foregroundColor: Colors.white,
-                              ),
-                              child: _isDeleting
-                                  ? const SizedBox(
-                                      width: 16,
-                                      height: 16,
-                                      child: CircularProgressIndicator(
-                                        strokeWidth: 2,
-                                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                                      ),
-                                    )
-                                  : const Text('Delete'),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
+                          ] : []),
+                        ],
+                      ),
+                    ],
                   ),
-                ] : []),
-                
-                // Action buttons at the bottom
-                SizedBox(height: 16),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
-                    // Share button - available to everyone
-                    IconButton(
-                      onPressed: () => _sharePortrait(context),
-                      icon: const Icon(Icons.share, color: AppColors.rustyOrange),
-                      tooltip: 'Share',
-                    ),
-                    ...(isOwner && !_showDeleteConfirmation ? [
-                      IconButton(
-                        onPressed: () => _editPortrait(context),
-                        icon: const Icon(Icons.edit, color: Colors.blue),
-                        tooltip: 'Edit',
-                      ),
-                      IconButton(
-                        onPressed: () {
-                          setState(() {
-                            _showDeleteConfirmation = true;
-                          });
-                        },
-                        icon: const Icon(Icons.delete, color: Colors.red),
-                        tooltip: 'Delete',
-                      ),
-                    ] : []),
-                  ],
-                ),
-              ],
             ),
           ),
         ],

@@ -67,7 +67,10 @@ class _SubmitPortraitDialogState extends State<SubmitPortraitDialog> {
       final now = DateTime.now();
       
       ModelModel? foundModel;
-      for (int i = 0; i < sortedModels.length; i++) {
+      
+      // Start from the end and work backwards to find the most recent model
+      // whose 9pm start time has passed
+      for (int i = sortedModels.length - 1; i >= 0; i--) {
         final modelStartTime = DateTime(
           sortedModels[i].date.year,
           sortedModels[i].date.month,
@@ -76,25 +79,15 @@ class _SubmitPortraitDialogState extends State<SubmitPortraitDialog> {
           0,
         );
         
-        // Find the end time (next model's date at 9pm, or far future if last model)
-        final modelEndTime = i < sortedModels.length - 1
-            ? DateTime(
-                sortedModels[i + 1].date.year,
-                sortedModels[i + 1].date.month,
-                sortedModels[i + 1].date.day,
-                21, // 9pm
-                0,
-              )
-            : DateTime.now().add(const Duration(days: 365)); // Far future for last model
-        
-        // Check if now is between start and end
-        if (now.isAfter(modelStartTime) && now.isBefore(modelEndTime)) {
+        // If we've passed this model's start time, this is the active model
+        if (now.isAfter(modelStartTime) || now.isAtSameMomentAs(modelStartTime)) {
           foundModel = sortedModels[i];
           break;
         }
       }
       
-      _sessionModel = foundModel ?? sortedModels.last;
+      // If no model found (current time is before all models), use the first model
+      _sessionModel = foundModel ?? sortedModels.first;
 
       // Get user's portraits
       final portraitsStream = portraitProvider.getUserPortraits(userId);
