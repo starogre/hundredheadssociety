@@ -52,6 +52,7 @@ class WeeklySessionProvider extends ChangeNotifier {
   String? _error;
 
   WeeklySessionModel? get currentSession => _currentSession;
+  WeeklySessionModel? get mostRecentCompletedSession => _mostRecentCompletedSession;
   List<UserModel> get rsvpUsers => _rsvpUsers;
   List<Map<String, dynamic>> get submissionsWithUsers => _submissionsWithUsers;
   bool get isLoading => _isLoading;

@@ -757,9 +757,12 @@ class _WeeklySessionsScreenState extends State<WeeklySessionsScreen>
     // Only show winners during the designated time period
     if (!shouldShowWinners) {
       // Calculate Friday noon to show exact date/time
+      // Use mostRecentCompletedSession if available (the session being voted on), otherwise currentSession
       String winnersAnnouncementText = 'Winners will be announced soon!';
-      if (weeklySessionProvider.currentSession != null) {
-        final sessionDate = weeklySessionProvider.currentSession!.sessionDate;
+      final sessionForWinners = weeklySessionProvider.mostRecentCompletedSession ?? weeklySessionProvider.currentSession;
+      
+      if (sessionForWinners != null) {
+        final sessionDate = sessionForWinners.sessionDate;
         final friday = sessionDate.add(const Duration(days: 4));
         final fridayNoon = DateTime(friday.year, friday.month, friday.day, 12, 0);
         
