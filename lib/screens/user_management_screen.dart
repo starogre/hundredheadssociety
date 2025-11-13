@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_auth/firebase_auth.dart' hide AuthProvider;
 import '../providers/auth_provider.dart';
 import '../services/user_service.dart';
 import '../services/portrait_service.dart';
@@ -627,7 +627,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                                           children: [
                                             // Switch to Appreciator Button (for artists only, Admin Only)
-                                            if (isAdmin && user.isArtist)
+                                            if (currentUser.isAdmin && user.isArtist)
                                               Expanded(
                                                 child: ElevatedButton.icon(
                                                   onPressed: () async {
@@ -692,7 +692,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                               ),
                                             
                                             // Delete Button (Admin Only)
-                                            if (isAdmin)
+                                            if (currentUser.isAdmin)
                                               Expanded(
                                                 child: ElevatedButton.icon(
                                                   onPressed: () async {
