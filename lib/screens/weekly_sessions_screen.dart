@@ -456,27 +456,6 @@ class _WeeklySessionsScreenState extends State<WeeklySessionsScreen>
                 ),
               ),
             ),
-          if (isArtist && currentUserId != null && hasSubmitted && !session.isCancelled)
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton.icon(
-                onPressed: () async {
-                  await weeklySessionProvider.removeSubmissionForCurrentSession(currentUserId);
-                  if (mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Submission removed')),
-                    );
-                  }
-                },
-                icon: const Icon(Icons.remove_circle),
-                label: const Text('Remove Submission'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.red,
-                  foregroundColor: AppColors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                ),
-              ),
-            ),
           const SizedBox(height: 24),
 
           // This Week's Model Section
@@ -686,30 +665,91 @@ class _WeeklySessionsScreenState extends State<WeeklySessionsScreen>
                         subtitle: Text(submission.portraitTitle),
                       ),
                       if (submission.portraitImageUrl.isNotEmpty)
-                        GestureDetector(
-                          onTap: () => _showNominationDialog(context, submission),
-                          child: AspectRatio(
-                            aspectRatio: 1,
-                            child: ClipRRect(
-                              borderRadius: BorderRadius.circular(4),
-                              child: CachedNetworkImage(
-                                imageUrl: submission.portraitImageUrl,
-                                fit: BoxFit.cover,
-                                placeholder: (context, url) => Container(
-                                  color: Colors.grey[200],
-                                  child: const Center(
-                                    child: CircularProgressIndicator(
-                                      valueColor: AlwaysStoppedAnimation<Color>(AppColors.forestGreen),
+                        Stack(
+                          children: [
+                            GestureDetector(
+                              onTap: () => _showNominationDialog(context, submission),
+                              child: AspectRatio(
+                                aspectRatio: 1,
+                                child: ClipRRect(
+                                  borderRadius: BorderRadius.circular(4),
+                                  child: CachedNetworkImage(
+                                    imageUrl: submission.portraitImageUrl,
+                                    fit: BoxFit.cover,
+                                    placeholder: (context, url) => Container(
+                                      color: Colors.grey[200],
+                                      child: const Center(
+                                        child: CircularProgressIndicator(
+                                          valueColor: AlwaysStoppedAnimation<Color>(AppColors.forestGreen),
+                                        ),
+                                      ),
+                                    ),
+                                    errorWidget: (context, url, error) => Container(
+                                      color: Colors.grey[300],
+                                      child: const Icon(Icons.error, color: Colors.red),
                                     ),
                                   ),
                                 ),
-                                errorWidget: (context, url, error) => Container(
-                                  color: Colors.grey[300],
-                                  child: const Icon(Icons.error, color: Colors.red),
-                                ),
                               ),
                             ),
-                          ),
+                            // Delete button - only show for user's own submission
+                            if (isArtist && currentUserId != null && submission.userId == currentUserId && !session.isCancelled)
+                              Positioned(
+                                top: 8,
+                                right: 8,
+                                child: Container(
+                                  decoration: BoxDecoration(
+                                    color: Colors.red,
+                                    shape: BoxShape.circle,
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.black.withValues(alpha: 0.3),
+                                        blurRadius: 4,
+                                        offset: const Offset(0, 2),
+                                      ),
+                                    ],
+                                  ),
+                                  child: IconButton(
+                                    icon: const Icon(Icons.delete, color: Colors.white, size: 20),
+                                    onPressed: () async {
+                                      // Show confirmation dialog
+                                      final confirmed = await showDialog<bool>(
+                                        context: context,
+                                        builder: (context) => AlertDialog(
+                                          title: const Text('Delete Submission'),
+                                          content: const Text(
+                                            'Are you sure you want to delete this submission? All votes on it will be gone. This can\'t be undone.',
+                                          ),
+                                          actions: [
+                                            TextButton(
+                                              onPressed: () => Navigator.of(context).pop(false),
+                                              child: const Text('Cancel'),
+                                            ),
+                                            TextButton(
+                                              onPressed: () => Navigator.of(context).pop(true),
+                                              style: TextButton.styleFrom(foregroundColor: Colors.red),
+                                              child: const Text('Delete'),
+                                            ),
+                                          ],
+                                        ),
+                                      );
+
+                                      if (confirmed == true) {
+                                        await weeklySessionProvider.removeSubmissionForCurrentSession(currentUserId);
+                                        if (context.mounted) {
+                                          ScaffoldMessenger.of(context).showSnackBar(
+                                            const SnackBar(
+                                              content: Text('Submission deleted'),
+                                              backgroundColor: AppColors.forestGreen,
+                                            ),
+                                          );
+                                        }
+                                      }
+                                    },
+                                  ),
+                                ),
+                              ),
+                          ],
                         ),
                       if (submission.artistNotes?.isNotEmpty == true)
                         Padding(
