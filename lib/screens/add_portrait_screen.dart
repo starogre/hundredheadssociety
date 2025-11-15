@@ -976,25 +976,10 @@ class _AddPortraitScreenState extends State<AddPortraitScreen> {
                         borderRadius: BorderRadius.circular(8),
                         border: Border.all(color: AppColors.rustyOrange.withValues(alpha: 0.3)),
                       ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              Icon(Icons.calendar_today, size: 16, color: AppColors.rustyOrange),
-                              const SizedBox(width: 8),
-                              Text(
-                                'Week $_selectedWeek',
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold,
-                                  color: AppColors.rustyOrange,
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 8),
-                          DropdownButtonFormField<int>(
+                      child:                         Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            DropdownButtonFormField<int>(
                             value: _selectedWeek,
                             decoration: const InputDecoration(
                               labelText: 'Select Week',

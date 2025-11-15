@@ -384,6 +384,7 @@ class _SubmitPortraitDialogState extends State<SubmitPortraitDialog> {
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.forestGreen,
               foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
             ),
             child: _isSubmitting
                 ? const SizedBox(

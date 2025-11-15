@@ -69,6 +69,8 @@ class _CommunityScreenState extends State<CommunityScreen>
             labelColor: AppColors.rustyOrange,
             unselectedLabelColor: AppColors.forestGreen.withValues(alpha: 0.7),
             indicatorColor: AppColors.rustyOrange,
+            indicatorWeight: 3,
+            dividerColor: AppColors.forestGreen.withValues(alpha: 0.2),
             tabs: const [
               Tab(text: 'Recent Portraits'),
               Tab(text: 'Members'),
