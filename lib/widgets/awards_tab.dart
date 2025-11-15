@@ -5,6 +5,7 @@ import '../models/user_model.dart';
 import '../services/award_service.dart';
 import '../services/portrait_service.dart';
 import '../theme/app_theme.dart';
+import '../screens/portrait_awards_list_screen.dart';
 
 class AwardsTab extends StatefulWidget {
   final String userId;
@@ -27,6 +28,7 @@ class _AwardsTabState extends State<AwardsTab> {
   int _communityExp = 0;
   List<String> _userMerchItems = [];
   bool _isLoading = true;
+  String _userName = '';
 
   final List<String> _availableMerchItems = [
     'T-Shirt',
@@ -75,6 +77,7 @@ class _AwardsTabState extends State<AwardsTab> {
       final cachedTrophies = userData?['portraitAwardCount'] as int? ?? 0;
       final cachedCommunityExp = userData?['totalVotesCast'] as int? ?? 0;
       final lastUpdate = userData?['awardsLastCalculated'] as Timestamp?;
+      final userName = userData?['name'] as String? ?? 'User';
       
       // Use cached data if it's less than 5 minutes old
       if (lastUpdate != null) {
@@ -85,6 +88,7 @@ class _AwardsTabState extends State<AwardsTab> {
             setState(() {
               _trophyCount = cachedTrophies;
               _communityExp = cachedCommunityExp;
+              _userName = userName;
             });
           }
           debugPrint('Awards loaded from cache - Trophies: $cachedTrophies, Community Exp: $cachedCommunityExp');
@@ -221,6 +225,7 @@ class _AwardsTabState extends State<AwardsTab> {
         setState(() {
           _trophyCount = totalTrophies;
           _communityExp = communityExp;
+          _userName = userName;
         });
       }
       
@@ -358,6 +363,16 @@ class _AwardsTabState extends State<AwardsTab> {
             _trophyCount.toString(),
             PhosphorIconsDuotone.trophy,
             AppColors.rustyOrange,
+            onTap: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (context) => PortraitAwardsListScreen(
+                    userId: widget.userId,
+                    userName: _userName,
+                  ),
+                ),
+              );
+            },
           ),
         ),
         const SizedBox(width: 12),
@@ -373,8 +388,8 @@ class _AwardsTabState extends State<AwardsTab> {
     );
   }
 
-  Widget _buildSummaryCard(String title, String value, IconData icon, Color color) {
-    return Container(
+  Widget _buildSummaryCard(String title, String value, IconData icon, Color color, {VoidCallback? onTap}) {
+    final cardContent = Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: AppColors.white,
@@ -411,6 +426,15 @@ class _AwardsTabState extends State<AwardsTab> {
         ],
       ),
     );
+
+    if (onTap != null) {
+      return GestureDetector(
+        onTap: onTap,
+        child: cardContent,
+      );
+    }
+    
+    return cardContent;
   }
 
   Widget _buildUserMerchSection() {
