@@ -382,6 +382,15 @@ class _AwardsTabState extends State<AwardsTab> {
             _communityExp.toString(),
             PhosphorIconsDuotone.star,
             AppColors.forestGreen,
+            onTap: () {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Vote on weekly submissions to get more EXP!'),
+                  duration: Duration(seconds: 3),
+                  backgroundColor: AppColors.forestGreen,
+                ),
+              );
+            },
           ),
         ),
       ],
