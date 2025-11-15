@@ -692,9 +692,21 @@ class _WeeklySessionsScreenState extends State<WeeklySessionsScreen>
                             aspectRatio: 1,
                             child: ClipRRect(
                               borderRadius: BorderRadius.circular(4),
-                              child: Image.network(
-                                submission.portraitImageUrl,
+                              child: CachedNetworkImage(
+                                imageUrl: submission.portraitImageUrl,
                                 fit: BoxFit.cover,
+                                placeholder: (context, url) => Container(
+                                  color: Colors.grey[200],
+                                  child: const Center(
+                                    child: CircularProgressIndicator(
+                                      valueColor: AlwaysStoppedAnimation<Color>(AppColors.forestGreen),
+                                    ),
+                                  ),
+                                ),
+                                errorWidget: (context, url, error) => Container(
+                                  color: Colors.grey[300],
+                                  child: const Icon(Icons.error, color: Colors.red),
+                                ),
                               ),
                             ),
                           ),
@@ -913,9 +925,21 @@ class _WeeklySessionsScreenState extends State<WeeklySessionsScreen>
                   aspectRatio: 1,
                   child: ClipRRect(
                     borderRadius: BorderRadius.circular(8),
-                    child: Image.network(
-                      submission.portraitImageUrl,
+                    child: CachedNetworkImage(
+                      imageUrl: submission.portraitImageUrl,
                       fit: BoxFit.cover,
+                      placeholder: (context, url) => Container(
+                        color: Colors.grey[200],
+                        child: const Center(
+                          child: CircularProgressIndicator(
+                            valueColor: AlwaysStoppedAnimation<Color>(AppColors.forestGreen),
+                          ),
+                        ),
+                      ),
+                      errorWidget: (context, url, error) => Container(
+                        color: Colors.grey[300],
+                        child: const Icon(Icons.error, color: Colors.red),
+                      ),
                     ),
                   ),
                 ),
