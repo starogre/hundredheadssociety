@@ -77,12 +77,39 @@ class WeeklySessionProvider extends ChangeNotifier {
         
         // Reload users and submissions whenever session data changes
         if (session != null) {
-          // Check if we need to reload (session changed OR submissions/rsvps changed)
+          // Check if we need to reload (session changed OR submissions/rsvps changed OR votes changed)
           final sessionChanged = oldSession?.id != session.id || oldSession == null;
           final submissionsChanged = oldSession?.submissions.length != session.submissions.length;
           final rsvpsChanged = oldSession?.rsvpUserIds.length != session.rsvpUserIds.length;
           
-          if (sessionChanged || submissionsChanged || rsvpsChanged) {
+          // Check if votes changed by comparing submission vote counts
+          bool votesChanged = false;
+          if (oldSession != null && oldSession.submissions.length == session.submissions.length) {
+            // Same number of submissions, check if votes changed
+            // Create a map of old submissions by ID for efficient lookup
+            final oldSubmissionsMap = {
+              for (var s in oldSession.submissions) s.id: s
+            };
+            
+            for (final newSubmission in session.submissions) {
+              final oldSubmission = oldSubmissionsMap[newSubmission.id];
+              if (oldSubmission != null) {
+                // Compare vote counts
+                final oldTotalVotes = oldSubmission.votes.values.fold(0, (sum, list) => sum + list.length);
+                final newTotalVotes = newSubmission.votes.values.fold(0, (sum, list) => sum + list.length);
+                if (oldTotalVotes != newTotalVotes) {
+                  votesChanged = true;
+                  break;
+                }
+              } else {
+                // New submission found, treat as changed
+                votesChanged = true;
+                break;
+              }
+            }
+          }
+          
+          if (sessionChanged || submissionsChanged || rsvpsChanged || votesChanged) {
             await _loadRsvpUsers(session.rsvpUserIds);
             await _loadSubmissionsWithUsers(session.submissions);
           }
