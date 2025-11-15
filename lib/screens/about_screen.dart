@@ -42,7 +42,7 @@ class AboutScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 8),
                   const Text(
-                    'Version 1.0.7',
+                    'Version 1.0.8',
                     style: TextStyle(
                       color: Colors.grey,
                       fontSize: 16,
@@ -76,7 +76,7 @@ class AboutScreen extends StatelessWidget {
                       ),
                       const SizedBox(width: 8),
                       const Text(
-                        'What\'s New in v1.0.7',
+                        'What\'s New in v1.0.8',
                         style: TextStyle(
                           fontSize: 20,
                           fontWeight: FontWeight.bold,
@@ -87,7 +87,7 @@ class AboutScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 16),
                   const Text(
-                    '🔐 Enhanced Admin Security',
+                    '🏆 Enhanced Awards & Profile Features',
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
@@ -96,15 +96,15 @@ class AboutScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 8),
                   const Text(
-                    '• Password re-authentication required for critical actions\n'
-                    '• Admins must verify identity before deleting users\n'
-                    '• Prevents unauthorized changes from compromised sessions\n'
-                    '• Enhanced Firestore security rules for better protection',
+                    '• Tap Portrait Trophies card to see detailed awards list\n'
+                    '• View all your awards with portrait thumbnails and model names\n'
+                    '• Tap Community Exp for helpful tips on earning more\n'
+                    '• Awards list shows 1st/2nd/3rd place breakdowns',
                     style: TextStyle(fontSize: 15, height: 1.5),
                   ),
                   const SizedBox(height: 16),
                   const Text(
-                    '🛡️ Improved User Management',
+                    '⚡ Real-Time Updates & Better UX',
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
@@ -113,15 +113,15 @@ class AboutScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 8),
                   const Text(
-                    '• Moderators can no longer delete user accounts\n'
-                    '• User deletion restricted to admins only\n'
-                    '• Role switching (Artist ↔ Appreciator) admin-only\n'
-                    '• Safer community management permissions',
+                    '• Vote counts update instantly - no app restart needed\n'
+                    '• Winners appear automatically when voting closes\n'
+                    '• Loading spinners for submission and winner images\n'
+                    '• Submission timestamps show exact date and time',
                     style: TextStyle(fontSize: 15, height: 1.5),
                   ),
                   const SizedBox(height: 16),
                   const Text(
-                    '✨ Backend Security Updates',
+                    '🎨 UI Polish & Improvements',
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
@@ -130,10 +130,10 @@ class AboutScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 8),
                   const Text(
-                    '• Updated Firestore rules for granular permissions\n'
-                    '• Activity logging for all admin actions\n'
-                    '• Better safeguards against unauthorized access\n'
-                    '• Improved data protection and audit trail',
+                    '• Delete icon on your own submissions (no more big button)\n'
+                    '• Wider submit button for easier tapping\n'
+                    '• Subtle tab dividers matching app design\n'
+                    '• Cleaner portrait upload interface',
                     style: TextStyle(fontSize: 15, height: 1.5),
                   ),
                 ],
