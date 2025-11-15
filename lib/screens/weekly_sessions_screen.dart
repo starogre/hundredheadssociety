@@ -662,7 +662,20 @@ class _WeeklySessionsScreenState extends State<WeeklySessionsScreen>
                             : null,
                         ),
                         title: Text(user.name),
-                        subtitle: Text(submission.portraitTitle),
+                        subtitle: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(submission.portraitTitle),
+                            const SizedBox(height: 4),
+                            Text(
+                              _formatSubmissionTime(submission.submittedAt),
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.grey[600],
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                       if (submission.portraitImageUrl.isNotEmpty)
                         Stack(
@@ -1175,5 +1188,38 @@ class _WeeklySessionsScreenState extends State<WeeklySessionsScreen>
         ],
       ),
     );
+  }
+
+  String _formatSubmissionTime(DateTime submittedAt) {
+    final now = DateTime.now();
+    final difference = now.difference(submittedAt);
+
+    if (difference.inDays > 7) {
+      // More than a week ago - show full date
+      final months = [
+        'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+        'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+      ];
+      return 'Submitted ${months[submittedAt.month - 1]} ${submittedAt.day}, ${submittedAt.year} at ${_formatTime(submittedAt)}';
+    } else if (difference.inDays > 0) {
+      // Days ago
+      return 'Submitted ${difference.inDays} ${difference.inDays == 1 ? 'day' : 'days'} ago at ${_formatTime(submittedAt)}';
+    } else if (difference.inHours > 0) {
+      // Hours ago
+      return 'Submitted ${difference.inHours} ${difference.inHours == 1 ? 'hour' : 'hours'} ago';
+    } else if (difference.inMinutes > 0) {
+      // Minutes ago
+      return 'Submitted ${difference.inMinutes} ${difference.inMinutes == 1 ? 'minute' : 'minutes'} ago';
+    } else {
+      // Just now
+      return 'Submitted just now';
+    }
+  }
+
+  String _formatTime(DateTime dateTime) {
+    final hour = dateTime.hour == 0 ? 12 : (dateTime.hour > 12 ? dateTime.hour - 12 : dateTime.hour);
+    final minute = dateTime.minute.toString().padLeft(2, '0');
+    final period = dateTime.hour >= 12 ? 'PM' : 'AM';
+    return '$hour:$minute $period';
   }
 } 

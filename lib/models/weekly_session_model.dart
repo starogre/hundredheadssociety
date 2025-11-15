@@ -93,13 +93,27 @@ class WeeklySubmissionModel {
   });
 
   factory WeeklySubmissionModel.fromMap(Map<String, dynamic> map) {
+    // Handle old submissions that might not have submittedAt
+    DateTime submittedAtDate;
+    if (map['submittedAt'] != null) {
+      if (map['submittedAt'] is Timestamp) {
+        submittedAtDate = (map['submittedAt'] as Timestamp).toDate();
+      } else {
+        // Fallback for old data that might be stored as DateTime
+        submittedAtDate = DateTime.now();
+      }
+    } else {
+      // Default to now for old submissions without timestamp
+      submittedAtDate = DateTime.now();
+    }
+    
     return WeeklySubmissionModel(
       id: map['id'] ?? '',
       userId: map['userId'] ?? '',
       portraitId: map['portraitId'] ?? '',
       portraitTitle: map['portraitTitle'] ?? '',
       portraitImageUrl: map['portraitImageUrl'] ?? '',
-      submittedAt: (map['submittedAt'] as Timestamp).toDate(),
+      submittedAt: submittedAtDate,
       artistNotes: map['artistNotes'],
       votes: (map['votes'] as Map<String, dynamic>?)
               ?.map((key, value) => MapEntry(key, List<String>.from(value))) ??
@@ -114,7 +128,7 @@ class WeeklySubmissionModel {
       'portraitId': portraitId,
       'portraitTitle': portraitTitle,
       'portraitImageUrl': portraitImageUrl,
-      'submittedAt': submittedAt,
+      'submittedAt': Timestamp.fromDate(submittedAt),
       'artistNotes': artistNotes,
       'votes': votes,
     };
