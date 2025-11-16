@@ -513,7 +513,7 @@ class _WeeklySessionsScreenState extends State<WeeklySessionsScreen>
                     final models = snapshot.data!;
                     
                     // Find the currently active model
-                    // A model is active from their date at 9pm until the next model's date at 9pm
+                    // A model is active from their date at 6pm until the next model's date at 6pm
                     final now = DateTime.now();
                     final sortedModels = models.toList()
                       ..sort((a, b) => a.date.compareTo(b.date));
@@ -521,13 +521,13 @@ class _WeeklySessionsScreenState extends State<WeeklySessionsScreen>
                     ModelModel? sessionModel;
                     
                     // Start from the end and work backwards to find the most recent model
-                    // whose 9pm start time has passed
+                    // whose 6pm start time has passed
                     for (int i = sortedModels.length - 1; i >= 0; i--) {
                       final modelStartTime = DateTime(
                         sortedModels[i].date.year,
                         sortedModels[i].date.month,
                         sortedModels[i].date.day,
-                        21, // 9pm
+                        18, // 6pm
                         0,
                       );
                       

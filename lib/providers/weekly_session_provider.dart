@@ -501,12 +501,12 @@ class WeeklySessionProvider extends ChangeNotifier {
     final now = DateTime.now();
     final sessionDate = _currentSession!.sessionDate;
     
-    // Calculate Friday noon (4 days after Monday session)
-    final friday = sessionDate.add(const Duration(days: 4));
+    // Session is Monday at 6 PM, Friday noon is 3 days and 18 hours later
+    final friday = sessionDate.add(const Duration(days: 3, hours: 18));
     final fridayNoon = DateTime(friday.year, friday.month, friday.day, 12, 0);
     
     final isClosed = now.isAfter(fridayNoon);
-    print('DEBUG: Voting closed check - Now: $now, Session: $sessionDate, Friday noon: $fridayNoon, Is closed: $isClosed');
+    print('DEBUG: Voting closed check - Now: $now, Session: $sessionDate (Monday 6PM), Friday noon: $fridayNoon, Is closed: $isClosed');
     
     return isClosed;
   }
@@ -555,7 +555,7 @@ class WeeklySessionProvider extends ChangeNotifier {
     }
   }
 
-  // Check if winners should be shown (from Friday noon until Monday 9am)
+  // Check if winners should be shown (from Friday noon until next Monday 6pm)
   bool shouldShowWinners() {
     if (_mostRecentCompletedSession == null) {
       print('DEBUG: No most recent completed session for winners check');
@@ -567,16 +567,16 @@ class WeeklySessionProvider extends ChangeNotifier {
     
     print('DEBUG: Most recent completed session date: $sessionDate');
     
-    // Calculate Friday noon (4 days after Monday session)
-    final friday = sessionDate.add(const Duration(days: 4));
+    // Session is Monday at 6 PM, Friday noon is 3 days and 18 hours later
+    final friday = sessionDate.add(const Duration(days: 3, hours: 18));
     final fridayNoon = DateTime(friday.year, friday.month, friday.day, 12, 0);
     
-    // Calculate next Monday 9am (7 days after session)
+    // Calculate next Monday 6pm (7 days after session)
     final nextMonday = sessionDate.add(const Duration(days: 7));
-    final nextMonday9am = DateTime(nextMonday.year, nextMonday.month, nextMonday.day, 9, 0);
+    final nextMonday6pm = DateTime(nextMonday.year, nextMonday.month, nextMonday.day, 18, 0);
     
-    final shouldShow = now.isAfter(fridayNoon) && now.isBefore(nextMonday9am);
-    print('DEBUG: Show winners check - Now: $now, Session: $sessionDate, Friday noon: $fridayNoon, Next Monday 9am: $nextMonday9am, Should show: $shouldShow');
+    final shouldShow = now.isAfter(fridayNoon) && now.isBefore(nextMonday6pm);
+    print('DEBUG: Show winners check - Now: $now, Session: $sessionDate (Monday 6PM), Friday noon: $fridayNoon, Next Monday 6pm: $nextMonday6pm, Should show: $shouldShow');
     
     return shouldShow;
   }

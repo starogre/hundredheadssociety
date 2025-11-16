@@ -57,17 +57,42 @@ interface WeeklySubmission {
  * Runs every Monday at 9:00 AM to create a new weekly session
  */
 export const createWeeklySession = onSchedule({
-  schedule: "0 9 * * 1", // Every Monday at 9:00 AM
+  schedule: "0 18 * * 1", // Every Monday at 6:00 PM
   timeZone: "America/New_York",
 }, async () => {
   try {
     logger.info("Creating new weekly session...");
 
-    // Calculate next session date (next Monday)
+    // Calculate this Monday at 6 PM
     const now = new Date();
-    const nextMonday = new Date(now);
-    nextMonday.setDate(now.getDate() + (8 - now.getDay()) % 7);
-    nextMonday.setHours(9, 0, 0, 0); // 9:00 AM
+    const thisMonday = new Date(now);
+    thisMonday.setDate(now.getDate() - (now.getDay() - 1) % 7);
+    thisMonday.setHours(18, 0, 0, 0); // 6:00 PM
+
+    // Try to find a model with matching date
+    let modelName: string | undefined;
+    let modelImageUrl: string | undefined;
+    
+    try {
+      // Look for model with date matching this Monday
+      const modelSnapshot = await db.collection("models")
+          .where("date", "==", thisMonday)
+          .where("isActive", "==", true)
+          .limit(1)
+          .get();
+
+      if (!modelSnapshot.empty) {
+        const modelData = modelSnapshot.docs[0].data();
+        modelName = modelData.name;
+        modelImageUrl = modelData.imageUrl;
+        logger.info(`Found model for session: ${modelName}`);
+      } else {
+        logger.info("No model found for this session date - admin will need to assign manually");
+      }
+    } catch (error) {
+      logger.error("Error finding model:", error);
+      // Continue without model - admin can assign later
+    }
 
     // Get all approved users
     const usersSnapshot = await db.collection("users")
@@ -76,22 +101,24 @@ export const createWeeklySession = onSchedule({
 
     const approvedUserIds = usersSnapshot.docs.map((doc) => doc.id);
 
-    // Create new session
+    // Create new session (with or without model)
     const newSession: Partial<WeeklySession> = {
-      sessionDate: nextMonday,
+      sessionDate: thisMonday,
       rsvpUserIds: [],
       submissions: [],
       createdAt: new Date(),
       isActive: true,
+      modelName: modelName,
+      modelImageUrl: modelImageUrl,
     };
 
     const sessionRef = await db.collection("weeklySessions").add(newSession);
 
     logger.info(`Created weekly session ${sessionRef.id} for ${
-        nextMonday.toDateString()}`);
+        thisMonday.toDateString()}${modelName ? ` with model ${modelName}` : " (no model assigned)"}`);
 
     // Send notification to all approved users
-    await sendSessionCreationNotification(approvedUserIds, nextMonday);
+    await sendSessionCreationNotification(approvedUserIds, thisMonday, modelName);
   } catch (error) {
     logger.error("Error creating weekly session:", error);
   }
@@ -102,16 +129,16 @@ export const createWeeklySession = onSchedule({
  * Sends reminders 24 hours before session starts
  */
 export const sendSessionReminders = onSchedule({
-  schedule: "0 9 * * 0", // Every Sunday at 9:00 AM
+  schedule: "0 18 * * 0", // Every Sunday at 6:00 PM
   timeZone: "America/New_York",
 }, async () => {
   try {
     logger.info("Sending session reminders...");
 
-    // Find active session for next Monday
+    // Find active session for next Monday at 6 PM
     const nextMonday = new Date();
     nextMonday.setDate(nextMonday.getDate() + (8 - nextMonday.getDay()) % 7);
-    nextMonday.setHours(9, 0, 0, 0);
+    nextMonday.setHours(18, 0, 0, 0);
 
     const sessionsSnapshot = await db.collection("weeklySessions")
         .where("sessionDate", "==", nextMonday)
@@ -127,7 +154,7 @@ export const sendSessionReminders = onSchedule({
     const session = sessionsSnapshot.docs[0];
     const sessionData = session.data() as WeeklySession;
 
-    // Get users who haven't RSVP'd yet
+    // Get all approved users
     const allUsersSnapshot = await db.collection("users")
         .where("status", "==", "approved")
         .get();
@@ -137,14 +164,10 @@ export const sendSessionReminders = onSchedule({
       ...doc.data(),
     })) as User[];
 
-    const usersWithoutRSVP = allApprovedUsers.filter(
-        (user) => !sessionData.rsvpUserIds.includes(user.id),
-    );
+    // Send reminders to all approved users (no RSVP needed anymore)
+    await sendReminderNotifications(allApprovedUsers, nextMonday, sessionData.modelName);
 
-    // Send reminders to users who haven't RSVP'd
-    await sendReminderNotifications(usersWithoutRSVP, nextMonday);
-
-    logger.info(`Sent reminders to ${usersWithoutRSVP.length} users`);
+    logger.info(`Sent reminders to ${allApprovedUsers.length} users`);
   } catch (error) {
     logger.error("Error sending session reminders:", error);
   }
@@ -268,9 +291,11 @@ export const onSubmissionAdded = onDocumentUpdated("weeklySessions/{sessionId}",
 /**
  * Send session creation notifications to users
  */
-async function sendSessionCreationNotification(userIds: string[], sessionDate: Date): Promise<void> {
+async function sendSessionCreationNotification(userIds: string[], sessionDate: Date, modelName?: string): Promise<void> {
   try {
     const batch = db.batch();
+
+    const modelInfo = modelName ? ` with model ${modelName}` : "";
 
     for (const userId of userIds) {
       const notificationRef = db.collection("notifications").doc();
@@ -279,7 +304,8 @@ async function sendSessionCreationNotification(userIds: string[], sessionDate: D
         type: "session_created",
         title: "New Weekly Session Created!",
         message: `A new weekly session has been scheduled for ${
-            sessionDate.toLocaleDateString()}. Don't forget to RSVP!`,
+            sessionDate.toLocaleDateString()} at 6:00 PM${modelInfo}. ` +
+            "Don't forget to purchase your session ticket on the website!",
         createdAt: new Date(),
         read: false,
         data: {
@@ -298,9 +324,11 @@ async function sendSessionCreationNotification(userIds: string[], sessionDate: D
 /**
  * Send reminder notifications to users
  */
-async function sendReminderNotifications(users: User[], sessionDate: Date): Promise<void> {
+async function sendReminderNotifications(users: User[], sessionDate: Date, modelName?: string): Promise<void> {
   try {
     const batch = db.batch();
+
+    const modelInfo = modelName ? ` with model ${modelName}` : "";
 
     for (const user of users) {
       const notificationRef = db.collection("notifications").doc();
@@ -308,8 +336,8 @@ async function sendReminderNotifications(users: User[], sessionDate: Date): Prom
         userId: user.id,
         type: "session_reminder",
         title: "Weekly Session Tomorrow!",
-        message: "Don't forget! The weekly session starts tomorrow at 9:00 AM. " +
-            "Please RSVP if you haven't already.",
+        message: `Don't forget! The weekly session starts tomorrow at 6:00 PM${modelInfo}. ` +
+            "Remember to purchase your session ticket on the website before attending!",
         createdAt: new Date(),
         read: false,
         data: {
