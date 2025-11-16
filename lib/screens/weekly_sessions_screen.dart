@@ -13,6 +13,7 @@ import '../widgets/submit_portrait_dialog.dart';
 import '../widgets/nomination_dialog.dart';
 import '../screens/profile_screen.dart';
 import '../services/user_service.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 
 class WeeklySessionsScreen extends StatefulWidget {
   const WeeklySessionsScreen({super.key});
@@ -718,7 +719,7 @@ class _WeeklySessionsScreenState extends State<WeeklySessionsScreen>
                         Stack(
                           children: [
                             GestureDetector(
-                              onTap: () => _showNominationDialog(context, submission),
+                              onTap: () => _showImagePreview(context, submission.portraitImageUrl),
                               child: AspectRatio(
                                 aspectRatio: 1,
                                 child: ClipRRect(
@@ -1028,24 +1029,27 @@ class _WeeklySessionsScreenState extends State<WeeklySessionsScreen>
                   title: Text(user.name, style: const TextStyle(fontWeight: FontWeight.bold)),
                   subtitle: Text(submission.portraitTitle),
                 ),
-                AspectRatio(
-                  aspectRatio: 1,
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(8),
-                    child: CachedNetworkImage(
-                      imageUrl: submission.portraitImageUrl,
-                      fit: BoxFit.cover,
-                      placeholder: (context, url) => Container(
-                        color: Colors.grey[200],
-                        child: const Center(
-                          child: CircularProgressIndicator(
-                            valueColor: AlwaysStoppedAnimation<Color>(AppColors.forestGreen),
+                GestureDetector(
+                  onTap: () => _showImagePreview(context, submission.portraitImageUrl),
+                  child: AspectRatio(
+                    aspectRatio: 1,
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(8),
+                      child: CachedNetworkImage(
+                        imageUrl: submission.portraitImageUrl,
+                        fit: BoxFit.cover,
+                        placeholder: (context, url) => Container(
+                          color: Colors.grey[200],
+                          child: const Center(
+                            child: CircularProgressIndicator(
+                              valueColor: AlwaysStoppedAnimation<Color>(AppColors.forestGreen),
+                            ),
                           ),
                         ),
-                      ),
-                      errorWidget: (context, url, error) => Container(
-                        color: Colors.grey[300],
-                        child: const Icon(Icons.error, color: Colors.red),
+                        errorWidget: (context, url, error) => Container(
+                          color: Colors.grey[300],
+                          child: const Icon(Icons.error, color: Colors.red),
+                        ),
                       ),
                     ),
                   ),
@@ -1361,6 +1365,55 @@ class _WeeklySessionsScreenState extends State<WeeklySessionsScreen>
             child: const Text('Close'),
           ),
         ],
+      ),
+    );
+  }
+
+  void _showImagePreview(BuildContext context, String imageUrl) {
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        backgroundColor: Colors.transparent,
+        insetPadding: const EdgeInsets.all(16),
+        child: Stack(
+          children: [
+            Center(
+              child: InteractiveViewer(
+                minScale: 0.5,
+                maxScale: 4.0,
+                child: CachedNetworkImage(
+                  imageUrl: imageUrl,
+                  fit: BoxFit.contain,
+                  placeholder: (context, url) => Container(
+                    color: Colors.black87,
+                    child: const Center(
+                      child: CircularProgressIndicator(
+                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                      ),
+                    ),
+                  ),
+                  errorWidget: (context, url, error) => Container(
+                    color: Colors.black87,
+                    child: const Center(
+                      child: Icon(Icons.error, color: Colors.red, size: 48),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            Positioned(
+              top: 8,
+              right: 8,
+              child: IconButton(
+                icon: const Icon(Icons.close, color: Colors.white),
+                onPressed: () => Navigator.of(context).pop(),
+                style: IconButton.styleFrom(
+                  backgroundColor: Colors.black54,
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
