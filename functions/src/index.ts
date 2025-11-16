@@ -39,6 +39,8 @@ interface WeeklySession {
   submissions: WeeklySubmission[];
   createdAt: Date;
   isActive: boolean;
+  modelName?: string;
+  modelImageUrl?: string;
 }
 
 interface WeeklySubmission {
