@@ -87,7 +87,7 @@ class AboutScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 16),
                   const Text(
-                    '🗳️ Redesigned Voting Experience',
+                    '⏰ Updated Session Timing',
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
@@ -96,16 +96,15 @@ class AboutScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 8),
                   const Text(
-                    '• Beautiful new voting UI with gradient backgrounds\n'
-                    '• See who you already voted for with thumbnail previews\n'
-                    '• Easy vote switching with confirmation dialogs\n'
-                    '• One vote per award category - fair and transparent\n'
-                    '• Can\'t vote on your own submissions',
+                    '• Weekly sessions now start Monday at 6:00 PM\n'
+                    '• Matches actual art sitting times\n'
+                    '• Session reminders now Sunday at 6:00 PM\n'
+                    '• Submit portraits throughout the week until Friday noon',
                     style: TextStyle(fontSize: 15, height: 1.5),
                   ),
                   const SizedBox(height: 16),
                   const Text(
-                    '🏆 Co-Winners & Tie Support',
+                    '🤖 Automated Model Selection',
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
@@ -114,15 +113,15 @@ class AboutScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 8),
                   const Text(
-                    '• Ties are now properly recognized with Co-Winner badges\n'
-                    '• All tied submissions shown in Winners tab\n'
-                    '• Fair recognition for everyone who deserves it\n'
-                    '• Awards list updated to reflect all your wins',
+                    '• App automatically selects the model for each week\n'
+                    '• Based on model schedule in the system\n'
+                    '• Admins can manually assign if needed\n'
+                    '• Seamless weekly session creation',
                     style: TextStyle(fontSize: 15, height: 1.5),
                   ),
                   const SizedBox(height: 16),
                   const Text(
-                    '📜 Past Winners Historical Archive',
+                    '🎫 Ticket Purchase Reminders',
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
@@ -131,15 +130,15 @@ class AboutScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 8),
                   const Text(
-                    '• New "Past Winners" tab to browse historical winners\n'
-                    '• See all previous sessions organized by model and date\n'
-                    '• Tap any session to view full winners breakdown\n'
-                    '• Celebrate past achievements and community history',
+                    '• New session notifications remind you to buy tickets\n'
+                    '• Sunday reminders include ticket purchase info\n'
+                    '• Visit website to purchase before attending\n'
+                    '• No more RSVP - just buy your ticket and come!',
                     style: TextStyle(fontSize: 15, height: 1.5),
                   ),
                   const SizedBox(height: 16),
                   const Text(
-                    '🔔 Winner Announcement Notifications',
+                    '✨ Clean Session Management',
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
@@ -148,10 +147,10 @@ class AboutScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 8),
                   const Text(
-                    '• Get notified Friday at noon when winners are announced\n'
-                    '• Winners receive personalized "You Won!" notifications\n'
-                    '• Co-winners get special tie recognition\n'
-                    '• Everyone gets a general announcement to check winners',
+                    '• Previous week automatically closes when new one starts\n'
+                    '• Winners move to Past Winners archive on Monday\n'
+                    '• Smooth weekly cycle with no manual intervention\n'
+                    '• Clean handoff between weeks',
                     style: TextStyle(fontSize: 15, height: 1.5),
                   ),
                 ],
