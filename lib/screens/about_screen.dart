@@ -87,7 +87,7 @@ class AboutScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 16),
                   const Text(
-                    '🏆 Enhanced Awards & Profile Features',
+                    '🗳️ Redesigned Voting Experience',
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
@@ -96,15 +96,16 @@ class AboutScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 8),
                   const Text(
-                    '• Tap Portrait Trophies card to see detailed awards list\n'
-                    '• View all your awards with portrait thumbnails and model names\n'
-                    '• Tap Community Exp for helpful tips on earning more\n'
-                    '• Awards list shows 1st/2nd/3rd place breakdowns',
+                    '• Beautiful new voting UI with gradient backgrounds\n'
+                    '• See who you already voted for with thumbnail previews\n'
+                    '• Easy vote switching with confirmation dialogs\n'
+                    '• One vote per award category - fair and transparent\n'
+                    '• Can\'t vote on your own submissions',
                     style: TextStyle(fontSize: 15, height: 1.5),
                   ),
                   const SizedBox(height: 16),
                   const Text(
-                    '⚡ Real-Time Updates & Better UX',
+                    '🏆 Co-Winners & Tie Support',
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
@@ -113,15 +114,15 @@ class AboutScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 8),
                   const Text(
-                    '• Vote counts update instantly - no app restart needed\n'
-                    '• Winners appear automatically when voting closes\n'
-                    '• Loading spinners for submission and winner images\n'
-                    '• Submission timestamps show exact date and time',
+                    '• Ties are now properly recognized with Co-Winner badges\n'
+                    '• All tied submissions shown in Winners tab\n'
+                    '• Fair recognition for everyone who deserves it\n'
+                    '• Awards list updated to reflect all your wins',
                     style: TextStyle(fontSize: 15, height: 1.5),
                   ),
                   const SizedBox(height: 16),
                   const Text(
-                    '🎨 UI Polish & Improvements',
+                    '📜 Past Winners Historical Archive',
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
@@ -130,10 +131,27 @@ class AboutScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 8),
                   const Text(
-                    '• Delete icon on your own submissions (no more big button)\n'
-                    '• Wider submit button for easier tapping\n'
-                    '• Subtle tab dividers matching app design\n'
-                    '• Cleaner portrait upload interface',
+                    '• New "Past Winners" tab to browse historical winners\n'
+                    '• See all previous sessions organized by model and date\n'
+                    '• Tap any session to view full winners breakdown\n'
+                    '• Celebrate past achievements and community history',
+                    style: TextStyle(fontSize: 15, height: 1.5),
+                  ),
+                  const SizedBox(height: 16),
+                  const Text(
+                    '🔔 Winner Announcement Notifications',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.forestGreen,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  const Text(
+                    '• Get notified Friday at noon when winners are announced\n'
+                    '• Winners receive personalized "You Won!" notifications\n'
+                    '• Co-winners get special tie recognition\n'
+                    '• Everyone gets a general announcement to check winners',
                     style: TextStyle(fontSize: 15, height: 1.5),
                   ),
                 ],
