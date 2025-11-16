@@ -413,8 +413,8 @@ class WeeklySessionProvider extends ChangeNotifier {
     }
   }
 
-  // Get winners for each category
-  Map<String, Map<String, dynamic>> get winners {
+  // Get winners for each category (supports ties - multiple winners per category)
+  Map<String, List<Map<String, dynamic>>> get winners {
     if (_mostRecentCompletedSession == null) {
       print('DEBUG: No most recent completed session for winners');
       return {};
@@ -427,33 +427,48 @@ class WeeklySessionProvider extends ChangeNotifier {
       return {};
     }
 
-    final Map<String, Map<String, dynamic>> categoryWinners = {};
+    final Map<String, List<Map<String, dynamic>>> categoryWinners = {};
 
     // Use award categories from the nomination dialog
     final awardCategories = ['likeness', 'style', 'fun', 'topHead'];
 
     for (var category in awardCategories) {
-      Map<String, dynamic>? topSubmission;
+      List<Map<String, dynamic>> winners = [];
       int maxVotes = 0;
 
+      // First pass: find the maximum number of votes
       for (var submissionData in _submissionsWithUsers) {
         final submission = submissionData['submission'] as WeeklySubmissionModel;
         final votes = submission.votes[category]?.length ?? 0;
         if (votes > maxVotes) {
           maxVotes = votes;
-          topSubmission = submissionData;
         }
       }
 
-      if (topSubmission != null && maxVotes > 0) {
-        categoryWinners[category] = topSubmission;
-        print('DEBUG: Winner for $category - ${topSubmission['user'].name} with $maxVotes votes');
+      // Second pass: collect all submissions with the maximum votes (handles ties)
+      if (maxVotes > 0) {
+        for (var submissionData in _submissionsWithUsers) {
+          final submission = submissionData['submission'] as WeeklySubmissionModel;
+          final votes = submission.votes[category]?.length ?? 0;
+          if (votes == maxVotes) {
+            winners.add(submissionData);
+          }
+        }
+      }
+
+      if (winners.isNotEmpty) {
+        categoryWinners[category] = winners;
+        if (winners.length > 1) {
+          print('DEBUG: TIE for $category - ${winners.length} co-winners with $maxVotes votes each');
+        } else {
+          print('DEBUG: Winner for $category - ${winners[0]['user'].name} with $maxVotes votes');
+        }
       } else {
         print('DEBUG: No winner for $category - max votes: $maxVotes');
       }
     }
     
-    print('DEBUG: Total winners found: ${categoryWinners.length}');
+    print('DEBUG: Total categories with winners: ${categoryWinners.length}');
     return categoryWinners;
   }
 

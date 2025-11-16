@@ -989,90 +989,151 @@ class _WeeklySessionsScreenState extends State<WeeklySessionsScreen>
       child: ListView(
         padding: const EdgeInsets.all(16),
         physics: const AlwaysScrollableScrollPhysics(),
-        children: awardDetails.entries.map((entry) {
+        children: awardDetails.entries.expand((entry) {
         final categoryKey = entry.key;
         final categoryDetails = entry.value;
         final categoryId = categoryKey.toString().split('.').last;
-        final winnerData = winners[categoryId];
+        final winnersData = winners[categoryId];
 
-        if (winnerData == null) {
-          return const SizedBox.shrink(); // Don't show a card if no winner for this category
+        if (winnersData == null || winnersData.isEmpty) {
+          return [const SizedBox.shrink()]; // Don't show a card if no winners for this category
         }
 
-        final submission = winnerData['submission'] as WeeklySubmissionModel;
-        final user = winnerData['user'] as UserModel;
+        final isTie = winnersData.length > 1;
 
-        return Card(
-          margin: const EdgeInsets.only(bottom: 16),
-          child: Padding(
-            padding: const EdgeInsets.all(12.0),
-            child: Column(
-              children: [
-                Text(
-                  '${categoryDetails['emoji']} ${categoryDetails['title']} ${categoryDetails['emoji']}',
-                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                    color: AppColors.forestGreen,
-                    fontWeight: FontWeight.bold,
+        // Create a card for this category with all winners
+        return [
+          Card(
+            margin: const EdgeInsets.only(bottom: 16),
+            child: Padding(
+              padding: const EdgeInsets.all(12.0),
+              child: Column(
+                children: [
+                  // Category header
+                  Text(
+                    '${categoryDetails['emoji']} ${categoryDetails['title']} ${categoryDetails['emoji']}',
+                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                      color: AppColors.forestGreen,
+                      fontWeight: FontWeight.bold,
+                    ),
+                    textAlign: TextAlign.center,
                   ),
-                  textAlign: TextAlign.center,
-                ),
-                Text(
-                  categoryDetails['subtitle'],
-                  style: TextStyle(color: AppColors.rustyOrange, fontStyle: FontStyle.italic),
-                ),
-                const SizedBox(height: 12),
-                ListTile(
-                  leading: CircleAvatar(
-                    radius: 25,
-                    backgroundImage: NetworkImage(user.profileImageUrl ?? ''),
+                  Text(
+                    categoryDetails['subtitle'],
+                    style: TextStyle(color: AppColors.rustyOrange, fontStyle: FontStyle.italic),
                   ),
-                  title: Text(user.name, style: const TextStyle(fontWeight: FontWeight.bold)),
-                  subtitle: Text(submission.portraitTitle),
-                ),
-                GestureDetector(
-                  onTap: () => _showImagePreview(context, submission.portraitImageUrl),
-                  child: AspectRatio(
-                    aspectRatio: 1,
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(8),
-                      child: CachedNetworkImage(
-                        imageUrl: submission.portraitImageUrl,
-                        fit: BoxFit.cover,
-                        placeholder: (context, url) => Container(
-                          color: Colors.grey[200],
-                          child: const Center(
-                            child: CircularProgressIndicator(
-                              valueColor: AlwaysStoppedAnimation<Color>(AppColors.forestGreen),
+                  // Show tie badge if multiple winners
+                  if (isTie) ...[
+                    const SizedBox(height: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: AppColors.rustyOrange.withValues(alpha: 0.2),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(
+                          color: AppColors.rustyOrange,
+                          width: 1,
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          PhosphorIcon(
+                            PhosphorIconsDuotone.trophy,
+                            size: 16,
+                            color: AppColors.rustyOrange,
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            '${winnersData.length} Co-Winners!',
+                            style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.rustyOrange,
+                              fontSize: 13,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                  const SizedBox(height: 12),
+                  // Show all winners
+                  ...winnersData.map((winnerData) {
+                    final submission = winnerData['submission'] as WeeklySubmissionModel;
+                    final user = winnerData['user'] as UserModel;
+                    
+                    return Column(
+                      children: [
+                        if (winnersData.indexOf(winnerData) > 0) 
+                          const Divider(height: 24, thickness: 1),
+                        ListTile(
+                          leading: CircleAvatar(
+                            radius: 25,
+                            backgroundImage: user.profileImageUrl != null 
+                                ? NetworkImage(user.profileImageUrl!)
+                                : null,
+                            backgroundColor: AppColors.cream,
+                            child: user.profileImageUrl == null
+                                ? Text(
+                                    user.name.isNotEmpty ? user.name[0].toUpperCase() : '?',
+                                    style: const TextStyle(
+                                      color: AppColors.forestGreen,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  )
+                                : null,
+                          ),
+                          title: Text(user.name, style: const TextStyle(fontWeight: FontWeight.bold)),
+                          subtitle: Text(submission.portraitTitle),
+                        ),
+                        GestureDetector(
+                          onTap: () => _showImagePreview(context, submission.portraitImageUrl),
+                          child: AspectRatio(
+                            aspectRatio: 1,
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(8),
+                              child: CachedNetworkImage(
+                                imageUrl: submission.portraitImageUrl,
+                                fit: BoxFit.cover,
+                                placeholder: (context, url) => Container(
+                                  color: Colors.grey[200],
+                                  child: const Center(
+                                    child: CircularProgressIndicator(
+                                      valueColor: AlwaysStoppedAnimation<Color>(AppColors.forestGreen),
+                                    ),
+                                  ),
+                                ),
+                                errorWidget: (context, url, error) => Container(
+                                  color: Colors.grey[300],
+                                  child: const Icon(Icons.error, color: Colors.red),
+                                ),
+                              ),
                             ),
                           ),
                         ),
-                        errorWidget: (context, url, error) => Container(
-                          color: Colors.grey[300],
-                          child: const Icon(Icons.error, color: Colors.red),
+                        Padding(
+                          padding: const EdgeInsets.only(top: 8.0),
+                          child: GestureDetector(
+                            onTap: isAdmin
+                                ? () => _showVotersDialog(context, submission, weeklySessionProvider)
+                                : null,
+                            child: Text(
+                              'with ${submission.votes.values.fold(0, (sum, list) => sum + list.length)} votes',
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                decoration: isAdmin ? TextDecoration.underline : null,
+                              ),
+                            ),
+                          ),
                         ),
-                      ),
-                    ),
-                  ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.only(top: 8.0),
-                  child: GestureDetector(
-                    onTap: isAdmin
-                        ? () => _showVotersDialog(context, submission, weeklySessionProvider)
-                        : null,
-                    child: Text(
-                      'with ${submission.votes.values.fold(0, (sum, list) => sum + list.length)} votes',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        decoration: isAdmin ? TextDecoration.underline : null,
-                      ),
-                    ),
-                  ),
-                )
-              ],
+                      ],
+                    );
+                  }).toList(),
+                ],
+              ),
             ),
           ),
-        );
+        ];
       }).toList(),
       ),
     );
