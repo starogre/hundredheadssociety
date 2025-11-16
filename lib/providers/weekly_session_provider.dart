@@ -324,26 +324,20 @@ class WeeklySessionProvider extends ChangeNotifier {
     String userId,
   ) async {
     if (_currentSession == null) return;
-    try {
-      await _weeklySessionService.voteForSubmission(
-        _currentSession!.id,
-        submissionId,
-        awardCategory,
-        userId,
-      );
+    
+    // First, optimistically update local state for immediate UI feedback
+    final submissionIndex = _submissionsWithUsers.indexWhere(
+      (data) => (data['submission'] as WeeklySubmissionModel).id == submissionId,
+    );
+    
+    if (submissionIndex != -1) {
+      final submission = _submissionsWithUsers[submissionIndex]['submission'] as WeeklySubmissionModel;
+      final updatedVotes = Map<String, List<String>>.from(submission.votes);
+      updatedVotes.putIfAbsent(awardCategory, () => []);
       
-      // Update locally for immediate UI feedback
-      final submissionIndex = _submissionsWithUsers.indexWhere(
-        (data) => (data['submission'] as WeeklySubmissionModel).id == submissionId,
-      );
-      
-      if (submissionIndex != -1) {
-        final submission = _submissionsWithUsers[submissionIndex]['submission'] as WeeklySubmissionModel;
-        final updatedVotes = Map<String, List<String>>.from(submission.votes);
-        updatedVotes.putIfAbsent(awardCategory, () => []);
-        if (!updatedVotes[awardCategory]!.contains(userId)) {
-          updatedVotes[awardCategory]!.add(userId);
-        }
+      // Only update if not already voted
+      if (!updatedVotes[awardCategory]!.contains(userId)) {
+        updatedVotes[awardCategory]!.add(userId);
         
         final updatedSubmission = submission.copyWith(votes: updatedVotes);
         _submissionsWithUsers[submissionIndex] = {
@@ -352,8 +346,21 @@ class WeeklySessionProvider extends ChangeNotifier {
         };
         notifyListeners();
       }
+    }
+    
+    // Then update backend
+    try {
+      await _weeklySessionService.voteForSubmission(
+        _currentSession!.id,
+        submissionId,
+        awardCategory,
+        userId,
+      );
+      // Stream will eventually sync, but we already updated UI
     } catch (e) {
       _error = e.toString();
+      // Revert local change on error
+      await _loadSubmissionsWithUsers(_currentSession!.submissions);
       notifyListeners();
     }
   }
@@ -365,6 +372,27 @@ class WeeklySessionProvider extends ChangeNotifier {
     String userId,
   ) async {
     if (_currentSession == null) return;
+    
+    // First, optimistically update local state for immediate UI feedback
+    final submissionIndex = _submissionsWithUsers.indexWhere(
+      (data) => (data['submission'] as WeeklySubmissionModel).id == submissionId,
+    );
+    
+    if (submissionIndex != -1) {
+      final submission = _submissionsWithUsers[submissionIndex]['submission'] as WeeklySubmissionModel;
+      final updatedVotes = Map<String, List<String>>.from(submission.votes);
+      updatedVotes.putIfAbsent(awardCategory, () => []);
+      updatedVotes[awardCategory]!.remove(userId);
+      
+      final updatedSubmission = submission.copyWith(votes: updatedVotes);
+      _submissionsWithUsers[submissionIndex] = {
+        ..._submissionsWithUsers[submissionIndex],
+        'submission': updatedSubmission,
+      };
+      notifyListeners();
+    }
+    
+    // Then update backend
     try {
       await _weeklySessionService.removeVoteForSubmission(
         _currentSession!.id,
@@ -372,27 +400,11 @@ class WeeklySessionProvider extends ChangeNotifier {
         awardCategory,
         userId,
       );
-      
-      // Update locally for immediate UI feedback
-      final submissionIndex = _submissionsWithUsers.indexWhere(
-        (data) => (data['submission'] as WeeklySubmissionModel).id == submissionId,
-      );
-      
-      if (submissionIndex != -1) {
-        final submission = _submissionsWithUsers[submissionIndex]['submission'] as WeeklySubmissionModel;
-        final updatedVotes = Map<String, List<String>>.from(submission.votes);
-        updatedVotes.putIfAbsent(awardCategory, () => []);
-        updatedVotes[awardCategory]!.remove(userId);
-        
-        final updatedSubmission = submission.copyWith(votes: updatedVotes);
-        _submissionsWithUsers[submissionIndex] = {
-          ..._submissionsWithUsers[submissionIndex],
-          'submission': updatedSubmission,
-        };
-        notifyListeners();
-      }
+      // Stream will eventually sync, but we already updated UI
     } catch (e) {
       _error = e.toString();
+      // Revert local change on error
+      await _loadSubmissionsWithUsers(_currentSession!.submissions);
       notifyListeners();
     }
   }
