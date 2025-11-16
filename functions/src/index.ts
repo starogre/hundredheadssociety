@@ -41,6 +41,7 @@ interface WeeklySession {
   isActive: boolean;
   modelName?: string;
   modelImageUrl?: string;
+  closedAt?: Date;
 }
 
 interface WeeklySubmission {
@@ -70,6 +71,29 @@ export const createWeeklySession = onSchedule({
     const thisMonday = new Date(now);
     thisMonday.setDate(now.getDate() - (now.getDay() - 1) % 7);
     thisMonday.setHours(18, 0, 0, 0); // 6:00 PM
+
+    // Close any active sessions from previous weeks
+    try {
+      const previousSessionsSnapshot = await db.collection("weeklySessions")
+          .where("isActive", "==", true)
+          .where("sessionDate", "<", thisMonday)
+          .get();
+
+      if (!previousSessionsSnapshot.empty) {
+        const batch = db.batch();
+        previousSessionsSnapshot.docs.forEach((doc) => {
+          batch.update(doc.ref, {
+            isActive: false,
+            closedAt: new Date(),
+          });
+        });
+        await batch.commit();
+        logger.info(`Closed ${previousSessionsSnapshot.docs.length} previous session(s)`);
+      }
+    } catch (error) {
+      logger.error("Error closing previous sessions:", error);
+      // Continue even if closing fails
+    }
 
     // Try to find a model with matching date
     let modelName: string | undefined;
