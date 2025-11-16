@@ -12,6 +12,7 @@ import '../theme/app_theme.dart';
 import '../widgets/submit_portrait_dialog.dart';
 import '../widgets/nomination_dialog.dart';
 import '../screens/profile_screen.dart';
+import '../services/user_service.dart';
 
 class WeeklySessionsScreen extends StatefulWidget {
   const WeeklySessionsScreen({super.key});
@@ -427,6 +428,7 @@ class _WeeklySessionsScreenState extends State<WeeklySessionsScreen>
     final currentUserId = authProvider.currentUser?.uid;
     final hasSubmitted = currentUserId != null && weeklySessionProvider.hasUserSubmitted(currentUserId);
     final isArtist = authProvider.userData?.isArtist ?? false;
+    final isAdmin = authProvider.userData?.isAdmin ?? false;
 
     return RefreshIndicator(
       onRefresh: () async {
@@ -774,10 +776,23 @@ class _WeeklySessionsScreenState extends State<WeeklySessionsScreen>
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            Text(
-                              'Votes: ${submission.votes.values.fold(0, (sum, list) => sum + list.length)}',
-                              style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.forestGreen),
-                            ),
+                            // Only show vote count if admin (during voting) or if voting is closed
+                            if (isAdmin || weeklySessionProvider.isVotingClosed())
+                              GestureDetector(
+                                onTap: isAdmin && !weeklySessionProvider.isVotingClosed()
+                                    ? () => _showVotersDialog(context, submission, weeklySessionProvider)
+                                    : null,
+                                child: Text(
+                                  'Votes: ${submission.votes.values.fold(0, (sum, list) => sum + list.length)}',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    color: AppColors.forestGreen,
+                                    decoration: isAdmin && !weeklySessionProvider.isVotingClosed()
+                                        ? TextDecoration.underline
+                                        : null,
+                                  ),
+                                ),
+                              ),
                             // Only show vote button if it's not the user's own submission
                             if (submission.userId != currentUserId)
                               ElevatedButton.icon(
@@ -1202,5 +1217,106 @@ class _WeeklySessionsScreenState extends State<WeeklySessionsScreen>
     final period = submittedAt.hour >= 12 ? 'PM' : 'AM';
     
     return 'Submitted ${months[submittedAt.month - 1]} ${submittedAt.day}, ${submittedAt.year} at $hour:$minute $period';
+  }
+
+  Future<void> _showVotersDialog(
+    BuildContext context,
+    WeeklySubmissionModel submission,
+    WeeklySessionProvider weeklySessionProvider,
+  ) async {
+    final userService = UserService();
+    final categoryNames = {
+      'likeness': 'Best Likeness',
+      'style': 'Best Style',
+      'fun': 'Most Fun',
+      'topHead': 'Top Head',
+    };
+
+    // Collect all voters with their categories
+    final List<Map<String, dynamic>> votersData = [];
+    for (final entry in submission.votes.entries) {
+      final categoryId = entry.key;
+      final voterIds = entry.value as List<dynamic>;
+      for (final voterId in voterIds) {
+        try {
+          final user = await userService.getUserById(voterId.toString());
+          if (user != null) {
+            votersData.add({
+              'user': user,
+              'category': categoryNames[categoryId] ?? categoryId,
+            });
+          }
+        } catch (e) {
+          debugPrint('Error loading user $voterId: $e');
+        }
+      }
+    }
+
+    if (!context.mounted) return;
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Voters'),
+        content: SizedBox(
+          width: double.maxFinite,
+          child: votersData.isEmpty
+              ? const Text('No votes yet')
+              : ListView.builder(
+                  shrinkWrap: true,
+                  itemCount: votersData.length,
+                  itemBuilder: (context, index) {
+                    final data = votersData[index];
+                    final user = data['user'] as UserModel;
+                    final category = data['category'] as String;
+                    return ListTile(
+                      leading: CircleAvatar(
+                        backgroundImage: user.profileImageUrl != null
+                            ? NetworkImage(user.profileImageUrl!)
+                            : null,
+                        backgroundColor: AppColors.cream,
+                        child: user.profileImageUrl == null
+                            ? Text(
+                                user.name.isNotEmpty ? user.name[0].toUpperCase() : '?',
+                                style: const TextStyle(
+                                  color: AppColors.forestGreen,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              )
+                            : null,
+                      ),
+                      title: Text(user.name),
+                      subtitle: Text(category),
+                      trailing: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: user.isArtist
+                              ? AppColors.rustyOrange.withValues(alpha: 0.2)
+                              : AppColors.forestGreen.withValues(alpha: 0.2),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Text(
+                          user.isArtist ? 'Artist' : 'Appreciator',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                            color: user.isArtist
+                                ? AppColors.rustyOrange
+                                : AppColors.forestGreen,
+                          ),
+                        ),
+                      ),
+                    );
+                  },
+                ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Close'),
+          ),
+        ],
+      ),
+    );
   }
 } 
