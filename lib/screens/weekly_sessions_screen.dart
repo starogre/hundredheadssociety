@@ -778,30 +778,32 @@ class _WeeklySessionsScreenState extends State<WeeklySessionsScreen>
                               'Votes: ${submission.votes.values.fold(0, (sum, list) => sum + list.length)}',
                               style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.forestGreen),
                             ),
-                            ElevatedButton.icon(
-                              onPressed: weeklySessionProvider.isVotingClosed() 
-                                  ? null 
-                                  : () => _showNominationDialog(context, submission),
-                              icon: Icon(
-                                Icons.how_to_vote, 
-                                size: 16,
-                                color: weeklySessionProvider.isVotingClosed() ? Colors.grey : null,
-                              ),
-                              label: Text(
-                                weeklySessionProvider.isVotingClosed() ? 'Voting Closed' : 'Vote',
-                                style: TextStyle(
+                            // Only show vote button if it's not the user's own submission
+                            if (submission.userId != currentUserId)
+                              ElevatedButton.icon(
+                                onPressed: weeklySessionProvider.isVotingClosed() 
+                                    ? null 
+                                    : () => _showNominationDialog(context, submission),
+                                icon: Icon(
+                                  Icons.how_to_vote, 
+                                  size: 16,
                                   color: weeklySessionProvider.isVotingClosed() ? Colors.grey : null,
                                 ),
+                                label: Text(
+                                  weeklySessionProvider.isVotingClosed() ? 'Voting Closed' : 'Vote',
+                                  style: TextStyle(
+                                    color: weeklySessionProvider.isVotingClosed() ? Colors.grey : null,
+                                  ),
+                                ),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: weeklySessionProvider.isVotingClosed() 
+                                      ? Colors.grey.shade300 
+                                      : AppColors.rustyOrange,
+                                  foregroundColor: AppColors.white,
+                                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                  textStyle: const TextStyle(fontSize: 12),
+                                ),
                               ),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: weeklySessionProvider.isVotingClosed() 
-                                    ? Colors.grey.shade300 
-                                    : AppColors.rustyOrange,
-                                foregroundColor: AppColors.white,
-                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                                textStyle: const TextStyle(fontSize: 12),
-                              ),
-                            ),
                           ],
                         ),
                       )
