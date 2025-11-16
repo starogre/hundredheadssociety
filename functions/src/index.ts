@@ -743,4 +743,188 @@ export const sendVotingReminders = onSchedule({
   }
 });
 
+/**
+ * Send winner announcement notifications
+ * Runs every Friday at 12:00 PM (noon) EST
+ */
+export const sendWinnerAnnouncements = onSchedule({
+  schedule: "0 12 * * 5", // Every Friday at 12:00 PM
+  timeZone: "America/New_York",
+}, async () => {
+  try {
+    logger.info("Sending winner announcement notifications...");
+
+    // Get the most recent session (the one that voting just closed for)
+    const now = new Date();
+    const sessionsSnapshot = await db.collection("weekly_sessions")
+      .where("sessionDate", "<", now)
+      .orderBy("sessionDate", "desc")
+      .limit(1)
+      .get();
+
+    if (sessionsSnapshot.empty) {
+      logger.info("No sessions found for winner announcements");
+      return;
+    }
+
+    const sessionDoc = sessionsSnapshot.docs[0];
+    const session = sessionDoc.data() as WeeklySession;
+    const submissions = session.submissions || [];
+
+    if (submissions.length === 0) {
+      logger.info("No submissions for this session");
+      return;
+    }
+
+    // Calculate winners for each category
+    const categories = ["likeness", "style", "fun", "topHead"];
+    const categoryNames: {[key: string]: string} = {
+      "likeness": "Best Likeness",
+      "style": "Best Style",
+      "fun": "Most Fun",
+      "topHead": "Top Head",
+    };
+
+    const winners: {[key: string]: string[]} = {}; // category -> list of winner userIds
+    const allWinnerIds = new Set<string>();
+
+    for (const category of categories) {
+      let maxVotes = 0;
+      const winnersForCategory: string[] = [];
+
+      // Find max votes
+      for (const submission of submissions) {
+        const votes = (submission.votes && submission.votes[category]) ? submission.votes[category].length : 0;
+        if (votes > maxVotes) {
+          maxVotes = votes;
+        }
+      }
+
+      // Collect all submissions with max votes
+      if (maxVotes > 0) {
+        for (const submission of submissions) {
+          const votes = (submission.votes && submission.votes[category]) ? submission.votes[category].length : 0;
+          if (votes === maxVotes) {
+            winnersForCategory.push(submission.userId);
+            allWinnerIds.add(submission.userId);
+          }
+        }
+      }
+
+      if (winnersForCategory.length > 0) {
+        winners[category] = winnersForCategory;
+      }
+    }
+
+    logger.info(`Found winners for ${Object.keys(winners).length} categories`);
+    logger.info(`Total unique winners: ${allWinnerIds.size}`);
+
+    // Get all artists (for general announcement)
+    const artistsSnapshot = await db.collection("users")
+      .where("isArtist", "==", true)
+      .where("status", "==", "active")
+      .get();
+
+    // Send notifications to winners
+    for (const category in winners) {
+      const categoryWinners = winners[category];
+      const categoryName = categoryNames[category] || category;
+      const isTie = categoryWinners.length > 1;
+
+      for (const winnerId of categoryWinners) {
+        try {
+          const winnerDoc = await db.collection("users").doc(winnerId).get();
+          if (!winnerDoc.exists) continue;
+
+          const winner = winnerDoc.data();
+          if (!winner || !winner.fcmToken || winner.pushNotificationsEnabled === false) {
+            logger.info(`Skipped winner ${winnerId} (no FCM token or disabled)`);
+            continue;
+          }
+
+          // Send in-app notification
+          await db.collection("notifications").add({
+            userId: winnerId,
+            title: isTie ? "🏆 You're a Co-Winner!" : "🏆 Congratulations, You Won!",
+            body: `You won ${categoryName}!${isTie ? ` (${categoryWinners.length}-way tie)` : ""}`,
+            type: "winner_announcement",
+            createdAt: admin.firestore.FieldValue.serverTimestamp(),
+            read: false,
+            link: "/weekly-sessions",
+          });
+
+          // Send push notification
+          await admin.messaging().send({
+            token: winner.fcmToken,
+            notification: {
+              title: isTie ? "🏆 You're a Co-Winner!" : "🏆 Congratulations, You Won!",
+              body: `You won ${categoryName}!${isTie ? ` (${categoryWinners.length}-way tie)` : ""}`,
+            },
+            data: {
+              type: "winner_announcement",
+              link: "/weekly-sessions",
+              click_action: "FLUTTER_NOTIFICATION_CLICK",
+            },
+          });
+
+          logger.info(`Sent winner notification to ${winnerId} for ${category}`);
+        } catch (error) {
+          logger.error(`Error sending winner notification to ${winnerId}:`, error);
+        }
+      }
+    }
+
+    // Send general announcement to all active artists (who didn't win)
+    for (const doc of artistsSnapshot.docs) {
+      const artist = doc.data();
+      const artistId = doc.id;
+
+      // Skip if this artist won an award (they already got personalized notification)
+      if (allWinnerIds.has(artistId)) {
+        continue;
+      }
+
+      try {
+        if (!artist.fcmToken || artist.pushNotificationsEnabled === false) {
+          logger.info(`Skipped artist ${artistId} (no FCM token or disabled)`);
+          continue;
+        }
+
+        // Send in-app notification
+        await db.collection("notifications").add({
+          userId: artistId,
+          title: "🏆 This Week's Winners Announced!",
+          body: "Check out who won this week's awards",
+          type: "winners_announced",
+          createdAt: admin.firestore.FieldValue.serverTimestamp(),
+          read: false,
+          link: "/weekly-sessions",
+        });
+
+        // Send push notification
+        await admin.messaging().send({
+          token: artist.fcmToken,
+          notification: {
+            title: "🏆 This Week's Winners Announced!",
+            body: "Check out who won this week's awards",
+          },
+          data: {
+            type: "winners_announced",
+            link: "/weekly-sessions",
+            click_action: "FLUTTER_NOTIFICATION_CLICK",
+          },
+        });
+
+        logger.info(`Sent general winner announcement to artist ${artistId}`);
+      } catch (error) {
+        logger.error(`Error sending general announcement to artist ${artistId}:`, error);
+      }
+    }
+
+    logger.info("Winner announcement notifications sent successfully");
+  } catch (error) {
+    logger.error("Error sending winner announcement notifications:", error);
+  }
+});
+
 // RSVP REMINDER REMOVED - Users now pay on website, no RSVP needed
