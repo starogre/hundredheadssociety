@@ -91,18 +91,31 @@ class NominationDialog extends StatelessWidget {
                   onTap: hasVotedForCategory && !hasVoted
                       ? null
                       : () async {
-                          if (hasVoted) {
-                            await weeklySessionProvider.removeVoteForSubmission(
-                              submission.id,
-                              categoryId,
-                              currentUserId,
-                            );
-                          } else {
-                            await weeklySessionProvider.voteForSubmission(
-                              submission.id,
-                              categoryId,
-                              currentUserId,
-                            );
+                          try {
+                            if (hasVoted) {
+                              await weeklySessionProvider.removeVoteForSubmission(
+                                submission.id,
+                                categoryId,
+                                currentUserId,
+                              );
+                            } else {
+                              await weeklySessionProvider.voteForSubmission(
+                                submission.id,
+                                categoryId,
+                                currentUserId,
+                              );
+                            }
+                          } catch (e) {
+                            // Show error message to user
+                            if (context.mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(e.toString().replaceAll('Exception: ', '')),
+                                  backgroundColor: Colors.red,
+                                  duration: const Duration(seconds: 3),
+                                ),
+                              );
+                            }
                           }
                         },
                   child: Padding(

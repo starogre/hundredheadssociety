@@ -358,10 +358,14 @@ class WeeklySessionProvider extends ChangeNotifier {
       );
       // Stream will eventually sync, but we already updated UI
     } catch (e) {
+      debugPrint('Error voting for submission: $e');
       _error = e.toString();
-      // Revert local change on error
-      await _loadSubmissionsWithUsers(_currentSession!.submissions);
+      // Revert local change on error - reload from current session
+      if (_currentSession != null) {
+        await _loadSubmissionsWithUsers(_currentSession!.submissions);
+      }
       notifyListeners();
+      rethrow; // Let the UI handle the error message
     }
   }
 

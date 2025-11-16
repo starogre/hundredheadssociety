@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/foundation.dart';
 import '../models/weekly_session_model.dart';
 import '../models/portrait_model.dart';
 
@@ -184,16 +185,31 @@ class WeeklySessionService {
     final submissionIndex = submissions.indexWhere((s) => s.id == submissionId);
     if (submissionIndex == -1) return;
 
+    // IMPORTANT: Check if user has already voted for this category on ANY submission
+    // User can only vote once per category per session
+    for (int i = 0; i < submissions.length; i++) {
+      final otherSubmission = submissions[i];
+      final categoryVotes = otherSubmission.votes[awardCategory] ?? [];
+      
+      if (categoryVotes.contains(userId)) {
+        // User already voted for this category on a different submission
+        if (i != submissionIndex) {
+          debugPrint('User $userId already voted for $awardCategory on submission ${otherSubmission.id}');
+          throw Exception('You can only vote once per award category. Remove your previous vote first.');
+        }
+        // If same submission, just ignore (already voted)
+        return;
+      }
+    }
+
     final submission = submissions[submissionIndex];
     final votes = Map<String, List<String>>.from(submission.votes);
     
     // Ensure the category exists
     votes.putIfAbsent(awardCategory, () => []);
 
-    // Add the user's vote, ensuring no duplicates
-    if (!votes[awardCategory]!.contains(userId)) {
-      votes[awardCategory]!.add(userId);
-    }
+    // Add the user's vote (we already checked for duplicates above)
+    votes[awardCategory]!.add(userId);
 
     // Update the submission with new votes
     submissions[submissionIndex] = submission.copyWith(votes: votes);
