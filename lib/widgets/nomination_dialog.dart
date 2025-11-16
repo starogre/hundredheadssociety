@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import '../models/weekly_session_model.dart';
+import '../models/user_model.dart';
 import '../providers/auth_provider.dart';
 import '../providers/weekly_session_provider.dart';
 import '../theme/app_theme.dart';
@@ -10,6 +12,22 @@ class NominationDialog extends StatelessWidget {
   final WeeklySubmissionModel submission;
 
   const NominationDialog({super.key, required this.submission});
+
+  // Helper to find which submission user voted for in a category
+  Map<String, dynamic>? _findVotedSubmission(
+    WeeklySessionProvider provider,
+    String categoryId,
+    String userId,
+  ) {
+    for (var submissionData in provider.submissionsWithUsers) {
+      final sub = submissionData['submission'] as WeeklySubmissionModel;
+      final votes = sub.votes[categoryId] ?? [];
+      if (votes.contains(userId)) {
+        return submissionData;
+      }
+    }
+    return null;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -40,6 +58,12 @@ class NominationDialog extends StatelessWidget {
             final votes = currentSubmission.votes[categoryId] ?? [];
             final hasVoted = votes.contains(currentUserId);
             final hasVotedForCategory = weeklySessionProvider.hasUserVotedForCategory(currentUserId, categoryId);
+            
+            // Get the submission user already voted for in this category (if any)
+            final votedSubmissionData = _findVotedSubmission(weeklySessionProvider, categoryId, currentUserId);
+            final votedSubmission = votedSubmissionData?['submission'] as WeeklySubmissionModel?;
+            final votedUser = votedSubmissionData?['user'] as UserModel?;
+            final isVotedOnDifferentSubmission = votedSubmission != null && votedSubmission.id != submission.id;
 
             return Container(
               margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
@@ -93,12 +117,102 @@ class NominationDialog extends StatelessWidget {
                       : () async {
                           try {
                             if (hasVoted) {
+                              // Unvote - no confirmation needed
                               await weeklySessionProvider.removeVoteForSubmission(
                                 submission.id,
                                 categoryId,
                                 currentUserId,
                               );
+                            } else if (isVotedOnDifferentSubmission && votedUser != null) {
+                              // Switching vote - show confirmation
+                              final confirmed = await showDialog<bool>(
+                                context: context,
+                                builder: (context) => AlertDialog(
+                                  title: Text('Switch ${details['title']} Vote?'),
+                                  content: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      const Text('You already voted for this award on:'),
+                                      const SizedBox(height: 12),
+                                      Container(
+                                        padding: const EdgeInsets.all(12),
+                                        decoration: BoxDecoration(
+                                          color: Colors.grey.shade100,
+                                          borderRadius: BorderRadius.circular(8),
+                                          border: Border.all(color: Colors.grey.shade300),
+                                        ),
+                                        child: Row(
+                                          children: [
+                                            ClipRRect(
+                                              borderRadius: BorderRadius.circular(4),
+                                              child: CachedNetworkImage(
+                                                imageUrl: votedSubmission!.portraitImageUrl,
+                                                width: 48,
+                                                height: 48,
+                                                fit: BoxFit.cover,
+                                                placeholder: (context, url) => Container(
+                                                  width: 48,
+                                                  height: 48,
+                                                  color: Colors.grey[300],
+                                                ),
+                                                errorWidget: (context, url, error) => Container(
+                                                  width: 48,
+                                                  height: 48,
+                                                  color: Colors.grey[300],
+                                                  child: const Icon(Icons.image, size: 24),
+                                                ),
+                                              ),
+                                            ),
+                                            const SizedBox(width: 12),
+                                            Expanded(
+                                              child: Text(
+                                                votedUser.name,
+                                                style: const TextStyle(
+                                                  fontWeight: FontWeight.bold,
+                                                  fontSize: 16,
+                                                ),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                      const SizedBox(height: 16),
+                                      const Text('Do you want to switch your vote to this submission instead?'),
+                                    ],
+                                  ),
+                                  actions: [
+                                    TextButton(
+                                      onPressed: () => Navigator.of(context).pop(false),
+                                      child: const Text('Cancel'),
+                                    ),
+                                    ElevatedButton(
+                                      onPressed: () => Navigator.of(context).pop(true),
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: AppColors.forestGreen,
+                                        foregroundColor: Colors.white,
+                                      ),
+                                      child: const Text('Switch Vote'),
+                                    ),
+                                  ],
+                                ),
+                              );
+
+                              if (confirmed == true) {
+                                // Remove old vote and add new one
+                                await weeklySessionProvider.removeVoteForSubmission(
+                                  votedSubmission.id,
+                                  categoryId,
+                                  currentUserId,
+                                );
+                                await weeklySessionProvider.voteForSubmission(
+                                  submission.id,
+                                  categoryId,
+                                  currentUserId,
+                                );
+                              }
                             } else {
+                              // New vote - no confirmation needed
                               await weeklySessionProvider.voteForSubmission(
                                 submission.id,
                                 categoryId,
@@ -162,17 +276,78 @@ class NominationDialog extends StatelessWidget {
                                 ),
                               ),
                               const SizedBox(height: 4),
-                              Text(
-                                hasVotedForCategory && !hasVoted 
-                                    ? 'Already voted for this award' 
-                                    : details['subtitle'],
-                                style: TextStyle(
-                                  fontSize: 13,
-                                  color: hasVotedForCategory && !hasVoted
-                                      ? Colors.grey.shade500
-                                      : Colors.grey.shade600,
+                              // Show current vote if voted on different submission
+                              if (isVotedOnDifferentSubmission && votedUser != null && votedSubmission != null)
+                                Container(
+                                  margin: const EdgeInsets.only(top: 6),
+                                  padding: const EdgeInsets.all(6),
+                                  decoration: BoxDecoration(
+                                    color: Colors.grey.shade100,
+                                    borderRadius: BorderRadius.circular(8),
+                                    border: Border.all(
+                                      color: Colors.grey.shade300,
+                                      width: 1,
+                                    ),
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      // Portrait thumbnail
+                                      ClipRRect(
+                                        borderRadius: BorderRadius.circular(4),
+                                        child: CachedNetworkImage(
+                                          imageUrl: votedSubmission.portraitImageUrl,
+                                          width: 32,
+                                          height: 32,
+                                          fit: BoxFit.cover,
+                                          placeholder: (context, url) => Container(
+                                            width: 32,
+                                            height: 32,
+                                            color: Colors.grey[300],
+                                          ),
+                                          errorWidget: (context, url, error) => Container(
+                                            width: 32,
+                                            height: 32,
+                                            color: Colors.grey[300],
+                                            child: const Icon(Icons.image, size: 16),
+                                          ),
+                                        ),
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              'Voted for:',
+                                              style: TextStyle(
+                                                fontSize: 10,
+                                                color: Colors.grey.shade600,
+                                              ),
+                                            ),
+                                            Text(
+                                              votedUser.name,
+                                              style: TextStyle(
+                                                fontSize: 12,
+                                                fontWeight: FontWeight.bold,
+                                                color: Colors.grey.shade800,
+                                              ),
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                )
+                              else if (!hasVoted)
+                                Text(
+                                  details['subtitle'],
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    color: Colors.grey.shade600,
+                                  ),
                                 ),
-                              ),
                             ],
                           ),
                         ),
