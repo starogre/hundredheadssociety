@@ -458,6 +458,41 @@ class _WeeklySessionsScreenState extends State<WeeklySessionsScreen>
                 ),
               ),
             ),
+          // Show "Voting is closed" message when winners are revealed
+          if (weeklySessionProvider.isVotingClosed() && weeklySessionProvider.shouldShowWinners())
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(16),
+              margin: const EdgeInsets.only(bottom: 24),
+              decoration: BoxDecoration(
+                color: AppColors.rustyOrange.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: AppColors.rustyOrange.withValues(alpha: 0.3),
+                  width: 1,
+                ),
+              ),
+              child: Row(
+                children: [
+                  PhosphorIcon(
+                    PhosphorIconsDuotone.clockCountdown,
+                    color: AppColors.rustyOrange,
+                    size: 24,
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      'Voting is closed this week! Come back again to vote next week!',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.rustyOrange,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
           const SizedBox(height: 24),
 
           // This Week's Model Section
