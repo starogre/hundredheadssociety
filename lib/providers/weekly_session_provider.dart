@@ -540,7 +540,7 @@ class WeeklySessionProvider extends ChangeNotifier {
       for (var winnersList in winners.values) {
         for (var winnerData in winnersList) {
           final user = winnerData['user'] as UserModel;
-          final userId = user.uid;
+          final userId = user.id;
           userAwardCounts[userId] = (userAwardCounts[userId] ?? 0) + 1;
         }
       }
