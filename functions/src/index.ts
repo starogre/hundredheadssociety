@@ -200,89 +200,7 @@ export const sendSessionReminders = onSchedule({
 });
 
 /**
- * 3. SESSION CLOSURE
- * Closes session and processes results when session time arrives
- */
-export const closeWeeklySession = onSchedule({
-  schedule: "0 10 * * 1", // Every Monday at 10:00 AM (1 hour after session starts)
-  timeZone: "America/New_York",
-}, async () => {
-  try {
-    logger.info("Closing weekly session...");
-
-    const now = new Date();
-    const today9AM = new Date(now);
-    today9AM.setHours(9, 0, 0, 0);
-
-    // Find session that started today
-    const sessionsSnapshot = await db.collection("weeklySessions")
-        .where("sessionDate", "==", today9AM)
-        .where("isActive", "==", true)
-        .limit(1)
-        .get();
-
-    if (sessionsSnapshot.empty) {
-      logger.info("No active session found to close");
-      return;
-    }
-
-    const sessionDoc = sessionsSnapshot.docs[0];
-    const sessionData = sessionDoc.data() as WeeklySession;
-
-    // Close the session
-    await sessionDoc.ref.update({
-      isActive: false,
-      closedAt: new Date(),
-    });
-
-    // Process session results
-    await processSessionResults(sessionDoc.id, sessionData);
-
-    // Send completion notifications
-    await sendSessionCompletionNotifications(sessionData);
-
-    logger.info(`Closed session ${sessionDoc.id}`);
-  } catch (error) {
-    logger.error("Error closing weekly session:", error);
-  }
-});
-
-/**
- * 4. RSVP TRIGGER
- * When a user RSVPs, send confirmation and update session
- */
-export const onUserRSVP = onDocumentUpdated("weeklySessions/{sessionId}", async (event) => {
-  try {
-    const beforeData = event.data?.before.data();
-    const afterData = event.data?.after.data();
-
-    if (!beforeData || !afterData) return;
-
-    const beforeRSVP = beforeData.rsvpUserIds || [];
-    const afterRSVP = afterData.rsvpUserIds || [];
-
-    // Check if someone new RSVP'd
-    const newRSVPs = afterRSVP.filter((userId: string) => !beforeRSVP.includes(userId));
-
-    if (newRSVPs.length > 0) {
-      logger.info(`New RSVPs detected: ${newRSVPs.join(", ")}`);
-
-      // Send confirmation to new RSVPs
-      for (const userId of newRSVPs) {
-        const userDoc = await db.collection("users").doc(userId).get();
-        if (userDoc.exists) {
-          const userData = userDoc.data() as User;
-          await sendRSVPConfirmation(userData, afterData.sessionDate);
-        }
-      }
-    }
-  } catch (error) {
-    logger.error("Error processing RSVP:", error);
-  }
-});
-
-/**
- * 5. SUBMISSION TRIGGER
+ * 3. SUBMISSION TRIGGER
  * When a submission is added, notify other participants
  */
 export const onSubmissionAdded = onDocumentUpdated("weeklySessions/{sessionId}", async (event) => {
@@ -380,31 +298,6 @@ async function sendReminderNotifications(users: User[], sessionDate: Date, model
 }
 
 /**
- * Send RSVP confirmation to user
- */
-async function sendRSVPConfirmation(user: User, sessionDate: Date): Promise<void> {
-  try {
-    const notificationRef = db.collection("notifications").doc();
-    await notificationRef.set({
-      userId: user.id,
-      type: "rsvp_confirmation",
-      title: "RSVP Confirmed!",
-      message: `You're confirmed for the weekly session on ${
-          sessionDate.toLocaleDateString()}. See you there!`,
-      createdAt: new Date(),
-      read: false,
-      data: {
-        sessionDate: sessionDate,
-      },
-    });
-
-    logger.info(`Sent RSVP confirmation to user ${user.id}`);
-  } catch (error) {
-    logger.error("Error sending RSVP confirmation:", error);
-  }
-}
-
-/**
  * Send submission notification to participants
  */
 async function sendSubmissionNotification(userIds: string[], submission: WeeklySubmission): Promise<void> {
@@ -431,64 +324,6 @@ async function sendSubmissionNotification(userIds: string[], submission: WeeklyS
     logger.info(`Sent submission notifications to ${userIds.length} users`);
   } catch (error) {
     logger.error("Error sending submission notifications:", error);
-  }
-}
-
-/**
- * Process session results and update statistics
- */
-async function processSessionResults(sessionId: string, sessionData: WeeklySession): Promise<void> {
-  try {
-    // Calculate participation statistics
-    const totalParticipants = sessionData.rsvpUserIds.length;
-    const totalSubmissions = sessionData.submissions.length;
-    const participationRate = totalParticipants > 0 ? 
-        (totalSubmissions / totalParticipants) * 100 : 0;
-
-    // Update session with results
-    await db.collection("weeklySessions").doc(sessionId).update({
-      results: {
-        totalParticipants,
-        totalSubmissions,
-        participationRate: Math.round(participationRate),
-        processedAt: new Date(),
-      },
-    });
-
-    logger.info(`Processed results for session ${sessionId}: ${
-        totalSubmissions}/${totalParticipants} submissions`);
-  } catch (error) {
-    logger.error("Error processing session results:", error);
-  }
-}
-
-/**
- * Send session completion notifications
- */
-async function sendSessionCompletionNotifications(sessionData: WeeklySession): Promise<void> {
-  try {
-    const batch = db.batch();
-
-    for (const userId of sessionData.rsvpUserIds) {
-      const notificationRef = db.collection("notifications").doc();
-      batch.set(notificationRef, {
-        userId: userId,
-        type: "session_completed",
-        title: "Weekly Session Completed!",
-        message: "The weekly session has ended. Check out all the amazing portraits submitted!",
-        createdAt: new Date(),
-        read: false,
-        data: {
-          sessionId: sessionData.id,
-          totalSubmissions: sessionData.submissions.length,
-        },
-      });
-    }
-
-    await batch.commit();
-    logger.info(`Sent completion notifications to ${sessionData.rsvpUserIds.length} users`);
-  } catch (error) {
-    logger.error("Error sending completion notifications:", error);
   }
 }
 
