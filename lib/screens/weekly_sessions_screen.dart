@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../providers/weekly_session_provider.dart';
 import '../providers/auth_provider.dart';
 import '../providers/model_provider.dart';
@@ -12,8 +13,8 @@ import '../theme/app_theme.dart';
 import '../widgets/submit_portrait_dialog.dart';
 import '../widgets/nomination_dialog.dart';
 import '../screens/profile_screen.dart';
+import '../screens/past_winners_detail_screen.dart';
 import '../services/user_service.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 
 class WeeklySessionsScreen extends StatefulWidget {
   const WeeklySessionsScreen({super.key});
@@ -29,7 +30,7 @@ class _WeeklySessionsScreenState extends State<WeeklySessionsScreen>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 2, vsync: this);
+    _tabController = TabController(length: 3, vsync: this);
     
     // Initialize the weekly session provider
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -93,6 +94,7 @@ class _WeeklySessionsScreenState extends State<WeeklySessionsScreen>
                   tabs: const [
                     Tab(text: 'Submissions'),
                     Tab(text: 'Winners'),
+                    Tab(text: 'Past Winners'),
                   ],
                 ),
                 Expanded(
@@ -101,6 +103,7 @@ class _WeeklySessionsScreenState extends State<WeeklySessionsScreen>
                     children: [
                       _buildSubmissionsTab(context, weeklySessionProvider, currentSession),
                       _buildWinnersTab(context, weeklySessionProvider),
+                      _buildPastWinnersTab(context),
                     ],
                   ),
                 ),
@@ -1477,5 +1480,196 @@ class _WeeklySessionsScreenState extends State<WeeklySessionsScreen>
         ),
       ),
     );
+  }
+
+  Widget _buildPastWinnersTab(BuildContext context) {
+    return StreamBuilder<QuerySnapshot>(
+      stream: FirebaseFirestore.instance
+          .collection('weekly_sessions')
+          .orderBy('sessionDate', descending: true)
+          .snapshots(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
+
+        if (snapshot.hasError) {
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                PhosphorIcon(
+                  PhosphorIconsDuotone.warningCircle,
+                  size: 64,
+                  color: AppColors.rustyOrange,
+                ),
+                const SizedBox(height: 16),
+                Text('Error loading past winners: ${snapshot.error}'),
+              ],
+            ),
+          );
+        }
+
+        if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                PhosphorIcon(
+                  PhosphorIconsDuotone.clockCounterClockwise,
+                  size: 64,
+                  color: Colors.grey[400],
+                ),
+                const SizedBox(height: 16),
+                const Text(
+                  'No past sessions yet',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                ),
+              ],
+            ),
+          );
+        }
+
+        // Filter sessions that have winners (at least one submission with votes)
+        final sessionsWithWinners = snapshot.data!.docs.where((doc) {
+          final data = doc.data() as Map<String, dynamic>;
+          final submissions = data['submissions'] as List<dynamic>? ?? [];
+          
+          // Check if any submission has votes
+          for (var submission in submissions) {
+            final votes = submission['votes'] as Map<String, dynamic>? ?? {};
+            final totalVotes = votes.values.fold(0, (sum, list) => sum + (list as List).length);
+            if (totalVotes > 0) {
+              return true;
+            }
+          }
+          return false;
+        }).toList();
+
+        if (sessionsWithWinners.isEmpty) {
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                PhosphorIcon(
+                  PhosphorIconsDuotone.clockCounterClockwise,
+                  size: 64,
+                  color: Colors.grey[400],
+                ),
+                const SizedBox(height: 16),
+                const Text(
+                  'No past winners yet',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Winners will appear here after voting closes',
+                  style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            ),
+          );
+        }
+
+        return ListView.builder(
+          padding: const EdgeInsets.all(16),
+          itemCount: sessionsWithWinners.length,
+          itemBuilder: (context, index) {
+            final sessionDoc = sessionsWithWinners[index];
+            final sessionData = sessionDoc.data() as Map<String, dynamic>;
+            final sessionDate = (sessionData['sessionDate'] as Timestamp).toDate();
+            final modelName = sessionData['modelName'] as String? ?? 'Unknown Model';
+            final modelImageUrl = sessionData['modelImageUrl'] as String?;
+            
+            return Card(
+              margin: const EdgeInsets.only(bottom: 12),
+              child: ListTile(
+                contentPadding: const EdgeInsets.all(12),
+                leading: CircleAvatar(
+                  radius: 32,
+                  backgroundImage: modelImageUrl != null 
+                      ? NetworkImage(modelImageUrl)
+                      : null,
+                  backgroundColor: AppColors.cream,
+                  child: modelImageUrl == null
+                      ? PhosphorIcon(
+                          PhosphorIconsDuotone.user,
+                          size: 32,
+                          color: AppColors.forestGreen,
+                        )
+                      : null,
+                ),
+                title: Text(
+                  modelName,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                  ),
+                ),
+                subtitle: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const SizedBox(height: 4),
+                    Text(
+                      _formatSessionDate(sessionDate),
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Colors.grey[600],
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Row(
+                      children: [
+                        PhosphorIcon(
+                          PhosphorIconsDuotone.trophy,
+                          size: 14,
+                          color: AppColors.rustyOrange,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          'View Winners',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: AppColors.rustyOrange,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+                trailing: PhosphorIcon(
+                  PhosphorIconsDuotone.caretRight,
+                  size: 24,
+                  color: AppColors.forestGreen,
+                ),
+                onTap: () {
+                  // Navigate to detail screen
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => PastWinnersDetailScreen(
+                        sessionId: sessionDoc.id,
+                        modelName: modelName,
+                        sessionDate: sessionDate,
+                      ),
+                    ),
+                  );
+                },
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  String _formatSessionDate(DateTime date) {
+    final months = [
+      'January', 'February', 'March', 'April', 'May', 'June',
+      'July', 'August', 'September', 'October', 'November', 'December'
+    ];
+    return '${months[date.month - 1]} ${date.day}, ${date.year}';
   }
 } 
