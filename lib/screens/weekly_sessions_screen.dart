@@ -835,6 +835,8 @@ class _WeeklySessionsScreenState extends State<WeeklySessionsScreen>
   }
 
   Widget _buildWinnersTab(BuildContext context, WeeklySessionProvider weeklySessionProvider) {
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final isAdmin = authProvider.userData?.isAdmin ?? false;
     final winners = weeklySessionProvider.winners;
     final isVotingClosed = weeklySessionProvider.isVotingClosed();
     final shouldShowWinners = weeklySessionProvider.shouldShowWinners();
@@ -1015,9 +1017,17 @@ class _WeeklySessionsScreenState extends State<WeeklySessionsScreen>
                 ),
                 Padding(
                   padding: const EdgeInsets.only(top: 8.0),
-                  child: Text(
-                    'with ${submission.votes[categoryId]?.length ?? 0} votes',
-                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  child: GestureDetector(
+                    onTap: isAdmin
+                        ? () => _showVotersDialog(context, submission, weeklySessionProvider)
+                        : null,
+                    child: Text(
+                      'with ${submission.votes.values.fold(0, (sum, list) => sum + list.length)} votes',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        decoration: isAdmin ? TextDecoration.underline : null,
+                      ),
+                    ),
                   ),
                 )
               ],
