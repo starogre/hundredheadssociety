@@ -158,7 +158,30 @@ class WeeklySessionProvider extends ChangeNotifier {
   // Load submissions with user information
   Future<void> _loadSubmissionsWithUsers(List<WeeklySubmissionModel> submissions) async {
     _submissionsWithUsers = [];
+    final Set<String> seenSubmissionIds = {}; // Track seen submission IDs to prevent duplicates
+    final Set<String> seenUserPortraitPairs = {}; // Track userId+portraitId pairs to prevent duplicates
+    
     for (WeeklySubmissionModel submission in submissions) {
+      // Create a unique key for userId+portraitId combination
+      final userPortraitKey = '${submission.userId}_${submission.portraitId}';
+      
+      // Skip if we've already seen this submission ID
+      if (submission.id.isNotEmpty && seenSubmissionIds.contains(submission.id)) {
+        debugPrint('WARNING: Duplicate submission found with ID: ${submission.id}');
+        continue;
+      }
+      
+      // Skip if same user+portrait combination already seen (user can only submit once per session)
+      if (seenUserPortraitPairs.contains(userPortraitKey)) {
+        debugPrint('WARNING: Duplicate submission found for user ${submission.userId} with portrait ${submission.portraitId}');
+        continue;
+      }
+      
+      if (submission.id.isNotEmpty) {
+        seenSubmissionIds.add(submission.id);
+      }
+      seenUserPortraitPairs.add(userPortraitKey);
+      
       try {
         final user = await _userService.getUserById(submission.userId);
         if (user != null) {
