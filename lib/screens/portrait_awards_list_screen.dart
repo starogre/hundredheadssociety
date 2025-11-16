@@ -61,7 +61,15 @@ class PortraitAwardsListScreen extends StatelessWidget {
           }
 
           // Collect all awards for this user
+          // Awards are determined by who won each category (most votes)
           final List<Map<String, dynamic>> awards = [];
+          final awardCategories = ['likeness', 'style', 'fun', 'topHead'];
+          final categoryNames = {
+            'likeness': 'Best Likeness',
+            'style': 'Best Style',
+            'fun': 'Most Fun',
+            'topHead': 'Top Head',
+          };
 
           for (final sessionDoc in snapshot.data!.docs) {
             final sessionData = sessionDoc.data() as Map<String, dynamic>;
@@ -69,27 +77,39 @@ class PortraitAwardsListScreen extends StatelessWidget {
             final sessionDate = (sessionData['sessionDate'] as Timestamp).toDate();
             final modelName = sessionData['modelName'] as String? ?? 'Unknown Model';
 
-            for (final submission in submissions) {
-              final submissionUserId = submission['userId'] as String?;
-              
-              // Check if this submission belongs to our user AND has awards
-              if (submissionUserId == userId) {
-                final awards1st = submission['awards1st'] as int? ?? 0;
-                final awards2nd = submission['awards2nd'] as int? ?? 0;
-                final awards3rd = submission['awards3rd'] as int? ?? 0;
-                final totalAwards = awards1st + awards2nd + awards3rd;
+            // For each category, find the winner (submission with most votes)
+            for (final category in awardCategories) {
+              String? winnerUserId;
+              int maxVotes = 0;
+              Map<String, dynamic>? winnerSubmission;
 
-                if (totalAwards > 0) {
-                  awards.add({
-                    'imageUrl': submission['imageUrl'] as String?,
-                    'sessionDate': sessionDate,
-                    'modelName': modelName,
-                    'awards1st': awards1st,
-                    'awards2nd': awards2nd,
-                    'awards3rd': awards3rd,
-                    'totalAwards': totalAwards,
-                  });
+              // Find the submission with the most votes in this category
+              for (final submission in submissions) {
+                final votes = submission['votes'] as Map<String, dynamic>?;
+                if (votes != null) {
+                  final categoryVotes = votes[category] as List<dynamic>?;
+                  if (categoryVotes != null && categoryVotes.length > maxVotes) {
+                    maxVotes = categoryVotes.length;
+                    winnerUserId = submission['userId'] as String?;
+                    winnerSubmission = submission;
+                  }
                 }
+              }
+
+              // If this user won this category, add it to awards
+              if (winnerUserId == userId && winnerSubmission != null && maxVotes > 0) {
+                awards.add({
+                  'imageUrl': winnerSubmission['portraitImageUrl'] as String?,
+                  'sessionDate': sessionDate,
+                  'modelName': modelName,
+                  'category': category,
+                  'categoryName': categoryNames[category] ?? category,
+                  'votes': maxVotes,
+                  'awards1st': 1, // Won this category
+                  'awards2nd': 0,
+                  'awards3rd': 0,
+                  'totalAwards': 1,
+                });
               }
             }
           }
@@ -144,10 +164,8 @@ class PortraitAwardsListScreen extends StatelessWidget {
     final imageUrl = award['imageUrl'] as String?;
     final sessionDate = award['sessionDate'] as DateTime;
     final modelName = award['modelName'] as String;
-    final awards1st = award['awards1st'] as int;
-    final awards2nd = award['awards2nd'] as int;
-    final awards3rd = award['awards3rd'] as int;
-    final totalAwards = award['totalAwards'] as int;
+    final categoryName = award['categoryName'] as String? ?? 'Award';
+    final votes = award['votes'] as int? ?? 0;
 
     return Container(
       decoration: BoxDecoration(
@@ -215,81 +233,28 @@ class PortraitAwardsListScreen extends StatelessWidget {
                   const SizedBox(height: 8),
                   Row(
                     children: [
-                      if (awards1st > 0) ...[
-                        PhosphorIcon(
-                          PhosphorIconsDuotone.trophy,
-                          size: 16,
-                          color: const Color(0xFFFFD700), // Gold
+                      PhosphorIcon(
+                        PhosphorIconsDuotone.trophy,
+                        size: 16,
+                        color: const Color(0xFFFFD700), // Gold
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        categoryName,
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
                         ),
-                        const SizedBox(width: 4),
-                        Text(
-                          '$awards1st',
-                          style: const TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.bold,
-                          ),
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        '($votes votes)',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.grey[600],
                         ),
-                        const SizedBox(width: 12),
-                      ],
-                      if (awards2nd > 0) ...[
-                        PhosphorIcon(
-                          PhosphorIconsDuotone.trophy,
-                          size: 16,
-                          color: const Color(0xFFC0C0C0), // Silver
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          '$awards2nd',
-                          style: const TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                      ],
-                      if (awards3rd > 0) ...[
-                        PhosphorIcon(
-                          PhosphorIconsDuotone.trophy,
-                          size: 16,
-                          color: const Color(0xFFCD7F32), // Bronze
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          '$awards3rd',
-                          style: const TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ],
+                      ),
                     ],
-                  ),
-                ],
-              ),
-            ),
-            // Total awards badge
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-              decoration: BoxDecoration(
-                color: AppColors.rustyOrange.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  PhosphorIcon(
-                    PhosphorIconsDuotone.trophy,
-                    size: 16,
-                    color: AppColors.rustyOrange,
-                  ),
-                  const SizedBox(width: 4),
-                  Text(
-                    '$totalAwards',
-                    style: const TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.rustyOrange,
-                    ),
                   ),
                 ],
               ),
