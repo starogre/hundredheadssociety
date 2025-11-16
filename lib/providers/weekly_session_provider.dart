@@ -536,9 +536,13 @@ class WeeklySessionProvider extends ChangeNotifier {
       // Track how many awards each user won
       Map<String, int> userAwardCounts = {};
       
-      for (var winner in winners.values) {
-        final userId = winner['user'].id;
-        userAwardCounts[userId] = (userAwardCounts[userId] ?? 0) + 1;
+      // winners is now Map<category, List<winnerData>>
+      for (var winnersList in winners.values) {
+        for (var winnerData in winnersList) {
+          final user = winnerData['user'] as UserModel;
+          final userId = user.uid;
+          userAwardCounts[userId] = (userAwardCounts[userId] ?? 0) + 1;
+        }
       }
       
       // Update each user's award count

@@ -6,6 +6,7 @@ import '../models/weekly_session_model.dart';
 import '../models/user_model.dart';
 import '../services/user_service.dart';
 import '../theme/app_theme.dart';
+import '../providers/weekly_session_provider.dart';
 
 class PastWinnersDetailScreen extends StatelessWidget {
   final String sessionId;
