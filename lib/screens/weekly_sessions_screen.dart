@@ -1581,14 +1581,17 @@ class _WeeklySessionsScreenState extends State<WeeklySessionsScreen>
             final sessionDate = (sessionData['sessionDate'] as Timestamp).toDate();
             
             // Try to get model name from session, or use formatted date as fallback
-            String modelName = sessionData['modelName'] as String?;
+            String? modelNameNullable = sessionData['modelName'] as String?;
             final modelImageUrl = sessionData['modelImageUrl'] as String?;
             
             // If no model name, format the session date as fallback
-            if (modelName == null || modelName.isEmpty) {
+            String modelName;
+            if (modelNameNullable == null || modelNameNullable.isEmpty) {
               final months = ['', 'January', 'February', 'March', 'April', 'May', 'June', 
                               'July', 'August', 'September', 'October', 'November', 'December'];
               modelName = '${months[sessionDate.month]} ${sessionDate.day} Session';
+            } else {
+              modelName = modelNameNullable;
             }
             
             return Card(
