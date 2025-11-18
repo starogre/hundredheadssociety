@@ -75,7 +75,14 @@ class PortraitAwardsListScreen extends StatelessWidget {
             final sessionData = sessionDoc.data() as Map<String, dynamic>;
             final submissions = sessionData['submissions'] as List<dynamic>? ?? [];
             final sessionDate = (sessionData['sessionDate'] as Timestamp).toDate();
-            final modelName = sessionData['modelName'] as String? ?? 'Unknown Model';
+            
+            // Try to get model name from session, or use formatted date as fallback
+            String modelName = sessionData['modelName'] as String?;
+            if (modelName == null || modelName.isEmpty) {
+              final months = ['', 'January', 'February', 'March', 'April', 'May', 'June', 
+                              'July', 'August', 'September', 'October', 'November', 'December'];
+              modelName = '${months[sessionDate.month]} ${sessionDate.day} Session';
+            }
 
             // For each category, find the winner (submission with most votes)
             for (final category in awardCategories) {

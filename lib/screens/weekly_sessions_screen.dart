@@ -93,8 +93,8 @@ class _WeeklySessionsScreenState extends State<WeeklySessionsScreen>
                   dividerColor: AppColors.forestGreen.withValues(alpha: 0.2),
                   tabs: const [
                     Tab(text: 'Submissions'),
-                    Tab(text: 'Winners'),
-                    Tab(text: 'Past Winners'),
+                    Tab(text: 'Awards'),
+                    Tab(text: 'Past Awards'),
                   ],
                 ),
                 Expanded(
@@ -884,7 +884,7 @@ class _WeeklySessionsScreenState extends State<WeeklySessionsScreen>
     if (!shouldShowWinners) {
       // Calculate Friday noon to show exact date/time
       // Use mostRecentCompletedSession if available (the session being voted on), otherwise currentSession
-      String winnersAnnouncementText = 'Winners will be announced soon!';
+      String winnersAnnouncementText = 'Awards will be announced soon!';
       final sessionForWinners = weeklySessionProvider.mostRecentCompletedSession ?? weeklySessionProvider.currentSession;
       
       if (sessionForWinners != null) {
@@ -898,7 +898,7 @@ class _WeeklySessionsScreenState extends State<WeeklySessionsScreen>
         final monthName = months[fridayNoon.month];
         final dayOfMonth = fridayNoon.day;
         
-        winnersAnnouncementText = 'Winners announced Friday, $monthName $dayOfMonth at 12:00 PM';
+        winnersAnnouncementText = 'Awards announced Friday, $monthName $dayOfMonth at 12:00 PM';
       }
       
       return Center(
@@ -914,7 +914,7 @@ class _WeeklySessionsScreenState extends State<WeeklySessionsScreen>
               ),
               const SizedBox(height: 24),
               Text(
-                'Winners Coming Soon!',
+                'Awards Coming Soon!',
                 style: const TextStyle(
                   fontSize: 24,
                   fontWeight: FontWeight.bold,
@@ -960,7 +960,7 @@ class _WeeklySessionsScreenState extends State<WeeklySessionsScreen>
             ),
             const SizedBox(height: 16),
             const Text(
-              'No winners yet!',
+              'No awards yet!',
               style: TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
@@ -1558,12 +1558,12 @@ class _WeeklySessionsScreenState extends State<WeeklySessionsScreen>
                 ),
                 const SizedBox(height: 16),
                 const Text(
-                  'No past winners yet',
+                  'No past awards yet',
                   style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'Winners will appear here after voting closes',
+                  'Awards will appear here after voting closes',
                   style: TextStyle(fontSize: 14, color: Colors.grey[600]),
                   textAlign: TextAlign.center,
                 ),
@@ -1579,8 +1579,17 @@ class _WeeklySessionsScreenState extends State<WeeklySessionsScreen>
             final sessionDoc = sessionsWithWinners[index];
             final sessionData = sessionDoc.data() as Map<String, dynamic>;
             final sessionDate = (sessionData['sessionDate'] as Timestamp).toDate();
-            final modelName = sessionData['modelName'] as String? ?? 'Unknown Model';
+            
+            // Try to get model name from session, or use formatted date as fallback
+            String modelName = sessionData['modelName'] as String?;
             final modelImageUrl = sessionData['modelImageUrl'] as String?;
+            
+            // If no model name, format the session date as fallback
+            if (modelName == null || modelName.isEmpty) {
+              final months = ['', 'January', 'February', 'March', 'April', 'May', 'June', 
+                              'July', 'August', 'September', 'October', 'November', 'December'];
+              modelName = '${months[sessionDate.month]} ${sessionDate.day} Session';
+            }
             
             return Card(
               margin: const EdgeInsets.only(bottom: 12),
@@ -1628,7 +1637,7 @@ class _WeeklySessionsScreenState extends State<WeeklySessionsScreen>
                         ),
                         const SizedBox(width: 4),
                         Text(
-                          'View Winners',
+                          'View Awards',
                           style: TextStyle(
                             fontSize: 12,
                             color: AppColors.rustyOrange,
@@ -1646,16 +1655,17 @@ class _WeeklySessionsScreenState extends State<WeeklySessionsScreen>
                 ),
                 onTap: () {
                   // Navigate to detail screen
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => PastWinnersDetailScreen(
-                        sessionId: sessionDoc.id,
-                        modelName: modelName,
-                        sessionDate: sessionDate,
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => PastWinnersDetailScreen(
+                          sessionId: sessionDoc.id,
+                          modelName: modelName,
+                          modelImageUrl: modelImageUrl,
+                          sessionDate: sessionDate,
+                        ),
                       ),
-                    ),
-                  );
+                    );
                 },
               ),
             );

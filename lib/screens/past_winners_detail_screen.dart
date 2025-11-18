@@ -11,12 +11,14 @@ import '../providers/weekly_session_provider.dart';
 class PastWinnersDetailScreen extends StatelessWidget {
   final String sessionId;
   final String modelName;
+  final String? modelImageUrl;
   final DateTime sessionDate;
 
   const PastWinnersDetailScreen({
     super.key,
     required this.sessionId,
     required this.modelName,
+    this.modelImageUrl,
     required this.sessionDate,
   });
 
