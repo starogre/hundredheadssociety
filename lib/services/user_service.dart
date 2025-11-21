@@ -130,7 +130,9 @@ class UserService {
     }
   }
 
-  // Delete a user
+  // Delete a user (for admin deletion through User Management)
+  // This uses the same comprehensive data deletion as user self-deletion
+  // Note: Does NOT delete Firebase Auth (admin can't delete another user's auth)
   Future<void> deleteUser(String userId, {
     String? performedBy,
     String? performedByName,
@@ -138,12 +140,13 @@ class UserService {
     final ActivityLogService _activityLogService = ActivityLogService();
     
     try {
-      // Get the user data before deleting to log their name
+      // Get the user data BEFORE deleting to log their name
       final userDoc = await _firestore.collection('users').doc(userId).get();
       final userData = userDoc.data();
       final targetUserName = userData?['name'] ?? 'Unknown User';
       
-      await _firestore.collection('users').doc(userId).delete();
+      // Use comprehensive data deletion (portraits, submissions, votes, etc.)
+      await _deleteUserData(userId);
       
       // Log the activity if admin info is provided
       if (performedBy != null && performedByName != null) {
@@ -480,11 +483,11 @@ class UserService {
     }
   }
 
-  // Delete user account and all associated data
-  // This is for user self-deletion (Account Deletion feature for App Store compliance)
-  Future<void> deleteUserAccount(String userId) async {
+  // Private helper method: Delete all user data from Firestore
+  // Used by both user self-deletion and admin deletion
+  Future<void> _deleteUserData(String userId) async {
     try {
-      debugPrint('Starting account deletion for user: $userId');
+      debugPrint('Starting data deletion for user: $userId');
       
       // 1. Get all user's portraits to delete images from Storage
       final portraitsSnapshot = await _firestore
@@ -636,11 +639,18 @@ class UserService {
       
       // 8. Commit final batch
       await batch.commit();
-      debugPrint('Account deletion completed successfully for user: $userId');
+      debugPrint('Data deletion completed successfully for user: $userId');
       
     } catch (e) {
-      debugPrint('Error deleting user account: $e');
+      debugPrint('Error deleting user data: $e');
       rethrow;
     }
+  }
+
+  // Delete user account and all associated data (for user self-deletion)
+  // This is the public method called from Settings screen
+  // Note: Firebase Auth deletion is handled separately in AuthService
+  Future<void> deleteUserAccount(String userId) async {
+    await _deleteUserData(userId);
   }
 } 
