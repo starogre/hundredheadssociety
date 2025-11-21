@@ -442,9 +442,9 @@ class _WeeklySessionsScreenState extends State<WeeklySessionsScreen>
       },
       color: AppColors.forestGreen,
       child: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(16),
         physics: const AlwaysScrollableScrollPhysics(),
-        child: Column(
+      child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Submit Button - only show for artists if session is not cancelled
@@ -616,12 +616,12 @@ class _WeeklySessionsScreenState extends State<WeeklySessionsScreen>
                                     fontWeight: FontWeight.bold,
                                     color: AppColors.forestGreen,
                                   ),
-                                ),
+                ),
                               ),
                             ],
-                          ),
-                        ),
-                        const SizedBox(height: 24),
+              ),
+            ),
+          const SizedBox(height: 24),
                       ],
                     );
                   },
@@ -667,7 +667,7 @@ class _WeeklySessionsScreenState extends State<WeeklySessionsScreen>
                           fontSize: 16,
                           color: Colors.grey[600],
                         ),
-                        textAlign: TextAlign.center,
+                    textAlign: TextAlign.center,
                       ),
                     ],
                   ),
@@ -721,23 +721,23 @@ class _WeeklySessionsScreenState extends State<WeeklySessionsScreen>
                       if (submission.portraitImageUrl.isNotEmpty)
                         Stack(
                           children: [
-                            GestureDetector(
+                        GestureDetector(
                               onTap: () => _showImagePreview(context, submission.portraitImageUrl),
-                              child: AspectRatio(
-                                aspectRatio: 1,
-                                child: ClipRRect(
-                                  borderRadius: BorderRadius.circular(4),
+                          child: AspectRatio(
+                            aspectRatio: 1,
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(4),
                                   child: CachedNetworkImage(
                                     imageUrl: submission.portraitImageUrl,
-                                    fit: BoxFit.cover,
+                                fit: BoxFit.cover,
                                     placeholder: (context, url) => Container(
                                       color: Colors.grey[200],
                                       child: const Center(
                                         child: CircularProgressIndicator(
                                           valueColor: AlwaysStoppedAnimation<Color>(AppColors.forestGreen),
-                                        ),
-                                      ),
-                                    ),
+                              ),
+                            ),
+                          ),
                                     errorWidget: (context, url, error) => Container(
                                       color: Colors.grey[300],
                                       child: const Icon(Icons.error, color: Colors.red),
@@ -822,7 +822,7 @@ class _WeeklySessionsScreenState extends State<WeeklySessionsScreen>
                                     ? () => _showVotersDialog(context, submission, weeklySessionProvider)
                                     : null,
                                 child: Text(
-                                  'Votes: ${submission.votes.values.fold(0, (sum, list) => sum + list.length)}',
+                              'Votes: ${submission.votes.values.fold(0, (sum, list) => sum + list.length)}',
                                   style: TextStyle(
                                     fontWeight: FontWeight.bold,
                                     color: AppColors.forestGreen,
@@ -831,33 +831,33 @@ class _WeeklySessionsScreenState extends State<WeeklySessionsScreen>
                                         : null,
                                   ),
                                 ),
-                              ),
+                            ),
                             // Only show vote button if it's not the user's own submission
                             if (submission.userId != currentUserId)
-                              ElevatedButton.icon(
-                                onPressed: weeklySessionProvider.isVotingClosed() 
-                                    ? null 
-                                    : () => _showNominationDialog(context, submission),
-                                icon: Icon(
-                                  Icons.how_to_vote, 
-                                  size: 16,
+                            ElevatedButton.icon(
+                              onPressed: weeklySessionProvider.isVotingClosed() 
+                                  ? null 
+                                  : () => _showNominationDialog(context, submission),
+                              icon: Icon(
+                                Icons.how_to_vote, 
+                                size: 16,
+                                color: weeklySessionProvider.isVotingClosed() ? Colors.grey : null,
+                              ),
+                              label: Text(
+                                weeklySessionProvider.isVotingClosed() ? 'Voting Closed' : 'Vote',
+                                style: TextStyle(
                                   color: weeklySessionProvider.isVotingClosed() ? Colors.grey : null,
                                 ),
-                                label: Text(
-                                  weeklySessionProvider.isVotingClosed() ? 'Voting Closed' : 'Vote',
-                                  style: TextStyle(
-                                    color: weeklySessionProvider.isVotingClosed() ? Colors.grey : null,
-                                  ),
-                                ),
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: weeklySessionProvider.isVotingClosed() 
-                                      ? Colors.grey.shade300 
-                                      : AppColors.rustyOrange,
-                                  foregroundColor: AppColors.white,
-                                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                                  textStyle: const TextStyle(fontSize: 12),
-                                ),
                               ),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: weeklySessionProvider.isVotingClosed() 
+                                    ? Colors.grey.shade300 
+                                    : AppColors.rustyOrange,
+                                foregroundColor: AppColors.white,
+                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                textStyle: const TextStyle(fontSize: 12),
+                              ),
+                            ),
                           ],
                         ),
                       )
@@ -904,26 +904,26 @@ class _WeeklySessionsScreenState extends State<WeeklySessionsScreen>
       return Center(
         child: Padding(
           padding: const EdgeInsets.all(24.0),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
               PhosphorIcon(
                 PhosphorIconsDuotone.clockCountdown,
                 size: 80,
                 color: AppColors.rustyOrange,
               ),
               const SizedBox(height: 24),
-              Text(
+            Text(
                 'Awards Coming Soon!',
-                style: const TextStyle(
+              style: const TextStyle(
                   fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.forestGreen,
-                ),
-                textAlign: TextAlign.center,
+                fontWeight: FontWeight.bold,
+                color: AppColors.forestGreen,
               ),
+              textAlign: TextAlign.center,
+            ),
               const SizedBox(height: 16),
-              Text(
+            Text(
                 winnersAnnouncementText,
                 style: const TextStyle(
                   fontSize: 16,
@@ -935,13 +935,13 @@ class _WeeklySessionsScreenState extends State<WeeklySessionsScreen>
               const SizedBox(height: 12),
               Text(
                 'Keep voting for your favorite paintings until then!',
-                style: TextStyle(
-                  fontSize: 14,
-                  color: Colors.grey[600],
-                ),
-                textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 14,
+                color: Colors.grey[600],
               ),
-            ],
+              textAlign: TextAlign.center,
+            ),
+          ],
           ),
         ),
       );
@@ -990,7 +990,7 @@ class _WeeklySessionsScreenState extends State<WeeklySessionsScreen>
       },
       color: AppColors.forestGreen,
       child: ListView(
-        padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(16),
         physics: const AlwaysScrollableScrollPhysics(),
         children: awardDetails.entries.expand((entry) {
         final categoryKey = entry.key;
@@ -1007,24 +1007,24 @@ class _WeeklySessionsScreenState extends State<WeeklySessionsScreen>
         // Create a card for this category with all winners
         return [
           Card(
-            margin: const EdgeInsets.only(bottom: 16),
-            child: Padding(
-              padding: const EdgeInsets.all(12.0),
-              child: Column(
-                children: [
+          margin: const EdgeInsets.only(bottom: 16),
+          child: Padding(
+            padding: const EdgeInsets.all(12.0),
+            child: Column(
+              children: [
                   // Category header
-                  Text(
-                    '${categoryDetails['emoji']} ${categoryDetails['title']} ${categoryDetails['emoji']}',
-                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                      color: AppColors.forestGreen,
-                      fontWeight: FontWeight.bold,
-                    ),
-                    textAlign: TextAlign.center,
+                Text(
+                  '${categoryDetails['emoji']} ${categoryDetails['title']} ${categoryDetails['emoji']}',
+                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                    color: AppColors.forestGreen,
+                    fontWeight: FontWeight.bold,
                   ),
-                  Text(
-                    categoryDetails['subtitle'],
-                    style: TextStyle(color: AppColors.rustyOrange, fontStyle: FontStyle.italic),
-                  ),
+                  textAlign: TextAlign.center,
+                ),
+                Text(
+                  categoryDetails['subtitle'],
+                  style: TextStyle(color: AppColors.rustyOrange, fontStyle: FontStyle.italic),
+                ),
                   // Show tie badge if multiple winners
                   if (isTie) ...[
                     const SizedBox(height: 8),
@@ -1059,7 +1059,7 @@ class _WeeklySessionsScreenState extends State<WeeklySessionsScreen>
                       ),
                     ),
                   ],
-                  const SizedBox(height: 12),
+                const SizedBox(height: 12),
                   // Show all winners
                   ...winnersData.map((winnerData) {
                     final submission = winnerData['submission'] as WeeklySubmissionModel;
@@ -1069,9 +1069,9 @@ class _WeeklySessionsScreenState extends State<WeeklySessionsScreen>
                       children: [
                         if (winnersData.indexOf(winnerData) > 0) 
                           const Divider(height: 24, thickness: 1),
-                        ListTile(
-                          leading: CircleAvatar(
-                            radius: 25,
+                ListTile(
+                  leading: CircleAvatar(
+                    radius: 25,
                             backgroundImage: user.profileImageUrl != null 
                                 ? NetworkImage(user.profileImageUrl!)
                                 : null,
@@ -1085,19 +1085,19 @@ class _WeeklySessionsScreenState extends State<WeeklySessionsScreen>
                                     ),
                                   )
                                 : null,
-                          ),
-                          title: Text(user.name, style: const TextStyle(fontWeight: FontWeight.bold)),
-                          subtitle: Text(submission.portraitTitle),
-                        ),
+                  ),
+                  title: Text(user.name, style: const TextStyle(fontWeight: FontWeight.bold)),
+                  subtitle: Text(submission.portraitTitle),
+                ),
                         GestureDetector(
                           onTap: () => _showImagePreview(context, submission.portraitImageUrl),
                           child: AspectRatio(
-                            aspectRatio: 1,
-                            child: ClipRRect(
-                              borderRadius: BorderRadius.circular(8),
+                  aspectRatio: 1,
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(8),
                               child: CachedNetworkImage(
                                 imageUrl: submission.portraitImageUrl,
-                                fit: BoxFit.cover,
+                      fit: BoxFit.cover,
                                 placeholder: (context, url) => Container(
                                   color: Colors.grey[200],
                                   child: const Center(
@@ -1111,27 +1111,27 @@ class _WeeklySessionsScreenState extends State<WeeklySessionsScreen>
                                   child: const Icon(Icons.error, color: Colors.red),
                                 ),
                               ),
-                            ),
-                          ),
-                        ),
-                        Padding(
-                          padding: const EdgeInsets.only(top: 8.0),
+                    ),
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.only(top: 8.0),
                           child: GestureDetector(
                             onTap: isAdmin
                                 ? () => _showVotersDialog(context, submission, weeklySessionProvider)
                                 : null,
-                            child: Text(
+                  child: Text(
                               'with ${submission.votes.values.fold(0, (sum, list) => sum + list.length)} votes',
                               style: TextStyle(
                                 fontWeight: FontWeight.bold,
                                 decoration: isAdmin ? TextDecoration.underline : null,
                               ),
-                            ),
+                  ),
                           ),
-                        ),
+            ),
                       ],
-                    );
-                  }).toList(),
+        );
+      }).toList(),
                 ],
               ),
             ),

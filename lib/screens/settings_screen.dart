@@ -4,6 +4,9 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 import '../providers/auth_provider.dart';
 import '../services/push_notification_service.dart';
+import '../services/user_service.dart';
+import '../services/auth_service.dart';
+import '../theme/app_theme.dart';
 import 'user_management_screen.dart';
 import 'app_updates_screen.dart';
 import 'about_screen.dart';
@@ -14,8 +17,17 @@ import 'push_notifications_settings_screen.dart';
 import 'user_data_repair_screen.dart';
 import 'rsvp_debug_screen.dart';
 
-class SettingsScreen extends StatelessWidget {
+class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
+
+  @override
+  State<SettingsScreen> createState() => _SettingsScreenState();
+}
+
+class _SettingsScreenState extends State<SettingsScreen> {
+  final UserService _userService = UserService();
+  final AuthService _authService = AuthService();
+  bool _isDeleting = false;
 
   @override
   Widget build(BuildContext context) {
@@ -173,6 +185,38 @@ class SettingsScreen extends StatelessWidget {
                   );
                 },
               ),
+              
+              // Danger Zone Section
+              const Divider(height: 32, thickness: 1),
+              const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                child: Text(
+                  'Danger Zone',
+                  style: TextStyle(
+                    color: Colors.red,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                  ),
+                ),
+              ),
+              ListTile(
+                leading: PhosphorIcon(
+                  PhosphorIconsDuotone.warning,
+                  color: Colors.red,
+                  size: 28,
+                ),
+                title: const Text(
+                  'Delete Account',
+                  style: TextStyle(color: Colors.red, fontWeight: FontWeight.w500),
+                ),
+                subtitle: const Text(
+                  'Permanently delete your account and all data',
+                  style: TextStyle(fontSize: 12),
+                ),
+                onTap: _isDeleting ? null : () => _showDeleteAccountDialog(context, authProvider),
+              ),
+              const Divider(height: 16, thickness: 1),
+              
               ListTile(
                 leading: PhosphorIcon(PhosphorIconsDuotone.signOut),
                 title: const Text('Sign Out'),
@@ -205,5 +249,268 @@ class SettingsScreen extends StatelessWidget {
         },
       ),
     );
+  }
+
+  // Show initial warning dialog for account deletion
+  void _showDeleteAccountDialog(BuildContext context, AuthProvider authProvider) {
+    final userData = authProvider.userData;
+    
+    // Check if user is admin
+    if (userData?.isAdmin == true) {
+      showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Row(
+            children: [
+              Icon(Icons.block, color: Colors.red),
+              SizedBox(width: 8),
+              Text('Cannot Delete Admin Account'),
+            ],
+          ),
+          content: const Text(
+            'Admin accounts cannot be deleted through the app for security reasons. '
+            'Please contact support if you need to delete your admin account.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('OK'),
+            ),
+          ],
+        ),
+      );
+      return;
+    }
+
+    final portraitCount = userData?.portraitsCompleted ?? 0;
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Row(
+          children: [
+            Icon(Icons.warning_amber_rounded, color: Colors.red, size: 28),
+            SizedBox(width: 8),
+            Text('Delete Account?'),
+          ],
+        ),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'This will permanently delete:',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 12),
+              Text('• Your profile and all data'),
+              Text('• All $portraitCount portraits you\'ve uploaded'),
+              const Text('• All your submissions and votes'),
+              const Text('• Any awards you\'ve earned'),
+              const SizedBox(height: 16),
+              const Text(
+                'This action cannot be undone.',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: Colors.red,
+                  fontSize: 16,
+                ),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              _showPasswordConfirmation(context, authProvider);
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Delete Account'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Show password re-authentication dialog
+  void _showPasswordConfirmation(BuildContext context, AuthProvider authProvider) {
+    final passwordController = TextEditingController();
+    bool obscurePassword = true;
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) => AlertDialog(
+          title: const Text('Confirm Deletion'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text('Please enter your password to confirm account deletion:'),
+              const SizedBox(height: 16),
+              TextField(
+                controller: passwordController,
+                obscureText: obscurePassword,
+                decoration: InputDecoration(
+                  labelText: 'Password',
+                  border: const OutlineInputBorder(),
+                  suffixIcon: IconButton(
+                    icon: Icon(
+                      obscurePassword ? Icons.visibility : Icons.visibility_off,
+                    ),
+                    onPressed: () {
+                      setState(() {
+                        obscurePassword = !obscurePassword;
+                      });
+                    },
+                  ),
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                final password = passwordController.text.trim();
+                if (password.isEmpty) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Please enter your password'),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                  return;
+                }
+
+                Navigator.pop(context);
+                await _deleteAccount(context, authProvider, password);
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.red,
+                foregroundColor: Colors.white,
+              ),
+              child: const Text('Confirm Deletion'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // Execute account deletion
+  Future<void> _deleteAccount(
+    BuildContext context,
+    AuthProvider authProvider,
+    String password,
+  ) async {
+    final userId = authProvider.userId;
+    if (userId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Error: No user signed in'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    setState(() {
+      _isDeleting = true;
+    });
+
+    // Show loading dialog
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const AlertDialog(
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            CircularProgressIndicator(),
+            SizedBox(height: 16),
+            Text('Deleting your account...'),
+            SizedBox(height: 8),
+            Text(
+              'This may take a few moments',
+              style: TextStyle(fontSize: 12, color: Colors.grey),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    try {
+      // Step 1: Re-authenticate user
+      await _authService.reauthenticateWithPassword(password);
+
+      // Step 2: Delete all user data from Firestore
+      await _userService.deleteUserAccount(userId);
+
+      // Step 3: Delete Firebase Auth account
+      await _authService.deleteFirebaseAuthAccount();
+
+      // Step 4: Sign out (redundant but safe)
+      await authProvider.signOut();
+
+      // Close loading dialog
+      if (mounted) Navigator.of(context).pop();
+
+      // Show success message and navigate to login
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Account deleted successfully'),
+            backgroundColor: AppColors.forestGreen,
+          ),
+        );
+
+        // Pop settings screen and any other screens to get back to login
+        Navigator.of(context).popUntil((route) => route.isFirst);
+      }
+    } catch (e) {
+      // Close loading dialog
+      if (mounted) Navigator.of(context).pop();
+
+      // Show error message
+      if (mounted) {
+        String errorMessage = 'Failed to delete account';
+        
+        if (e.toString().contains('wrong-password')) {
+          errorMessage = 'Incorrect password. Please try again.';
+        } else if (e.toString().contains('requires-recent-login')) {
+          errorMessage = 'Please sign out and sign in again before deleting your account.';
+        } else {
+          errorMessage = 'Failed to delete account: ${e.toString()}';
+        }
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(errorMessage),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 5),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isDeleting = false;
+        });
+      }
+    }
   }
 }
