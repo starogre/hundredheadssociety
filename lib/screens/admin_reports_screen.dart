@@ -373,7 +373,7 @@ class _AdminReportsScreenState extends State<AdminReportsScreen> {
       await _reportService.updateReportStatus(
         reportId: reportId,
         status: 'dismissed',
-        reviewedBy: authProvider.userId!,
+        reviewedBy: authProvider.currentUser!.uid,
         resolution: 'Dismissed by moderator',
         actionTaken: 'none',
       );
@@ -403,7 +403,7 @@ class _AdminReportsScreenState extends State<AdminReportsScreen> {
       await _reportService.updateReportStatus(
         reportId: reportId,
         status: 'resolved',
-        reviewedBy: authProvider.userId!,
+        reviewedBy: authProvider.currentUser!.uid,
         resolution: 'Reviewed and action taken',
         actionTaken: 'reviewed',
       );

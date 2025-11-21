@@ -454,7 +454,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     AuthProvider authProvider,
     String password,
   ) async {
-    final userId = authProvider.userId;
+    final userId = authProvider.currentUser?.uid;
     if (userId == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(

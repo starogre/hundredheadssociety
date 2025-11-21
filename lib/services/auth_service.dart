@@ -9,7 +9,7 @@ class AuthException implements Exception {
   final String message;
   final String code;
   
-  AuthException(this.message, {required this.code});
+  AuthException({required this.message, required this.code});
   
   @override
   String toString() => message;
@@ -39,7 +39,7 @@ class AuthService {
       final existingUser = await getUserByEmail(email);
       if (existingUser != null) {
         throw AuthException(
-          'An account with this email address already exists. Please try signing in instead.',
+          message: 'An account with this email address already exists. Please try signing in instead.',
           code: 'email-already-exists',
         );
       }
@@ -140,14 +140,14 @@ class AuthService {
           userFriendlyMessage = 'Sign up failed: ${e.message ?? 'Unknown error occurred'}';
       }
       
-      throw AuthException(userFriendlyMessage, code: e.code);
+      throw AuthException(message: userFriendlyMessage, code: e.code);
     } on AuthException {
       // Re-throw our custom exceptions
       rethrow;
     } catch (e) {
       print('Error in signUpWithEmailAndPassword: $e');
       print('Error type: ${e.runtimeType}');
-      throw AuthException('Sign up failed: ${e.toString()}', code: 'unknown-error');
+      throw AuthException(message: 'Sign up failed: ${e.toString()}', code: 'unknown-error');
     }
   }
 
@@ -336,10 +336,10 @@ class AuthService {
           userFriendlyMessage = 'Sign in failed: ${e.message ?? 'Unknown error occurred'}';
       }
       
-      throw AuthException(userFriendlyMessage, code: e.code);
+      throw AuthException(message: userFriendlyMessage, code: e.code);
     } catch (e) {
       print('Error in signInWithEmailAndPassword: $e');
-      throw AuthException('Sign in failed: ${e.toString()}', code: 'unknown-error');
+      throw AuthException(message: 'Sign in failed: ${e.toString()}', code: 'unknown-error');
     }
   }
 
@@ -571,6 +571,36 @@ class AuthService {
         code: 'unknown',
         message: 'An unexpected error occurred while deleting the account',
       );
+    }
+  }
+
+  // Helper method to get user-friendly error messages
+  String _getErrorMessage(String code) {
+    switch (code) {
+      case 'user-not-found':
+        return 'No account found with this email address';
+      case 'wrong-password':
+        return 'The password you entered is incorrect';
+      case 'invalid-credential':
+        return 'The credentials you provided are invalid';
+      case 'requires-recent-login':
+        return 'This action requires recent authentication. Please sign out and sign in again';
+      case 'weak-password':
+        return 'The password provided is too weak';
+      case 'email-already-in-use':
+        return 'An account already exists with this email address';
+      case 'invalid-email':
+        return 'The email address is not valid';
+      case 'operation-not-allowed':
+        return 'This operation is not allowed';
+      case 'user-disabled':
+        return 'This account has been disabled';
+      case 'too-many-requests':
+        return 'Too many unsuccessful attempts. Please try again later';
+      case 'network-request-failed':
+        return 'Network error. Please check your internet connection';
+      default:
+        return 'An error occurred. Please try again';
     }
   }
 } 
