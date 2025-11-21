@@ -6,6 +6,7 @@ import '../providers/auth_provider.dart';
 import '../services/push_notification_service.dart';
 import '../services/user_service.dart';
 import '../services/auth_service.dart';
+import '../services/report_service.dart';
 import '../theme/app_theme.dart';
 import 'user_management_screen.dart';
 import 'app_updates_screen.dart';
@@ -16,6 +17,7 @@ import 'test_notifications_screen.dart';
 import 'push_notifications_settings_screen.dart';
 import 'user_data_repair_screen.dart';
 import 'rsvp_debug_screen.dart';
+import 'admin_reports_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -27,6 +29,7 @@ class SettingsScreen extends StatefulWidget {
 class _SettingsScreenState extends State<SettingsScreen> {
   final UserService _userService = UserService();
   final AuthService _authService = AuthService();
+  final ReportService _reportService = ReportService();
   bool _isDeleting = false;
 
   @override
@@ -62,6 +65,40 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   onTap: () {
                     Navigator.of(context).push(
                       MaterialPageRoute(builder: (context) => const ActivityLogScreen()),
+                    );
+                  },
+                ),
+              // Show Content Reports for admins and moderators
+              if (isAdmin || isModerator)
+                ListTile(
+                  leading: PhosphorIcon(PhosphorIconsDuotone.flag),
+                  title: const Text('Content Reports'),
+                  subtitle: const Text('Review user-reported content'),
+                  trailing: StreamBuilder<int>(
+                    stream: _reportService.getPendingReportCount(),
+                    builder: (context, snapshot) {
+                      final count = snapshot.data ?? 0;
+                      if (count == 0) return const SizedBox.shrink();
+                      return Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: Colors.red,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Text(
+                          count.toString(),
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                  onTap: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(builder: (context) => const AdminReportsScreen()),
                     );
                   },
                 ),
