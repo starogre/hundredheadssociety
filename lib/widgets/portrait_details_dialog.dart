@@ -8,10 +8,12 @@ import '../theme/app_theme.dart';
 import '../screens/edit_portrait_screen.dart';
 import '../screens/profile_screen.dart';
 import '../services/portrait_service.dart';
-
+import '../services/report_service.dart';
+import '../providers/auth_provider.dart';
 import '../providers/model_provider.dart';
 import '../services/award_service.dart';
 import '../services/instagram_sharing_service.dart';
+import 'report_dialog.dart';
 
 class PortraitDetailsDialog extends StatefulWidget {
   final PortraitModel portrait;
@@ -544,6 +546,15 @@ class _PortraitDetailsDialogState extends State<PortraitDetailsDialog> {
                             icon: const Icon(Icons.share, color: AppColors.rustyOrange),
                             tooltip: 'Share',
                           ),
+                          // Report button - only for non-owners
+                          ...(!isOwner ? [
+                            IconButton(
+                              onPressed: () => _reportPortrait(context),
+                              icon: const Icon(Icons.flag_outlined, color: Colors.red),
+                              tooltip: 'Report',
+                            ),
+                          ] : []),
+                          // Edit and Delete - only for owners
                           ...(isOwner ? [
                             IconButton(
                               onPressed: () => _editPortrait(context),
@@ -776,5 +787,30 @@ class _PortraitDetailsDialogState extends State<PortraitDetailsDialog> {
         );
       }
     }
+  }
+
+  void _reportPortrait(BuildContext context) {
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final currentUser = authProvider.userData;
+    
+    if (currentUser == null) return;
+
+    showDialog(
+      context: context,
+      builder: (context) => ReportDialog(
+        reportType: 'portrait',
+        onSubmit: (reason, details) async {
+          await ReportService().reportPortrait(
+            portraitId: _currentPortrait.id,
+            reportedUserId: _currentPortrait.userId,
+            reportedUserName: widget.user?.name ?? 'Unknown User',
+            reporterUserId: currentUser.id,
+            reporterName: currentUser.name,
+            reason: reason,
+            details: details,
+          );
+        },
+      ),
+    );
   }
 } 
