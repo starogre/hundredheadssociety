@@ -28,7 +28,7 @@ class PrivacyPolicyScreen extends StatelessWidget {
             ),
             const SizedBox(height: 16),
             const Text(
-              'Last updated: July 2025',
+              'Last updated: November 21, 2025',
               style: TextStyle(
                 color: Colors.grey,
                 fontSize: 14,
@@ -53,7 +53,7 @@ class PrivacyPolicyScreen extends StatelessWidget {
               '• Profile information (bio, profile picture)\n'
               '• Portrait submissions and artwork\n'
               '• Usage data and app interactions\n'
-              '• RSVP and session participation data',
+              '• Session participation and voting data',
               style: TextStyle(fontSize: 16),
             ),
             const SizedBox(height: 16),
@@ -88,6 +88,36 @@ class PrivacyPolicyScreen extends StatelessWidget {
             ),
             const SizedBox(height: 16),
             const Text(
+              'Account Deletion',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              'You can delete your account and all associated data at any time.\n\n'
+              'In-App Deletion:\n'
+              '1. Open Settings in the app\n'
+              '2. Scroll to the bottom and tap "Delete Account"\n'
+              '3. Confirm your decision\n'
+              '4. Enter your password to verify\n\n'
+              'What Gets Deleted:\n'
+              '• Your profile (name, email, Instagram, profile picture)\n'
+              '• All portraits you\'ve uploaded (images and data)\n'
+              '• All your submissions and votes\n'
+              '• Any awards you\'ve earned\n'
+              '• Your authentication credentials\n\n'
+              'Email Request:\n'
+              'If you cannot access the app, you can email us at:\n'
+              'support@100headsociety.com\n\n'
+              'Subject: "Account Deletion Request"\n\n'
+              'We will process your request within 30 days.\n\n'
+              'Important: Account deletion is permanent and cannot be undone.',
+              style: TextStyle(fontSize: 16),
+            ),
+            const SizedBox(height: 16),
+            const Text(
               'Contact Us',
               style: TextStyle(
                 fontSize: 18,
@@ -96,7 +126,10 @@ class PrivacyPolicyScreen extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             const Text(
-              'If you have any questions about this Privacy Policy, please visit our website to contact us.',
+              'If you have any questions about this Privacy Policy or wish to request account deletion, please contact us at:\n\n'
+              'Email: support@100headsociety.com\n'
+              'Website: https://100headsociety.com\n\n'
+              'We respond to all inquiries within 48 hours.',
               style: TextStyle(fontSize: 16),
             ),
           ],

@@ -59,9 +59,9 @@ class WeeklySessionService {
       }
       
       // Add user to RSVP list
-      await _firestore.collection('weekly_sessions').doc(sessionId).update({
-        'rsvpUserIds': FieldValue.arrayUnion([userId]),
-      });
+    await _firestore.collection('weekly_sessions').doc(sessionId).update({
+      'rsvpUserIds': FieldValue.arrayUnion([userId]),
+    });
       
       print('Successfully RSVP\'d user $userId for session $sessionId');
     } catch (e) {
@@ -90,9 +90,9 @@ class WeeklySessionService {
       }
       
       // Remove user from RSVP list
-      await _firestore.collection('weekly_sessions').doc(sessionId).update({
-        'rsvpUserIds': FieldValue.arrayRemove([userId]),
-      });
+    await _firestore.collection('weekly_sessions').doc(sessionId).update({
+      'rsvpUserIds': FieldValue.arrayRemove([userId]),
+    });
       
       print('Successfully cancelled RSVP for user $userId from session $sessionId');
     } catch (e) {
@@ -209,7 +209,7 @@ class WeeklySessionService {
     votes.putIfAbsent(awardCategory, () => []);
 
     // Add the user's vote (we already checked for duplicates above)
-    votes[awardCategory]!.add(userId);
+      votes[awardCategory]!.add(userId);
 
     // Update the submission with new votes
     submissions[submissionIndex] = submission.copyWith(votes: votes);

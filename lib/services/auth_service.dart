@@ -512,4 +512,65 @@ class AuthService {
       rethrow;
     }
   }
+
+  // Re-authenticate user with password (required before account deletion)
+  Future<void> reauthenticateWithPassword(String password) async {
+    try {
+      final user = _auth.currentUser;
+      if (user == null || user.email == null) {
+        throw AuthException(
+          code: 'user-not-found',
+          message: 'No user currently signed in',
+        );
+      }
+
+      final credential = EmailAuthProvider.credential(
+        email: user.email!,
+        password: password,
+      );
+
+      await user.reauthenticateWithCredential(credential);
+      print('User successfully re-authenticated');
+    } on FirebaseAuthException catch (e) {
+      print('Re-authentication error: ${e.code}');
+      throw AuthException(
+        code: e.code,
+        message: _getErrorMessage(e.code),
+      );
+    } catch (e) {
+      print('Unexpected re-authentication error: $e');
+      throw AuthException(
+        code: 'unknown',
+        message: 'An unexpected error occurred during re-authentication',
+      );
+    }
+  }
+
+  // Delete Firebase Auth account (call after deleting all Firestore data)
+  Future<void> deleteFirebaseAuthAccount() async {
+    try {
+      final user = _auth.currentUser;
+      if (user == null) {
+        throw AuthException(
+          code: 'user-not-found',
+          message: 'No user currently signed in',
+        );
+      }
+
+      await user.delete();
+      print('Firebase Auth account deleted successfully');
+    } on FirebaseAuthException catch (e) {
+      print('Error deleting Firebase Auth account: ${e.code}');
+      throw AuthException(
+        code: e.code,
+        message: _getErrorMessage(e.code),
+      );
+    } catch (e) {
+      print('Unexpected error deleting Firebase Auth account: $e');
+      throw AuthException(
+        code: 'unknown',
+        message: 'An unexpected error occurred while deleting the account',
+      );
+    }
+  }
 } 

@@ -9,6 +9,7 @@ import '../providers/portrait_provider.dart';
 import '../models/portrait_model.dart';
 import '../models/user_model.dart';
 import '../services/user_service.dart';
+import '../services/report_service.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'dart:io';
@@ -16,6 +17,7 @@ import '../widgets/profile_image_picker_dialog.dart';
 import '../theme/app_theme.dart';
 import '../widgets/portrait_details_dialog.dart';
 import '../widgets/awards_tab.dart';
+import '../widgets/report_dialog.dart';
 import '../utils/milestone_utils.dart';
 import 'edit_profile_screen.dart';
 
@@ -303,6 +305,13 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
         foregroundColor: Colors.white,
         title: Text(_userData?.name ?? 'User'),
         elevation: 0,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.flag_outlined),
+            tooltip: 'Report User',
+            onPressed: () => _reportUser(context, authProvider),
+          ),
+        ],
       );
     }
     
@@ -1487,6 +1496,29 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
             child: const Text('Save'),
           ),
         ],
+      ),
+    );
+  }
+
+  void _reportUser(BuildContext context, AuthProvider authProvider) {
+    final currentUser = authProvider.userData;
+    
+    if (currentUser == null || _userData == null) return;
+
+    showDialog(
+      context: context,
+      builder: (context) => ReportDialog(
+        reportType: 'user',
+        onSubmit: (reason, details) async {
+          await ReportService().reportUser(
+            reportedUserId: widget.userId,
+            reportedUserName: _userData!.name,
+            reporterUserId: currentUser.id,
+            reporterName: currentUser.name,
+            reason: reason,
+            details: details,
+          );
+        },
       ),
     );
   }

@@ -28,7 +28,7 @@ class TermsOfServiceScreen extends StatelessWidget {
             ),
             const SizedBox(height: 16),
             const Text(
-              'Last updated: July 2025',
+              'Last updated: November 21, 2025',
               style: TextStyle(
                 color: Colors.grey,
                 fontSize: 14,
@@ -78,8 +78,12 @@ class TermsOfServiceScreen extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             const Text(
-              '• All portrait submissions must be original artwork\n'
-              '• Content must not be offensive, inappropriate, or violate others\' rights\n'
+              '• All portrait submissions must be original artwork created by you\n'
+              '• Portraits must be of consenting models from our sessions\n'
+              '• No explicit, offensive, or inappropriate content\n'
+              '• No harassment, bullying, or hate speech\n'
+              '• No spam, advertising, or commercial content\n'
+              '• No copyright violations or stolen artwork\n'
               '• You retain ownership of your artwork but grant us license to display it\n'
               '• We reserve the right to remove content that violates these terms',
               style: TextStyle(fontSize: 16),
@@ -102,7 +106,7 @@ class TermsOfServiceScreen extends StatelessWidget {
             ),
             const SizedBox(height: 16),
             const Text(
-              'Termination',
+              'Content Reporting & Moderation',
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
@@ -110,7 +114,29 @@ class TermsOfServiceScreen extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             const Text(
-              'We reserve the right to terminate or suspend your account at any time for violations of these terms or for any other reason at our discretion.',
+              '• Users can report inappropriate content or behavior\n'
+              '• All reports are reviewed by moderators\n'
+              '• False or malicious reports may result in penalties\n'
+              '• We investigate all reports promptly and fairly\n'
+              '• Actions may include warnings, content removal, or account suspension',
+              style: TextStyle(fontSize: 16),
+            ),
+            const SizedBox(height: 16),
+            const Text(
+              'Termination & Suspension',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              'Account Suspension:\n'
+              'We may temporarily suspend accounts for violations. Suspended users cannot access the app but may request account deletion.\n\n'
+              'Account Deletion:\n'
+              'You may delete your account at any time through Settings. We may also permanently delete accounts for serious or repeated violations.\n\n'
+              'Appeals:\n'
+              'Contact support@100headsociety.com to appeal suspensions or deletions.',
               style: TextStyle(fontSize: 16),
             ),
             const SizedBox(height: 16),
@@ -123,7 +149,10 @@ class TermsOfServiceScreen extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             const Text(
-              'If you have any questions about these Terms of Service, please visit our website to contact us.',
+              'If you have any questions about these Terms of Service, please contact us at:\n\n'
+              'Email: support@100headsociety.com\n'
+              'Website: https://100headsociety.com\n\n'
+              'We respond to all inquiries within 48 hours.',
               style: TextStyle(fontSize: 16),
             ),
           ],
