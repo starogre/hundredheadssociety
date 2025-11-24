@@ -46,19 +46,10 @@
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
 	<key>NSPhotoLibraryUsageDescription</key>
-	<string>This app needs access to your photos to let you view and choose images.</string>
+	<string>We need access to your photo library so you can select portrait images to upload as part of your 100 Heads Challenge. For example, you can choose a photo of a portrait you've drawn or painted to add to your collection.</string>
 
-	<!-- Add if you ever SAVE to the library -->
-	<key>NSPhotoLibraryAddUsageDescription</key>
-	<string>This app needs permission to save images to your photo library.</string>
-
-	<!-- Add if you use the camera -->
 	<key>NSCameraUsageDescription</key>
-	<string>This app needs camera access to take photos or videos.</string>
-
-	<!-- Add if you record video/voice -->
-	<key>NSMicrophoneUsageDescription</key>
-	<string>This app needs microphone access to record audio.</string>
+	<string>We need camera access so you can take photos of your portrait artwork directly within the app to upload to your 100 Heads Challenge collection. For example, you can photograph a portrait you've just completed and immediately add it to your progress.</string>
 
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
