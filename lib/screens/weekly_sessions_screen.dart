@@ -15,6 +15,7 @@ import '../widgets/nomination_dialog.dart';
 import '../screens/profile_screen.dart';
 import '../screens/past_winners_detail_screen.dart';
 import '../services/user_service.dart';
+import '../services/block_service.dart';
 
 class WeeklySessionsScreen extends StatefulWidget {
   const WeeklySessionsScreen({super.key});
@@ -26,6 +27,7 @@ class WeeklySessionsScreen extends StatefulWidget {
 class _WeeklySessionsScreenState extends State<WeeklySessionsScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
+  final BlockService _blockService = BlockService();
 
   @override
   void initState() {
@@ -1684,5 +1686,16 @@ class _WeeklySessionsScreenState extends State<WeeklySessionsScreen>
       'July', 'August', 'September', 'October', 'November', 'December'
     ];
     return '${months[date.month - 1]} ${date.day}, ${date.year}';
+  }
+
+  // Helper to filter out blocked users from submissions
+  List<Map<String, dynamic>> _filterBlockedSubmissions(
+    List<Map<String, dynamic>> submissions,
+    List<String> blockedUsers,
+  ) {
+    return submissions.where((submissionData) {
+      final user = submissionData['user'] as UserModel;
+      return !blockedUsers.contains(user.id);
+    }).toList();
   }
 } 
