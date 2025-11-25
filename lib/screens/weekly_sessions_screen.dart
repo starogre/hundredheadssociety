@@ -15,6 +15,7 @@ import '../widgets/nomination_dialog.dart';
 import '../screens/profile_screen.dart';
 import '../screens/past_winners_detail_screen.dart';
 import '../services/user_service.dart';
+import '../services/block_service.dart';
 
 class WeeklySessionsScreen extends StatefulWidget {
   const WeeklySessionsScreen({super.key});
@@ -26,6 +27,7 @@ class WeeklySessionsScreen extends StatefulWidget {
 class _WeeklySessionsScreenState extends State<WeeklySessionsScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
+  final BlockService _blockService = BlockService();
 
   @override
   void initState() {
@@ -674,14 +676,30 @@ class _WeeklySessionsScreenState extends State<WeeklySessionsScreen>
                 ),
               )
             else
-              ListView.builder(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                itemCount: weeklySessionProvider.submissionsWithUsers.length,
-                itemBuilder: (context, index) {
-                  final submissionData = weeklySessionProvider.submissionsWithUsers[index];
-                  final submission = submissionData['submission'] as WeeklySubmissionModel;
-                  final user = submissionData['user'] as UserModel;
+              StreamBuilder<List<String>>(
+                stream: _blockService.getBlockedUsers(currentUserId!),
+                builder: (context, blockedSnapshot) {
+                  return StreamBuilder<List<String>>(
+                    stream: _blockService.getBlockedByUsers(currentUserId),
+                    builder: (context, blockedBySnapshot) {
+                      final blockedUsers = blockedSnapshot.data ?? [];
+                      final blockedByUsers = blockedBySnapshot.data ?? [];
+                      final allBlockedUsers = [...blockedUsers, ...blockedByUsers];
+                      
+                      // Filter out blocked users' submissions
+                      final filteredSubmissions = _filterBlockedSubmissions(
+                        weeklySessionProvider.submissionsWithUsers,
+                        allBlockedUsers,
+                      );
+                      
+                      return ListView.builder(
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        itemCount: filteredSubmissions.length,
+                        itemBuilder: (context, index) {
+                          final submissionData = filteredSubmissions[index];
+                          final submission = submissionData['submission'] as WeeklySubmissionModel;
+                          final user = submissionData['user'] as UserModel;
 
                 return Card(
                   margin: const EdgeInsets.only(bottom: 16),
@@ -865,7 +883,11 @@ class _WeeklySessionsScreenState extends State<WeeklySessionsScreen>
                   ),
                 );
               },
-            ),
+            );
+                    },
+                  );
+                },
+              ),
           ],
         ],
       ),
@@ -982,27 +1004,52 @@ class _WeeklySessionsScreenState extends State<WeeklySessionsScreen>
       );
     }
     
-    return RefreshIndicator(
-      onRefresh: () async {
-        weeklySessionProvider.initialize();
-        // Wait a bit for the stream to update
-        await Future.delayed(const Duration(milliseconds: 500));
-      },
-      color: AppColors.forestGreen,
-      child: ListView(
-      padding: const EdgeInsets.all(16),
-        physics: const AlwaysScrollableScrollPhysics(),
-        children: awardDetails.entries.expand((entry) {
-        final categoryKey = entry.key;
-        final categoryDetails = entry.value;
-        final categoryId = categoryKey.toString().split('.').last;
-        final winnersData = winners[categoryId];
+    final currentUserId = authProvider.currentUser?.uid;
+    if (currentUserId == null) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    
+    return StreamBuilder<List<String>>(
+      stream: _blockService.getBlockedUsers(currentUserId),
+      builder: (context, blockedSnapshot) {
+        return StreamBuilder<List<String>>(
+          stream: _blockService.getBlockedByUsers(currentUserId),
+          builder: (context, blockedBySnapshot) {
+            final blockedUsers = blockedSnapshot.data ?? [];
+            final blockedByUsers = blockedBySnapshot.data ?? [];
+            final allBlockedUsers = [...blockedUsers, ...blockedByUsers];
+            
+            return RefreshIndicator(
+              onRefresh: () async {
+                weeklySessionProvider.initialize();
+                // Wait a bit for the stream to update
+                await Future.delayed(const Duration(milliseconds: 500));
+              },
+              color: AppColors.forestGreen,
+              child: ListView(
+              padding: const EdgeInsets.all(16),
+                physics: const AlwaysScrollableScrollPhysics(),
+                children: awardDetails.entries.expand((entry) {
+                final categoryKey = entry.key;
+                final categoryDetails = entry.value;
+                final categoryId = categoryKey.toString().split('.').last;
+                final winnersDataRaw = winners[categoryId];
 
-        if (winnersData == null || winnersData.isEmpty) {
-          return [const SizedBox.shrink()]; // Don't show a card if no winners for this category
-        }
+                if (winnersDataRaw == null || winnersDataRaw.isEmpty) {
+                  return [const SizedBox.shrink()]; // Don't show a card if no winners for this category
+                }
 
-        final isTie = winnersData.length > 1;
+                // Filter out blocked users from winners
+                final winnersData = winnersDataRaw.where((winner) {
+                  final userId = winner['userId'] as String;
+                  return !allBlockedUsers.contains(userId);
+                }).toList();
+
+                if (winnersData.isEmpty) {
+                  return [const SizedBox.shrink()]; // Don't show a card if all winners are blocked
+                }
+
+                final isTie = winnersData.length > 1;
 
         // Create a card for this category with all winners
         return [
@@ -1139,6 +1186,10 @@ class _WeeklySessionsScreenState extends State<WeeklySessionsScreen>
         ];
       }).toList(),
       ),
+            );
+          },
+        );
+      },
     );
   }
 
@@ -1684,5 +1735,16 @@ class _WeeklySessionsScreenState extends State<WeeklySessionsScreen>
       'July', 'August', 'September', 'October', 'November', 'December'
     ];
     return '${months[date.month - 1]} ${date.day}, ${date.year}';
+  }
+
+  // Helper to filter out blocked users from submissions
+  List<Map<String, dynamic>> _filterBlockedSubmissions(
+    List<Map<String, dynamic>> submissions,
+    List<String> blockedUsers,
+  ) {
+    return submissions.where((submissionData) {
+      final user = submissionData['user'] as UserModel;
+      return !blockedUsers.contains(user.id);
+    }).toList();
   }
 } 

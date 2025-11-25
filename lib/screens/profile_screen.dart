@@ -10,6 +10,7 @@ import '../models/portrait_model.dart';
 import '../models/user_model.dart';
 import '../services/user_service.dart';
 import '../services/report_service.dart';
+import '../services/block_service.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'dart:io';
@@ -18,6 +19,7 @@ import '../theme/app_theme.dart';
 import '../widgets/portrait_details_dialog.dart';
 import '../widgets/awards_tab.dart';
 import '../widgets/report_dialog.dart';
+import '../widgets/block_or_report_dialog.dart';
 import '../utils/milestone_utils.dart';
 import 'edit_profile_screen.dart';
 
@@ -37,6 +39,7 @@ class ProfileScreen extends StatefulWidget {
 
 class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProviderStateMixin {
   final UserService _userService = UserService();
+  final BlockService _blockService = BlockService();
   UserModel? _userData;
   final ImagePicker _picker = ImagePicker();
   int _lastPortraitCount = 0;
@@ -44,6 +47,10 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
   int _imageRefreshKey = 0;
   bool _justSubmittedUpgradeRequest = false;
   late TabController _tabController;
+  
+  // Block status
+  bool _hasBlockedUser = false;
+  bool _isBlockedByUser = false;
   
   // Lazy loading for portraits
   List<PortraitModel> _portraits = [];
@@ -64,6 +71,7 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
       }
     });
     _loadUserData();
+    _checkBlockStatus();
   }
 
   @override
@@ -82,6 +90,32 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
       }
     } catch (e) {
       debugPrint('Error loading user data: $e');
+    }
+  }
+
+  Future<void> _checkBlockStatus() async {
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final currentUser = authProvider.currentUser;
+    
+    // Only check if viewing someone else's profile
+    if (currentUser == null || currentUser.uid == widget.userId) {
+      return;
+    }
+    
+    try {
+      final blockStatus = await _blockService.checkBlockStatus(
+        currentUserId: currentUser.uid,
+        targetUserId: widget.userId,
+      );
+      
+      if (mounted) {
+        setState(() {
+          _hasBlockedUser = blockStatus['hasBlocked'] ?? false;
+          _isBlockedByUser = blockStatus['isBlockedBy'] ?? false;
+        });
+      }
+    } catch (e) {
+      debugPrint('Error checking block status: $e');
     }
   }
 
@@ -307,9 +341,9 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
         elevation: 0,
         actions: [
           IconButton(
-            icon: const Icon(Icons.flag_outlined),
-            tooltip: 'Report User',
-            onPressed: () => _reportUser(context, authProvider),
+            icon: PhosphorIcon(PhosphorIconsDuotone.flag, color: Colors.white),
+            tooltip: _hasBlockedUser ? 'Unblock User' : 'Block or Report User',
+            onPressed: () => _showBlockOrReportDialog(context),
           ),
         ],
       );
@@ -668,6 +702,54 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                   },
                 ),
 
+                // Block Status Message (when viewing blocked/blocked by users)
+                if (_hasBlockedUser || _isBlockedByUser)
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                      child: Container(
+                        padding: const EdgeInsets.all(20),
+                        decoration: BoxDecoration(
+                          color: Colors.grey.shade100,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: Colors.grey.shade300),
+                        ),
+                        child: Column(
+                          children: [
+                            PhosphorIcon(
+                              PhosphorIconsDuotone.userMinus,
+                              size: 48,
+                              color: Colors.grey.shade600,
+                            ),
+                            const SizedBox(height: 16),
+                            Text(
+                              _hasBlockedUser
+                                  ? 'You\'ve blocked ${_userData?.name ?? 'this user'}'
+                                  : '${_userData?.name ?? 'This user'} has blocked you',
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.grey.shade800,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              _hasBlockedUser
+                                  ? 'You won\'t see their portraits and they won\'t see yours'
+                                  : 'You cannot view their portraits or interact with their content',
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: Colors.grey.shade600,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+
                 // Edit Profile Button (only show to profile owner or admin for test users)
                 Consumer<AuthProvider>(
                   builder: (context, authProvider, child) {
@@ -909,6 +991,11 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                       return const SliverToBoxAdapter(child: SizedBox.shrink());
                     }
                     
+                    // Hide tabs if there's a block relationship
+                    if (_hasBlockedUser || _isBlockedByUser) {
+                      return const SliverToBoxAdapter(child: SizedBox.shrink());
+                    }
+                    
                     return SliverToBoxAdapter(
                       child: Container(
                         color: AppColors.cream,
@@ -943,6 +1030,11 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                     final isArtist = _userData?.isArtist ?? false;
                     
                     if (!isArtist && !isOwnProfile) {
+                      return const SliverToBoxAdapter(child: SizedBox.shrink());
+                    }
+                    
+                    // Hide portraits tab if there's a block relationship
+                    if (_hasBlockedUser || _isBlockedByUser) {
                       return const SliverToBoxAdapter(child: SizedBox.shrink());
                     }
                     
@@ -1500,26 +1592,21 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
     );
   }
 
-  void _reportUser(BuildContext context, AuthProvider authProvider) {
-    final currentUser = authProvider.userData;
-    
-    if (currentUser == null || _userData == null) return;
+  void _showBlockOrReportDialog(BuildContext context) async {
+    if (_userData == null) return;
 
-    showDialog(
+    final result = await showDialog<bool>(
       context: context,
-      builder: (context) => ReportDialog(
-        reportType: 'user',
-        onSubmit: (reason, details) async {
-          await ReportService().reportUser(
-            reportedUserId: widget.userId,
-            reportedUserName: _userData!.name,
-            reporterUserId: currentUser.id,
-            reporterName: currentUser.name,
-            reason: reason,
-            details: details,
-          );
-        },
+      builder: (context) => BlockOrReportDialog(
+        targetUserId: widget.userId,
+        targetUserName: _userData!.name,
+        isCurrentlyBlocked: _hasBlockedUser,
       ),
     );
+
+    // Refresh block status after dialog closes
+    if (result != null || mounted) {
+      await _checkBlockStatus();
+    }
   }
 } 

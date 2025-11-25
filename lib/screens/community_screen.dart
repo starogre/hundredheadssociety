@@ -5,6 +5,7 @@ import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'dart:async';
 import '../services/user_service.dart';
 import '../services/portrait_service.dart';
+import '../services/block_service.dart';
 import '../models/user_model.dart';
 import '../models/portrait_model.dart';
 import '../models/model_model.dart';
@@ -27,6 +28,7 @@ class _CommunityScreenState extends State<CommunityScreen>
   late TabController _tabController;
   final UserService _userService = UserService();
   final PortraitService _portraitService = PortraitService();
+  final BlockService _blockService = BlockService();
   final TextEditingController _searchController = TextEditingController();
   Timer? _debounceTimer;
   String _searchQuery = '';
@@ -326,33 +328,58 @@ class _CommunityScreenState extends State<CommunityScreen>
           ),
         ),
         Expanded(
-          child: StreamBuilder<List<PortraitModel>>(
-            stream: _portraitService.getAllPortraits(),
-            builder: (context, snapshot) {
-              if (snapshot.hasError) {
-                return Center(
-                  child: Text(
-                    'Error loading portraits: \\${snapshot.error}',
-                    style: TextStyle(color: AppColors.rustyOrange),
-                  ),
-                );
+          child: Consumer<AuthProvider>(
+            builder: (context, authProvider, child) {
+              final currentUser = authProvider.currentUser;
+              
+              if (currentUser == null) {
+                return const Center(child: CircularProgressIndicator());
               }
+              
+              // Get blocked users streams
+              return StreamBuilder<List<String>>(
+                stream: _blockService.getBlockedUsers(currentUser.uid),
+                builder: (context, blockedSnapshot) {
+                  return StreamBuilder<List<String>>(
+                    stream: _blockService.getBlockedByUsers(currentUser.uid),
+                    builder: (context, blockedBySnapshot) {
+                      final blockedUsers = blockedSnapshot.data ?? [];
+                      final blockedByUsers = blockedBySnapshot.data ?? [];
+                      final allBlockedUsers = [...blockedUsers, ...blockedByUsers];
+                      
+                      return StreamBuilder<List<PortraitModel>>(
+                        stream: _portraitService.getAllPortraits(),
+                        builder: (context, snapshot) {
+                          if (snapshot.hasError) {
+                            return Center(
+                              child: Text(
+                                'Error loading portraits: \\${snapshot.error}',
+                                style: TextStyle(color: AppColors.rustyOrange),
+                              ),
+                            );
+                          }
 
-              if (!snapshot.hasData) {
-                return Center(
-                  child: CircularProgressIndicator(
-                    valueColor: AlwaysStoppedAnimation<Color>(AppColors.rustyOrange),
-                  ),
-                );
-              }
+                          if (!snapshot.hasData) {
+                            return Center(
+                              child: CircularProgressIndicator(
+                                valueColor: AlwaysStoppedAnimation<Color>(AppColors.rustyOrange),
+                              ),
+                            );
+                          }
 
-              final allPortraits = snapshot.data!;
-              // For now, filter by model name only. Artist filtering will be handled in the UI
-              final portraits = _modelNameFilter.isEmpty
-                  ? allPortraits
-                  : allPortraits.where((p) => 
-                      (p.modelName ?? '').toLowerCase().contains(_modelNameFilter.toLowerCase())
-                    ).toList();
+                          final allPortraits = snapshot.data!;
+                          
+                          // Filter out blocked users' portraits
+                          final nonBlockedPortraits = allPortraits.where((p) => 
+                            !allBlockedUsers.contains(p.userId)
+                          ).toList();
+                          
+                          // Then filter by model name
+                          final portraits = _modelNameFilter.isEmpty
+                              ? nonBlockedPortraits
+                              : nonBlockedPortraits.where((p) => 
+                                  (p.modelName ?? '').toLowerCase().contains(_modelNameFilter.toLowerCase())
+                                ).toList();
 
               if (portraits.isEmpty) {
                 return Center(
@@ -644,6 +671,12 @@ class _CommunityScreenState extends State<CommunityScreen>
                             ],
                           ),
                         ),
+                      );
+                    },
+                  );
+                },
+              );
+                        },
                       );
                     },
                   );
