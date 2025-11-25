@@ -43,7 +43,7 @@ class BlockOrReportDialog extends StatelessWidget {
           if (isCurrentlyBlocked)
             ElevatedButton.icon(
               onPressed: () async {
-                Navigator.of(context).pop();
+                // Don't close dialog yet
                 await _unblockUser(context, blockService, authProvider);
               },
               icon: PhosphorIcon(PhosphorIconsDuotone.userCheck, color: Colors.white),
@@ -57,8 +57,10 @@ class BlockOrReportDialog extends StatelessWidget {
           else
             ElevatedButton.icon(
               onPressed: () async {
-                Navigator.of(context).pop();
+                debugPrint('🔴 BLOCK BUTTON PRESSED for $targetUserName');
+                // Don't close dialog yet - pass it to the function
                 await _confirmBlockUser(context, blockService, authProvider);
+                debugPrint('🔴 _confirmBlockUser completed');
               },
               icon: PhosphorIcon(PhosphorIconsDuotone.userMinus, color: Colors.white),
               label: Text('Block ${targetUserName}'),
@@ -75,8 +77,12 @@ class BlockOrReportDialog extends StatelessWidget {
           if (!isCurrentlyBlocked)
             OutlinedButton.icon(
               onPressed: () {
+                // Close dialog first, then show report dialog
                 Navigator.of(context).pop();
-                _showReportDialog(context, authProvider);
+                // Need a small delay to ensure dialog is closed
+                Future.delayed(const Duration(milliseconds: 100), () {
+                  _showReportDialog(context, authProvider);
+                });
               },
               icon: PhosphorIcon(PhosphorIconsDuotone.warning, color: AppColors.rustyOrange),
               label: Text('Report ${targetUserName}'),
@@ -102,6 +108,7 @@ class BlockOrReportDialog extends StatelessWidget {
     BlockService blockService,
     AuthProvider authProvider,
   ) async {
+    debugPrint('⚠️ CONFIRMATION: Showing confirmation dialog for $targetUserName');
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -112,11 +119,17 @@ class BlockOrReportDialog extends StatelessWidget {
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
+            onPressed: () {
+              debugPrint('⚠️ CONFIRMATION: User cancelled block');
+              Navigator.of(context).pop(false);
+            },
             child: const Text('Cancel'),
           ),
           ElevatedButton(
-            onPressed: () => Navigator.of(context).pop(true),
+            onPressed: () {
+              debugPrint('⚠️ CONFIRMATION: User confirmed block');
+              Navigator.of(context).pop(true);
+            },
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.red,
               foregroundColor: Colors.white,
@@ -127,15 +140,36 @@ class BlockOrReportDialog extends StatelessWidget {
       ),
     );
 
-    if (confirmed != true || !context.mounted) return;
+    debugPrint('⚠️ CONFIRMATION RESULT: confirmed=$confirmed, mounted=${context.mounted}');
+    if (confirmed != true) {
+      debugPrint('⚠️ CONFIRMATION: User cancelled - closing dialog');
+      if (context.mounted) {
+        Navigator.of(context).pop(); // Close the main dialog
+      }
+      return;
+    }
+
+    if (!context.mounted) {
+      debugPrint('⚠️ CONFIRMATION: Context unmounted - aborting');
+      return;
+    }
+
+    debugPrint('🚫 BLOCKING: Starting block process...');
+    debugPrint('🚫 Blocker ID: ${authProvider.currentUser!.uid}');
+    debugPrint('🚫 Blocked User ID: $targetUserId');
 
     try {
+      debugPrint('🚫 BLOCKING: Calling blockService.blockUser()...');
       await blockService.blockUser(
         blockedBy: authProvider.currentUser!.uid,
         blockedUser: targetUserId,
       );
+      debugPrint('🚫 BLOCKING: Block successful!');
 
       if (context.mounted) {
+        // Close the main dialog first
+        Navigator.of(context).pop();
+        
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('$targetUserName has been blocked'),
@@ -147,7 +181,12 @@ class BlockOrReportDialog extends StatelessWidget {
         Navigator.of(context).pop();
       }
     } catch (e) {
+      debugPrint('🚫 BLOCKING ERROR: $e');
+      debugPrint('🚫 BLOCKING ERROR TYPE: ${e.runtimeType}');
       if (context.mounted) {
+        // Close the main dialog first
+        Navigator.of(context).pop();
+        
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Failed to block user: $e'),
@@ -170,6 +209,9 @@ class BlockOrReportDialog extends StatelessWidget {
       );
 
       if (context.mounted) {
+        // Close the dialog first
+        Navigator.of(context).pop();
+        
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('$targetUserName has been unblocked'),
@@ -177,11 +219,14 @@ class BlockOrReportDialog extends StatelessWidget {
           ),
         );
         
-        // Refresh the profile screen by popping and showing success
+        // Refresh the profile screen by popping
         Navigator.of(context).pop();
       }
     } catch (e) {
       if (context.mounted) {
+        // Close the dialog first
+        Navigator.of(context).pop();
+        
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Failed to unblock user: $e'),
@@ -202,8 +247,8 @@ class BlockOrReportDialog extends StatelessWidget {
         onSubmit: (reason, details) async {
           try {
             await reportService.reportUser(
-              reporterId: authProvider.currentUser!.uid,
-              reporterName: authProvider.currentUser!.name,
+              reporterUserId: authProvider.currentUser!.uid,
+              reporterName: authProvider.userData?.name ?? authProvider.currentUser!.displayName ?? 'Unknown',
               reportedUserId: targetUserId,
               reportedUserName: targetUserName,
               reason: reason,

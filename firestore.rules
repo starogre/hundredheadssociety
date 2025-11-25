@@ -122,5 +122,50 @@ service cloud.firestore {
           get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isModerator == true
         );
     }
+
+    // Reports collection
+    match /reports/{reportId} {
+      // Users can create reports
+      allow create: if request.auth != null 
+        && request.resource.data.reporterUserId == request.auth.uid
+        && request.resource.data.status == 'pending';
+      
+      // Users can read their own reports
+      allow read: if request.auth != null 
+        && (resource.data.reporterUserId == request.auth.uid
+            || get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true
+            || get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isModerator == true);
+      
+      // Only admins and moderators can update reports
+      allow update: if request.auth != null 
+        && (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true
+            || get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isModerator == true);
+      
+      // Only admins can delete reports
+      allow delete: if request.auth != null 
+        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true;
+    }
+
+    // Blocks collection - User blocking system
+    match /blocks/{blockId} {
+      // Allow users to create blocks where they are the blocker
+      // blockId format: "blockerId_blockedUserId"
+      allow create: if request.auth != null 
+        && blockId == request.auth.uid + '_' + request.resource.data.blockedUser
+        && request.resource.data.blockedBy == request.auth.uid
+        && request.resource.data.blockedUser is string
+        && request.resource.data.createdAt == request.time;
+      
+      // Allow users to read blocks where they are involved (either blocker or blocked)
+      allow read: if request.auth != null 
+        && (resource.data.blockedBy == request.auth.uid 
+            || resource.data.blockedUser == request.auth.uid);
+      
+      // Allow users to delete blocks they created (unblock)
+      allow delete: if request.auth != null 
+        && resource.data.blockedBy == request.auth.uid;
+      
+      // No updates allowed - blocks are immutable
+    }
   }
 }

@@ -13,15 +13,21 @@ class BlockService {
       // Create a compound document ID to ensure uniqueness
       final blockId = '${blockedBy}_$blockedUser';
       
+      debugPrint('📝 BlockService: Creating block document with ID: $blockId');
+      debugPrint('📝 BlockService: Data - blockedBy: $blockedBy, blockedUser: $blockedUser');
+      
       await _firestore.collection('blocks').doc(blockId).set({
         'blockedBy': blockedBy,
         'blockedUser': blockedUser,
         'createdAt': FieldValue.serverTimestamp(),
       });
       
-      debugPrint('User $blockedUser blocked by $blockedBy');
+      debugPrint('✅ BlockService: Successfully created block document');
+      debugPrint('✅ User $blockedUser blocked by $blockedBy');
     } catch (e) {
-      debugPrint('Error blocking user: $e');
+      debugPrint('❌ BlockService ERROR: $e');
+      debugPrint('❌ BlockService ERROR TYPE: ${e.runtimeType}');
+      debugPrint('❌ Error blocking user: $e');
       rethrow;
     }
   }
