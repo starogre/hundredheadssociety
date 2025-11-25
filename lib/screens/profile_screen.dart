@@ -991,6 +991,11 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                       return const SliverToBoxAdapter(child: SizedBox.shrink());
                     }
                     
+                    // Hide tabs if there's a block relationship
+                    if (_hasBlockedUser || _isBlockedByUser) {
+                      return const SliverToBoxAdapter(child: SizedBox.shrink());
+                    }
+                    
                     return SliverToBoxAdapter(
                       child: Container(
                         color: AppColors.cream,
@@ -1025,6 +1030,11 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                     final isArtist = _userData?.isArtist ?? false;
                     
                     if (!isArtist && !isOwnProfile) {
+                      return const SliverToBoxAdapter(child: SizedBox.shrink());
+                    }
+                    
+                    // Hide portraits tab if there's a block relationship
+                    if (_hasBlockedUser || _isBlockedByUser) {
                       return const SliverToBoxAdapter(child: SizedBox.shrink());
                     }
                     
